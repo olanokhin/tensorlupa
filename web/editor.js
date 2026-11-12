@@ -29,16 +29,6 @@ async function boot() {
   }
   const i = S.engine.info;
   $('status').textContent = `${i.layers} слоя × ${i.dim}, ${i.heads} головы, словарь ${i.vocab} · WebAssembly`;
-  // живой индикатор размеров: окно браузера и рабочая область (для проверки отзывчивости)
-  const sizeTag = document.createElement('span'); sizeTag.className = 'sizetag'; $('top').appendChild(sizeTag);
-  const showSize = () => {
-    const a = $('app').getBoundingClientRect(), small = innerWidth < 1200 || innerHeight < 720;
-    const dpr = Math.round(devicePixelRatio * 100) / 100;
-    sizeTag.textContent = `окно ${innerWidth}×${innerHeight} · редактор ${Math.round(a.width)}×${Math.round(a.height)} · пикселей на точку ${dpr}` +
-      (small ? ' · меньше минимума 1200×720 — прокрутка' : '') + (dpr < 1 ? ' · масштаб браузера уменьшен — Cmd+0' : '');
-    sizeTag.classList.toggle('warn', small);
-  };
-  addEventListener('resize', showSize); showSize();
   S.strip = new LogitStrip($('logits-canvas'), $('tip'), S.engine.tokenText);
   S.amode = 'look';
   S.attn = new AttentionView($('attn-canvas'), (sel) => { if (S.a3d) S.a3d.setSel(sel); tintStory(); renderInspector(S.run.steps[S.cur]); });
@@ -252,12 +242,53 @@ function switchView(v) {
 
 // заливка пройденной части у ползунков (CSS-переменная --p)
 function fillRange(el) {
-  const min = +el.min || 0, max = +el.max || 100, v = +el.value;
-  el.style.setProperty('--p', (max > min ? (100 * (v - min)) / (max - min) : 0) + '%');
+  const min = +el.min || 0, max = +el.max || 100, v = +el.value, f = max > min ? (v - min) / (max - min) : 0;
+  // граница заливки — ровно под центром капли: центр ходит от 11px до (ширина − 11px), а не от края до края
+  el.style.setProperty('--p', `calc(11px + ${f} * (100% - 22px))`);
+  el._f = f;
+  placeKnob(el);
 }
 
+// стеклянная ручка: элемент в слое поверх страницы, ставится по экранным координатам своего ползунка
+function placeKnob(el) {
+  const k = el._knob;
+  if (!k) return;
+  const r = el.getBoundingClientRect();
+  if (!r.width || el.closest('[hidden]')) { k.style.display = 'none'; return; }
+  k.style.display = '';
+  const cx = r.left + 11 + (el._f || 0) * (r.width - 22);
+  k.style.left = cx + 'px';
+  k.style.top = r.top + r.height / 2 + 'px';
+  // лупа: внутри капли дорожка есть только между её концами (центр капли в минимуме и в максимуме),
+  // увеличена в M раз относительно центра капли; split — где кончается заливка (центр капли)
+  const kw = k.classList.contains('drag') ? 30 : 22, M = 1.4, half = kw / 2;
+  const toKnob = (x) => half + (x - cx) * M;              // экранная x -> координата внутри капли (с увеличением)
+  const lcut = Math.max(0, toKnob(r.left + 11)), rcut = Math.max(0, kw - toKnob(r.right - 11));
+  k.style.setProperty('--lcut', lcut + 'px'); k.style.setProperty('--rcut', rcut + 'px');
+  k.style.setProperty('--split', Math.max(0, half - lcut) + 'px');
+}
+const glassRanges = [];
+function glassRange(el) {
+  const wrap = document.createElement('span'); wrap.className = 'rng-wrap';
+  el.parentNode.insertBefore(wrap, el); wrap.appendChild(el);
+  const knob = document.createElement('span'); knob.className = 'glass-knob'; document.body.appendChild(knob);
+  el._knob = knob; glassRanges.push(el);
+  const cs = getComputedStyle(el);                       // цвета дорожки этого ползунка — для лупы внутри капли
+  knob.style.setProperty('--fill', cs.getPropertyValue('--fill').trim() || '#bbbcc4');
+  knob.style.setProperty('--rest', cs.getPropertyValue('--rest').trim() || 'rgba(187,188,196,.14)');
+  const up = () => { if (knob.classList.contains('drag')) { knob.classList.remove('drag'); placeKnob(el); } };
+  el.addEventListener('pointerdown', () => { knob.classList.add('drag'); placeKnob(el); });
+  addEventListener('pointerup', up); addEventListener('pointercancel', up);
+  new ResizeObserver(() => placeKnob(el)).observe(el);
+  fillRange(el);
+}
+// положение ручек обновляется при прокрутке, изменении окна и переключении видов
+addEventListener('resize', () => glassRanges.forEach(placeKnob));
+addEventListener('scroll', () => glassRanges.forEach(placeKnob), true);
+new MutationObserver(() => glassRanges.forEach(placeKnob)).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['hidden'] });
+
 function bindUI() {
-  document.querySelectorAll('input[type=range]').forEach((el) => { fillRange(el); el.addEventListener('input', () => fillRange(el)); });
+  document.querySelectorAll('input[type=range]').forEach((el) => { glassRange(el); el.addEventListener('input', () => fillRange(el)); });
   document.querySelectorAll('.tab.amode').forEach((b) => b.addEventListener('click', () => {
     S.amode = b.dataset.amode; S.attn.mode = S.amode; if (S.a3d) { S.a3d.mode = S.amode; S.a3d.ridges(); }
     document.querySelectorAll('.tab.amode').forEach((x) => x.classList.toggle('on', x === b));
