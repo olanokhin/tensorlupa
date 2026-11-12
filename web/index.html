@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>micro-qwen3 editor</title>
+<link rel="stylesheet" href="editor.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand">micro-qwen3 <span>editor</span></div>
+    <div class="order">
+      <select id="mode" title="Режим">
+        <option value="order">Заказ истории</option>
+        <option value="continue">Продолжить текст</option>
+      </select>
+      <input id="words" type="text" value="dragon, cookie, school" placeholder="до трёх слов: глагол, существительное, прилагательное" spellcheck="false">
+      <input id="prompt" type="text" value="Once upon a time" placeholder="начало истории" spellcheck="false" hidden>
+      <button id="gen" class="primary">Сгенерировать</button>
+    </div>
+    <div id="status" class="status">загрузка модели…</div>
+  </header>
+
+  <section id="view-model" class="viewport">
+    <div class="vp-title vp-tabs" title="Поток слева направо. Мышь — вращать, колесо — приблизить, щелчок по пластине — разобрать слой">Модель
+      <button class="tab on" data-view="3d">3D</button><button class="tab" data-view="schema">схема</button>
+      <label class="explode" id="spread-box">раздвинуть <input id="spread" type="range" min="0.6" max="2" step="0.01" value="1"></label>
+      <span class="cams" id="cams"><button class="tab cam on" data-cam="perspective">перспектива</button><button class="tab cam" data-cam="side">сбоку</button><button class="tab cam" data-cam="along">вдоль потока</button></span>
+      <span id="model-sub" hidden>· поток слева направо · мышь — вращать</span></div>
+    <div class="vp-body"><div id="model-3d" class="fill"></div><canvas id="model-canvas" class="fill" hidden></canvas></div>
+  </section>
+
+  <section id="view-attn" class="viewport">
+    <div class="vp-title vp-tabs">Attention
+      <button class="tab on" data-aview="3d">3D</button><button class="tab" data-aview="2d">2D</button>
+      <span class="amodes"><button class="tab amode on" data-amode="look" title="вес внимания: куда голова смотрит">куда смотрит</button><button class="tab amode" data-amode="contrib" title="вес × сила value: что реально забрано из токена">вклад</button></span>
+      <label class="explode" id="explode-box">раздвинуть <input id="explode" type="range" min="0" max="1" step="0.01" value="0.25"></label>
+      <span id="attn-sub">· щёлкни карту — подсветить историю</span></div>
+    <div class="vp-body attn-body">
+      <div class="attn-view"><div id="attn-3d" class="fill"></div><canvas id="attn-canvas" class="fill" hidden></canvas></div>
+      <canvas id="growth-canvas" class="growth"></canvas>
+    </div>
+  </section>
+
+  <aside id="side">
+    <div id="pane"></div>
+    <div id="inspector" class="inspector"></div>
+  </aside>
+
+  <section id="logits" class="viewport">
+    <div class="vp-title">Логиты <span id="logits-sub"></span></div>
+    <div class="vp-body"><canvas id="logits-canvas"></canvas><div id="tip" class="tip" hidden></div></div>
+  </section>
+
+  <section id="story" class="viewport">
+    <div class="vp-title">Вход и выход <span id="story-sub"></span></div>
+    <div class="vp-body"><div id="story-text" class="story-text"></div></div>
+    <div id="timeline" class="timeline">
+      <button id="t-first" title="В начало ответа (Home)">⏮</button>
+      <button id="t-prev" title="Шаг назад (←)">◀</button>
+      <button id="t-play" title="Проиграть / пауза (пробел)">▶</button>
+      <button id="t-next" title="Шаг вперёд (→)">▶|</button>
+      <button id="t-last" title="В конец (End)">⏭</button>
+      <input id="t-range" type="range" min="0" max="0" value="0">
+      <span id="t-label" class="mono"></span>
+    </div>
+  </section>
+</div>
+<script type="module" src="editor.js"></script>
+</body>
+</html>
