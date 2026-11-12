@@ -56,35 +56,38 @@ export class LogitStrip {
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, W, H);
     if (!this.step) return;
-    const padL = 38, padR = 8, padT = 10, labH = 58, chartH = H - padT - labH;
+    const padL = 34, padR = 8, padT = 8, labH = 44, chartH = H - padT - labH;
     const n = this.bars.length + 1, bw = (W - padL - padR) / n;
     const y = (p) => padT + chartH * (1 - Math.max(0, (Math.log10(Math.max(p, 1e-12)) - LOG_MIN) / -LOG_MIN));
     // сетка
     g.font = '10px ' + css('--mono'); g.textAlign = 'right'; g.textBaseline = 'middle';
-    for (let e = 0; e >= LOG_MIN; e--) {
-      const yy = y(10 ** e);
-      g.strokeStyle = e === 0 ? '#3a4049' : '#2a2f36'; g.beginPath(); g.moveTo(padL, yy); g.lineTo(W - padR, yy); g.stroke();
-      g.fillStyle = css('--dim'); g.fillText(e === 0 ? '1' : '1e' + e, padL - 5, yy);
+    for (let e = 0; e >= LOG_MIN; e--) {          // бледная сетка; подписи только 1, 1e-3, 1e-6
+      const yy = Math.round(y(10 ** e)) + 0.5;
+      g.strokeStyle = e === 0 ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)'; g.beginPath(); g.moveTo(padL, yy); g.lineTo(W - padR, yy); g.stroke();
+      if (e % 3 === 0) { g.fillStyle = 'rgba(235,238,243,0.32)'; g.fillText(e === 0 ? '1' : '1e' + e, padL - 5, yy); }
     }
     const cAcc = css('--accent'), cDim = '#4a5059', cCh = css('--chosen'), cBias = css('--bias'), cForced = css('--forced');
     this.layout = [];
     this.bars.forEach((b, i) => {
-      const x = padL + i * bw, top = y(b.p), w = Math.max(1, bw - 2);
-      g.fillStyle = this.forcedView ? (b.chosen ? cForced : '#6b5f8f') : b.chosen ? cCh : b.inTopk ? cAcc : cDim;
-      g.fillRect(x + 1, top, w, padT + chartH - top);
-      if (b.bias > 0 && b.bias < 1e8) { g.fillStyle = cBias; g.fillRect(x + 1, top - 3, w, 3); }
+      // стеклянная колонна: тоньше шага, цвет насыщен сверху и тает книзу, скруглённая верхушка;
+      // ярко — только выбранный токен (со свечением), кандидаты top-k — приглушённо, остальные — едва видны
+      const w = Math.max(1, Math.min(bw * 0.58, 14)), x0 = padL + i * bw + (bw - w) / 2, x = padL + i * bw, top = y(b.p);
+      const col = this.forcedView ? (b.chosen ? cForced : '#6b5f8f') : b.chosen ? cCh : b.inTopk ? cAcc : '#8a93a3';
+      const a1 = b.chosen ? 0.95 : b.inTopk ? 0.55 : 0.22, a0 = b.chosen ? 0.35 : b.inTopk ? 0.10 : 0.04;
+      glassBar(g, x0, top, w, padT + chartH - top, col, a1, a0, b.chosen);
+      if (b.bias > 0 && b.bias < 1e8) { g.fillStyle = cBias; g.globalAlpha = 0.9; rr(g, x0, top - 3, w, 2, 1); g.fill(); g.globalAlpha = 1; }
       const yr = y(b.pRaw);
-      if (Math.abs(yr - top) > 1.5) { g.strokeStyle = '#ffffffcc'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x + 1, yr); g.lineTo(x + 1 + w, yr); g.stroke(); }
+      if (Math.abs(yr - top) > 1.5) { g.strokeStyle = 'rgba(255,255,255,0.75)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x0 - 1, yr); g.lineTo(x0 + w + 1, yr); g.stroke(); }
       this.layout.push({ x, w: bw, b });
       // подпись токена — вертикально
       g.save(); g.translate(x + bw / 2 + 3, padT + chartH + 4); g.rotate(-Math.PI / 2);
-      g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillStyle = b.chosen ? cCh : b.inTopk ? '#c9ced6' : css('--dim');
-      g.font = (bw > 13 ? '11px ' : '9px ') + css('--mono');
-      g.fillText(show(this.tokenText[b.tok]).slice(0, 9), 0, 0); g.restore();
+      g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillStyle = b.chosen ? cCh : b.inTopk ? 'rgba(235,238,243,0.62)' : 'rgba(235,238,243,0.28)';
+      g.font = (bw > 13 ? '10px ' : '9px ') + css('--mono');
+      g.fillText(show(this.tokenText[b.tok]).slice(0, 7), 0, 0); g.restore();
     });
     // хвост
     const x = padL + this.bars.length * bw, top = y(this.tail);
-    g.fillStyle = '#39404a'; g.fillRect(x + 1, top, Math.max(1, bw - 2), padT + chartH - top);
+    { const w = Math.max(1, Math.min(bw * 0.58, 14)); glassBar(g, x + (bw - w) / 2, top, w, padT + chartH - top, '#8a93a3', 0.3, 0.05, false); }
     g.save(); g.translate(x + bw / 2 + 3, padT + chartH + 4); g.rotate(-Math.PI / 2); g.textAlign = 'right';
     g.textBaseline = 'middle'; g.fillStyle = css('--dim'); g.font = '9px ' + css('--mono'); g.fillText('хвост', 0, 0); g.restore();
     this.layout.push({ x, w: bw, tail: true });
@@ -116,3 +119,26 @@ export class LogitStrip {
 
 export function show(t) { return t === undefined ? '' : t.replace(/\n/g, '↵').replace(/ /g, '·'); }
 function fmtP(p) { return p >= 0.01 ? (100 * p).toFixed(1) + '%' : p.toExponential(1); }
+
+// скруглённый прямоугольник (только верхние углы)
+function rr(g, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h);
+  g.beginPath(); g.moveTo(x, y + h); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y);
+  g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h); g.closePath();
+}
+// стеклянная колонна: вертикальный градиент цвета (a1 сверху → a0 снизу) и светлый блик по верхней кромке
+function glassBar(g, x, y, w, h, color, a1, a0, glow) {
+  if (h <= 0) return;
+  const [r, gg, b] = hex(color), gr = g.createLinearGradient(0, y, 0, y + h);
+  gr.addColorStop(0, `rgba(${r},${gg},${b},${a1})`); gr.addColorStop(1, `rgba(${r},${gg},${b},${a0})`);
+  g.save();
+  if (glow) { g.shadowColor = `rgba(${r},${gg},${b},0.55)`; g.shadowBlur = 10; }
+  g.fillStyle = gr; rr(g, x, y, w, h, 3); g.fill();
+  g.restore();
+  g.fillStyle = `rgba(255,255,255,${glow ? 0.55 : 0.18})`; rr(g, x, y, w, Math.min(1.5, h), 1.5); g.fill();
+}
+function hex(c) {
+  c = c.trim();
+  if (c.startsWith('#')) { const v = c.length === 4 ? c.slice(1).split('').map((x) => x + x).join('') : c.slice(1, 7); return [0, 2, 4].map((i) => parseInt(v.slice(i, i + 2), 16)); }
+  const m = c.match(/\d+/g); return m ? m.slice(0, 3).map(Number) : [200, 200, 200];
+}

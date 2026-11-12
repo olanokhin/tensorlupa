@@ -4,6 +4,7 @@
 // рельефом (высота — вес внимания) и подписывает три слова, на которые голова смотрит сильнее всего.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { setBackdrop } from './backdrop.js';
 
 const SIDE = 3.2;
 const GOLD = new THREE.Color(0xffe08a);
@@ -122,6 +123,7 @@ export class AttnStack3D {
     const w = this.box.clientWidth, h = this.box.clientHeight;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
+    setBackdrop(this.scene, w, h, window.devicePixelRatio || 1);
     this.renderer.domElement.style.width = '100%'; this.renderer.domElement.style.height = '100%';
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
     this.fit();

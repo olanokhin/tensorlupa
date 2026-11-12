@@ -27,7 +27,7 @@ body { overflow: auto; }
 #app {
   height: 100vh; min-width: 1200px; min-height: 720px; display: grid; gap: 6px; padding: 6px;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) clamp(270px, 20vw, 380px);
-  grid-template-rows: 44px minmax(260px, 1fr) minmax(170px, 0.45fr) minmax(150px, 0.38fr);
+  grid-template-rows: 44px minmax(260px, 1fr) minmax(118px, 0.24fr) minmax(170px, 0.5fr);
   grid-template-areas:
     "top top top"
     "model attn side"
@@ -192,3 +192,152 @@ input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border: none; b
   -webkit-backdrop-filter: blur(0.5px) saturate(200%) brightness(1.2); backdrop-filter: blur(0.5px) saturate(200%) brightness(1.2);
 }
 .glass-knob.drag::after { opacity: 0.6; }
+
+/* ======================= жидкое стекло: интерфейс =======================
+   Принципы: нет обводок — край стекла выделяет световая кромка (ярче сверху, тает книзу); панели полупрозрачные
+   и размывают фон под собой (под панелями — статичный фон, поэтому backdrop-filter недорогой; 3D-сцены — внутри
+   панелей, а не под ними); неактивные кнопки почти невидимы, активная — приподнятая стеклянная плашка;
+   системный шрифт для интерфейса, моноширинный — только для чисел и токенов. */
+:root {
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --rim-hi: rgba(255, 255, 255, 0.30);
+  --rim-lo: rgba(255, 255, 255, 0.04);
+}
+html, body { font-family: var(--ui); }
+body {
+  background:
+    radial-gradient(1200px 700px at 12% -10%, rgba(242, 179, 61, 0.10), transparent 60%),
+    radial-gradient(1000px 800px at 105% 110%, rgba(169, 140, 240, 0.12), transparent 60%),
+    radial-gradient(900px 600px at 60% 40%, rgba(120, 140, 170, 0.05), transparent 70%),
+    #121418;
+}
+
+/* стеклянная поверхность: полупрозрачная заливка, размытие фона, световая кромка через псевдоэлемент */
+.viewport, #top, .inspector, #pane .tp-rotv {
+  position: relative; border: none !important; border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02)), rgba(24, 26, 31, 0.62);
+  -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.viewport::before, #top::before, .inspector::before, #pane .tp-rotv::before,
+button::before, .tab.on::before, .order input::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 3;
+  background: linear-gradient(180deg, var(--rim-hi), var(--rim-lo) 45%, rgba(255, 255, 255, 0.10));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.vp-title { border-bottom: none; color: rgba(235, 238, 243, 0.62); font: 600 11px var(--ui); letter-spacing: 0.06em; padding: 8px 12px 6px; }
+.vp-title span { color: rgba(235, 238, 243, 0.38); font-weight: 400; letter-spacing: 0; }
+.timeline { border-top: none; padding: 8px 12px 10px; gap: 6px; }
+.brand { font: 600 14px var(--ui); letter-spacing: 0; }
+.status { font: 12px var(--ui); color: rgba(235, 238, 243, 0.5); }
+
+/* кнопки: стеклянные, без обводки; центрирование текста по высоте */
+button {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+  height: 26px; padding: 0 12px; border: none; border-radius: 999px; color: rgba(235, 238, 243, 0.9);
+  font: 500 12px var(--ui);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18);
+  -webkit-backdrop-filter: blur(12px) saturate(170%); backdrop-filter: blur(12px) saturate(170%);
+  transition: background 160ms, box-shadow 160ms, transform 120ms;
+}
+button:hover { background: linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.08)); }
+button:active { transform: scale(0.97); }
+
+/* вкладки — как сегменты macOS: неактивные без фона, активная — приподнятая стеклянная плашка */
+.vp-tabs { gap: 2px; }
+.tab {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+  height: 22px; padding: 0 10px; border: none !important; border-radius: 999px; box-shadow: none;
+  background: transparent; color: rgba(235, 238, 243, 0.55); font: 500 11px var(--ui); letter-spacing: 0; text-transform: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.tab:hover { background: rgba(255, 255, 255, 0.06); color: rgba(235, 238, 243, 0.85); }
+.tab:active { transform: none; }
+.tab.on, .vp-tabs .tab.on, .tab.cam.on {
+  color: #fff; border: none !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.08));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(242, 179, 61, 0.0);
+}
+.tab.amode[data-amode="look"].on { color: #ffd98a; background: linear-gradient(180deg, rgba(242, 179, 61, 0.30), rgba(242, 179, 61, 0.10)); }
+.tab.amode[data-amode="contrib"].on { color: #d6c8ff; background: linear-gradient(180deg, rgba(169, 140, 240, 0.32), rgba(169, 140, 240, 0.10)); }
+.cams, .amodes { gap: 2px; padding: 2px; border-radius: 999px; background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35); }
+.vp-tabs > .tab[data-view], .vp-tabs > .tab[data-aview] { margin: 0; }
+.explode { font: 11px var(--ui); color: rgba(235, 238, 243, 0.5); }
+
+/* главная кнопка — янтарное стекло */
+button.primary {
+  height: 30px; padding: 0 16px; color: #2a1a06; font-weight: 600;
+  background: linear-gradient(180deg, rgba(255, 214, 140, 0.95), rgba(240, 168, 60, 0.92));
+  box-shadow: 0 2px 10px rgba(242, 179, 61, 0.30), 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 250, 235, 0.9);
+}
+button.primary:hover { background: linear-gradient(180deg, rgba(255, 224, 160, 1), rgba(246, 178, 74, 0.96)); }
+
+/* поле заказа и список — утопленное стекло */
+.order input, .order select {
+  height: 30px; border: none; border-radius: 10px; font: 13px var(--mono); color: #eef0f3;
+  background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+.order select { font: 500 12px var(--ui); padding: 0 10px; }
+.order input:focus, .order select:focus { outline: none; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(242, 179, 61, 0.22); }
+
+/* плеер: круглые кнопки, SVG-иконки ровно по центру */
+.timeline button { width: 30px; height: 30px; min-width: 30px; padding: 0; }
+.timeline button svg { width: 14px; height: 14px; fill: currentColor; display: block; }
+#t-play { width: 34px; height: 34px; min-width: 34px; }
+#t-play svg { width: 16px; height: 16px; }
+
+/* инспектор и мелочи */
+.inspector { font: 12px var(--ui); }
+.inspector h4 { font: 600 11px var(--ui); letter-spacing: 0.05em; color: rgba(235, 238, 243, 0.55); }
+.inspector .tokpill { border: none; border-radius: 6px; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); }
+.formula { border: none; border-radius: 10px; background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35); }
+.st { border-radius: 999px; }
+.tip { border: none; border-radius: 10px; background: rgba(20, 22, 27, 0.78); -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.12); }
+
+/* панель настроек (Tweakpane): системный шрифт, заголовки групп — лёгкие строки со стрелкой, без плашек */
+#pane {
+  --tp-base-font-family: var(--ui);
+  --tp-base-background-color: transparent;
+  --tp-base-shadow-color: transparent;
+  --tp-container-background-color: transparent;
+  --tp-container-background-color-active: rgba(255, 255, 255, 0.06);
+  --tp-container-background-color-focus: rgba(255, 255, 255, 0.05);
+  --tp-container-background-color-hover: rgba(255, 255, 255, 0.05);
+  --tp-container-foreground-color: rgba(235, 238, 243, 0.7);
+  --tp-button-background-color: rgba(255, 255, 255, 0.12);
+  --tp-button-background-color-active: rgba(255, 255, 255, 0.22);
+  --tp-button-background-color-focus: rgba(255, 255, 255, 0.18);
+  --tp-button-background-color-hover: rgba(255, 255, 255, 0.18);
+  --tp-button-foreground-color: rgba(235, 238, 243, 0.92);
+  --tp-input-background-color: rgba(0, 0, 0, 0.25);
+  --tp-input-background-color-active: rgba(0, 0, 0, 0.32);
+  --tp-input-background-color-focus: rgba(0, 0, 0, 0.30);
+  --tp-input-background-color-hover: rgba(0, 0, 0, 0.30);
+  --tp-input-foreground-color: #eef0f3;
+  --tp-label-foreground-color: rgba(235, 238, 243, 0.62);
+  --tp-groove-foreground-color: rgba(255, 255, 255, 0.10);
+}
+#pane .tp-rotv { overflow: hidden; padding-bottom: 6px; }
+#pane .tp-rotv_b, #pane .tp-fldv_b {
+  text-align: left !important; font: 600 12px var(--ui) !important; height: 30px; padding-left: 12px !important;
+  background: transparent !important; border-radius: 0 !important; color: rgba(235, 238, 243, 0.85) !important;
+}
+#pane .tp-rotv_b { font-size: 13px !important; color: #fff !important; }
+#pane .tp-fldv_b { color: rgba(235, 238, 243, 0.55) !important; font-size: 11px !important; letter-spacing: 0.05em; text-transform: uppercase; }
+#pane .tp-fldv_b:hover, #pane .tp-rotv_b:hover { background: rgba(255, 255, 255, 0.04) !important; }
+#pane .tp-fldv_m, #pane .tp-rotv_m { opacity: 0.6; }
+#pane .tp-fldv_c, #pane .tp-rotv_c { background: transparent !important; }
+#pane .tp-fldv.tp-v-first .tp-fldv_b, #pane .tp-fldv_b { border-top: 0.5px solid rgba(255, 255, 255, 0.06); }
+#pane .tp-lblv_l { font: 12px var(--ui); }
+#pane .tp-txtv_i, #pane .tp-sldtxtv_t .tp-txtv_i { font: 12px var(--mono); border-radius: 7px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4); }
+#pane .tp-ckbv_w { border-radius: 6px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4); }
+#pane .tp-btnv_b { border-radius: 999px; height: 28px; font: 500 12px var(--ui); position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06)); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+#pane .tp-sldv_k::after {
+  width: 20px !important; height: 13px !important; right: -10px !important; border-radius: 999px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.14)) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 0 0 0.5px rgba(255, 255, 255, 0.35);
+}
+#pane .tp-sldv_k::before { background-color: rgba(235, 238, 243, 0.75) !important; }

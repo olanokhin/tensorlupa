@@ -16,6 +16,8 @@ const P = {
   maxNew: 200, speed: 24, autoplay: true,
 };
 const S = { engine: null, run: null, cur: 0, timer: null, items: [] };
+const ICON_PLAY = '<svg viewBox="0 0 16 16"><path d="M5 3.1v9.8a.7.7 0 0 0 1.06.6l7.7-4.9a.7.7 0 0 0 0-1.2l-7.7-4.9A.7.7 0 0 0 5 3.1z"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 16 16"><rect x="4" y="3" width="2.8" height="10" rx="0.9"/><rect x="9.2" y="3" width="2.8" height="10" rx="0.9"/></svg>';
 window.__viz = S;   // для отладки из консоли
 
 // ---------------------------------------------------------------- загрузка
@@ -29,6 +31,11 @@ async function boot() {
   }
   const i = S.engine.info;
   $('status').textContent = `${i.layers} слоя × ${i.dim}, ${i.heads} головы, словарь ${i.vocab} · WebAssembly`;
+  // отметка версии файлов: время изменения view3d.js на сервере — видно, свежая ли загружена страница
+  fetch('view3d.js', { method: 'HEAD', cache: 'no-store' }).then((r) => {
+    const t = new Date(r.headers.get('Last-Modified'));
+    if (!isNaN(t)) $('status').textContent += ` · файлы от ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }).catch(() => {});
   S.strip = new LogitStrip($('logits-canvas'), $('tip'), S.engine.tokenText);
   S.amode = 'look';
   S.attn = new AttentionView($('attn-canvas'), (sel) => { if (S.a3d) S.a3d.setSel(sel); tintStory(); renderInspector(S.run.steps[S.cur]); });
@@ -161,13 +168,13 @@ function play() {
   if (!S.run) return;
   if (S.cur >= S.run.steps.length - 1) setCur(Math.max(0, S.run.nPrompt - 1));
   stop();
-  $('t-play').textContent = '⏸';
+  $('t-play').innerHTML = ICON_PAUSE;
   S.timer = setInterval(() => {
     if (S.cur >= S.run.steps.length - 1) { stop(); return; }
     setCur(S.cur + 1);
   }, 1000 / P.speed);
 }
-function stop() { if (S.timer) clearInterval(S.timer); S.timer = null; $('t-play').textContent = '▶'; }
+function stop() { if (S.timer) clearInterval(S.timer); S.timer = null; $('t-play').innerHTML = ICON_PLAY; }
 
 // ---------------------------------------------------------------- инспектор шага
 function renderInspector(s) {
@@ -233,7 +240,7 @@ function switchView(v) {
   document.querySelectorAll('.vp-tabs .tab[data-view]').forEach((b) => b.classList.toggle('on', b.dataset.view === v));
   $('model-3d').hidden = v !== '3d'; $('model-canvas').hidden = v !== 'schema';
   $('cams').hidden = v !== '3d';
-  $('spread-box').hidden = v !== '3d';
+  $('spread-box').hidden = v !== '3d'; $('wires-tog').hidden = v !== '3d';
   $('model-sub').hidden = v === '3d';
   $('model-sub').textContent = v === '3d' ? '· поток слева направо · мышь — вращать'
     : '· путь токена через слои · справа — logit lens';
@@ -297,6 +304,11 @@ function bindUI() {
   document.querySelectorAll('.tab[data-aview]').forEach((b) => b.addEventListener('click', () => switchAttn(b.dataset.aview)));
   $('explode').addEventListener('input', (e) => { if (S.a3d) S.a3d.setExplode(Number(e.target.value)); });
   $('spread').addEventListener('input', (e) => { if (S.v3d) S.v3d.setSpread(Number(e.target.value)); });
+  $('wires-tog').addEventListener('click', (e) => {
+    const on = !e.currentTarget.classList.contains('on');
+    e.currentTarget.classList.toggle('on', on);
+    if (S.v3d) S.v3d.showWires(on);
+  });
   document.querySelectorAll('.vp-tabs .tab[data-view]').forEach((b) => b.addEventListener('click', () => switchView(b.dataset.view)));
   document.querySelectorAll('.tab.cam').forEach((b) => b.addEventListener('click', () => {
     document.querySelectorAll('.tab.cam').forEach((x) => x.classList.toggle('on', x === b));

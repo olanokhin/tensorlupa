@@ -8,12 +8,16 @@
 // При смене токена импульс бежит слева направо.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { setBackdrop } from './backdrop.js';
 
 // палитра из двух комплементарных цветов: жёлтый (плюс, путь к выбранному токену) — сиреневый (минус, attention)
 const POS = new THREE.Color(0xf2b33d), NEG = new THREE.Color(0xa98cf0), DIM = new THREE.Color(0x4b4f56);
+const GREY = new THREE.Color(0x5d636d);          // слабые значения: видимая сетка, как пустые клетки в attention
 const S = 0.24;                                    // шаг сетки точек
 const LAYER_DX = 5.2, X_HEADS = 1.25, X_MID = 2.4, X_MLP = 3.8;
-const N_HIGHWAY = 14, N_NEURONS = 18, PER_NEURON = 2, PER_HEAD = 4;
+const N_HIGHWAY = 8, N_NEURONS = 10, PER_NEURON = 2, PER_HEAD = 2;   // линий немного: только сильнейшие пути
+const GLASS = 0x9fb3d6, RIM = 0x6f7b8c, GLASS_T = 0.07, GLASS_PAD = 0.12;   // стекло пластин
+const SEL_GAP = 2.4;                 // у выбранной пластины соседи не ближе — место для столбиков рельефа
 
 let glowTex = null;
 function glow() {                                  // круглая мягкая точка
@@ -63,10 +67,21 @@ let tileMat = null;
 function tileMaterial() {
   if (tileMat) return tileMat;
   tileMat = new THREE.ShaderMaterial({
-    vertexShader: `attribute float ialpha; varying vec3 vColor; varying float vAlpha;
-      void main() { vColor = instanceColor; vAlpha = ialpha;
+    vertexShader: `attribute float ialpha; varying vec3 vColor; varying float vAlpha; varying vec2 vUv;
+      void main() { vColor = instanceColor; vAlpha = ialpha; vUv = uv;
         gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `varying vec3 vColor; varying float vAlpha; void main() { gl_FragColor = vec4(vColor, vAlpha); }`,
+    // цвета Three.js хранятся в линейном пространстве: на выходе переводим в sRGB, как стандартные материалы
+    // (иначе плитки темнее и другого оттенка, чем столбики рельефа)
+    // плитка — скруглённый квадрат (сглаживание через fwidth) с мягким бликом к верхнему краю, как стеклянная мозаика
+    fragmentShader: `varying vec3 vColor; varying float vAlpha; varying vec2 vUv;
+      void main() {
+        vec2 q = abs(vUv - 0.5) - (0.5 - 0.2); float d = length(max(q, 0.0)) - 0.2;
+        float aa = max(fwidth(d), 1e-4), m = 1.0 - smoothstep(-aa, aa, d);
+        if (m < 0.01) discard;
+        vec3 col = vColor * (0.82 + 0.36 * vUv.y);
+        gl_FragColor = vec4(col, vAlpha * m);
+      #include <colorspace_fragment>
+      }`,
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
   });
   return tileMat;
@@ -86,10 +101,15 @@ class Plate {
     this.points = this.mesh;                       // совместимость: сцена добавляет p.points
     this.cur = new Float32Array(n); this.from = new Float32Array(n); this.to = new Float32Array(n);
     this.c = new THREE.Color();
-    const h = this.rows * S * (tile > 1 ? tile : 1), w = this.cols * S * (tile > 1 ? tile : 1), f = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(x, -h / 2, -w / 2), new THREE.Vector3(x, h / 2, -w / 2), new THREE.Vector3(x, h / 2, w / 2),
-      new THREE.Vector3(x, -h / 2, w / 2), new THREE.Vector3(x, -h / 2, -w / 2)]);
-    this.frame = new THREE.Line(f, new THREE.LineBasicMaterial({ color: 0x2c3138 }));
+    const h = this.rows * S * (tile > 1 ? tile : 1), w = this.cols * S * (tile > 1 ? tile : 1);
+    // стеклянная пластина под плитками (как карточки attention): тонкий полупрозрачный слой с толщиной,
+    // светлая кромка по рёбрам; у выбранной кромка янтарная
+    const slab = new THREE.BoxGeometry(GLASS_T, h + GLASS_PAD * 2, w + GLASS_PAD * 2);
+    this.glass = new THREE.Mesh(slab, new THREE.MeshBasicMaterial({ color: GLASS, transparent: true, opacity: 0.075, depthWrite: false }));
+    this.glass.position.x = x; this.glass.renderOrder = -1;
+    this.frame = new THREE.LineSegments(new THREE.EdgesGeometry(slab),
+      new THREE.LineBasicMaterial({ color: RIM, transparent: true, opacity: 0.55, depthWrite: false }));
+    this.frame.position.x = x;
     this.height = h; this.width = w; this.tile = tile;
     this.apply(1);
   }
@@ -98,9 +118,7 @@ class Plate {
     const m = new THREE.Matrix4();
     for (let i = 0; i < this.n; i++) { const [y, z] = this.local(i); m.makeTranslation(x, y, z); this.mesh.setMatrixAt(i, m); }
     this.mesh.instanceMatrix.needsUpdate = true; this.mesh.computeBoundingSphere();
-    const f = this.frame.geometry.getAttribute('position');
-    for (let k = 0; k < f.count; k++) f.setX(k, x);
-    f.needsUpdate = true; this.frame.geometry.computeBoundingSphere();
+    this.frame.position.x = x; this.glass.position.x = x;
   }
   local(i) {
     const st = S * (this.tile > 1 ? this.tile : 1);
@@ -115,10 +133,12 @@ class Plate {
   apply(t) {
     for (let i = 0; i < this.n; i++) {
       const v = this.from[i] + (this.to[i] - this.from[i]) * t; this.cur[i] = v;
+      // тот же оттенок, что у столбиков рельефа: (POS|NEG)·(0.45 + 0.55·a); слабые — заметный нейтральный серый
       const a = Math.min(1, Math.abs(v));
-      this.c.copy(DIM).lerp(v >= 0 ? POS : NEG, Math.min(1, a * 1.25));
+      this.c.copy(v >= 0 ? POS : NEG).multiplyScalar(0.45 + 0.55 * a);
+      this.c.lerpColors(GREY, this.c, Math.min(1, a * 2.2));
       this.mesh.setColorAt(i, this.c);
-      this.alpha[i] = 0.1 + 0.88 * a ** 0.9;
+      this.alpha[i] = 0.32 + 0.66 * a ** 0.8;
     }
     this.mesh.instanceColor.needsUpdate = true;
     this.mesh.geometry.getAttribute('ialpha').needsUpdate = true;
@@ -129,13 +149,13 @@ class Plate {
 class Wires {
   constructor(scene) {
     this.geo = new THREE.BufferGeometry();
-    this.mat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
+    this.mat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false });
     this.obj = new THREE.LineSegments(this.geo, this.mat); scene.add(this.obj);
     this.clear();
   }
   clear() { this.pts = []; this.cols = []; }
   seg(a, b, color, alpha, n = 6, tags = null) {  // прямая (разбита на куски, чтобы проявлялась постепенно)
-    if (this.focus && tags && tags.includes(this.focus)) alpha *= 0.25;   // у выбранной пластины акцент на рельефе
+    if (this.focus) alpha *= tags && tags.includes(this.focus) ? 0.15 : 0.4;   // при выборе акцент на рельефе
     for (let i = 0; i < n; i++) {
       this.pts.push(a.clone().lerp(b, i / n), a.clone().lerp(b, (i + 1) / n));
       for (let k = 0; k < 2; k++) this.cols.push(color.r * alpha, color.g * alpha, color.b * alpha);
@@ -174,6 +194,8 @@ export class View3D {
     this.camera = new THREE.PerspectiveCamera(36, 1, 0.1, 400);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
+    this.userMoved = false;                      // камеру двигали мышью — тогда раздвижение и ресайз её не сбрасывают
+    this.controls.addEventListener('start', () => { this.userMoved = true; });
 
     this.res = [new Plate(d, 8, 0)];              // эмбеддинг = поток перед слоем 1
     this.heads = []; this.mid = []; this.mlp = [];
@@ -190,7 +212,7 @@ export class View3D {
     this.heads.forEach((p, l) => Object.assign(p, { tag: 'heads' + l, kind: 'heads', layer: l, name: `головы attention слоя ${l + 1}` }));
     this.mlp.forEach((p, l) => Object.assign(p, { tag: 'mlp' + l, kind: 'mlp', layer: l, name: `нейроны MLP слоя ${l + 1}` }));
     this.plates = [...this.res, ...this.heads, ...this.mid, ...this.mlp];
-    for (const p of this.plates) { this.scene.add(p.points); if (p.n > 4) this.scene.add(p.frame); }
+    for (const p of this.plates) { this.scene.add(p.points); this.scene.add(p.glass, p.frame); }
     const sub = (p, t, c = '#6b7280') => { const s = label(t, c, 38, 0.28); s.position.set(p.x, -p.height / 2 - 0.35, 0); this.scene.add(s); };
     sub(this.res[0], 'эмбеддинг', '#8a919c');
     for (let l = 0; l < L; l++) { sub(this.heads[l], 'головы', '#b79cff'); sub(this.mlp[l], `MLP · ${I}`); sub(this.res[l + 1], 'поток'); sub(this.mid[l], '+ attention'); }
@@ -236,9 +258,12 @@ export class View3D {
     if (click) {
       this.sel = plate ? { plate, idx } : null;
       this.wires.focus = plate ? plate.tag : null;
-      if (this.step) this.set(this.step, false, this.dur);
-      for (const p of this.plates) p.frame.material.color.set(p === plate ? 0xf2b33d : 0x2c3138);
-      this.buildPeaks();
+      for (const p of this.plates) {
+        const on = p === plate;
+        p.frame.material.color.set(on ? 0xf2b33d : RIM); p.frame.material.opacity = on ? 1 : 0.55;
+        p.glass.material.color.set(on ? 0xf2c46a : GLASS); p.glass.material.opacity = on ? 0.1 : 0.075;
+      }
+      this.layout(true);
       if (this.onSelect) this.onSelect();
     }
   }
@@ -251,7 +276,7 @@ export class View3D {
     if (!this.sel || !this.step) return;
     const p = this.sel.plate, w = S * 0.55 * (p.tile > 1 ? p.tile * 0.7 : 1);
     const xs = this.plates.map((q) => q.x).sort((a, b) => a - b), k = xs.indexOf(p.x);
-    const gapL = k > 0 ? p.x - xs[k - 1] : 1.2, gapR = k < xs.length - 1 ? xs[k + 1] - p.x : this.outX - p.x - 0.3;
+    const gapL = k > 0 ? p.x - xs[k - 1] : SEL_GAP, gapR = k < xs.length - 1 ? xs[k + 1] - p.x : this.outX - p.x - 0.3;
     const LENL = 0.9 * gapL, LENR = 0.9 * gapR;          // плюс — влево, минус — вправо: не дальше соседа
     const geo = new THREE.BoxGeometry(1, w, w); geo.translate(0.5, 0, 0);
     const mesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.9, depthWrite: false }), p.n);
@@ -291,12 +316,49 @@ export class View3D {
   // раздвинуть пластины вдоль потока (размер плиток не меняется)
   setSpread(k) {
     this.spread = k;
-    for (const p of this.plates) p.setX(p.bx * k);
-    for (const { o, bx } of this.xl) o.position.x = bx * k;
-    this.outX = this.baseOutX * k;
-    if (this.step) this.set(this.step, false, this.dur);
-    this.preset(this.view || 'perspective', false);
+    const oldCx = (this.outX + 4.5) / 2 - 2.2;
+    this.layout(false);
+    if (!this.userMoved) this.preset(this.view || 'perspective', false);
+    else {                                       // ракурс пользователя сохраняется: сдвигаем камеру вместе с центром сцены
+      const dx = (this.outX + 4.5) / 2 - 2.2 - oldCx;
+      this.camera.position.x += dx; this.controls.target.x += dx;
+    }
   }
+
+  // где стоят пластины: база × «раздвинуть», а у выбранной пластины соседи отодвинуты до SEL_GAP с каждой стороны
+  // (как карточки в attention: выбор открывает место для рельефа при любом положении ползунка)
+  targets() {
+    const k = this.spread, out = this.baseOutX * k;
+    let pushL = 0, pushR = 0, sx = null;
+    if (this.sel) {
+      sx = this.sel.plate.bx * k;
+      const xs = this.plates.map((q) => q.bx * k);
+      const left = xs.filter((x) => x < sx - 1e-6), right = [...xs.filter((x) => x > sx + 1e-6), out];
+      if (left.length) pushL = Math.max(0, SEL_GAP - (sx - Math.max(...left)));
+      pushR = Math.max(0, SEL_GAP - (Math.min(...right) - sx));
+    }
+    const at = (bx) => { const x = bx * k; return sx === null ? x : x < sx - 1e-6 ? x - pushL : x > sx + 1e-6 ? x + pushR : x; };
+    return { plates: this.plates.map((p) => at(p.bx)), sprites: this.xl.map(({ bx }) => at(bx)), out: out + pushR };
+  }
+
+  layout(animate) {
+    const to = this.targets();
+    const from = { plates: this.plates.map((p) => p.x), sprites: this.xl.map(({ o }) => o.position.x), out: this.outX };
+    if (!animate) { this.lay = null; this.placeAt(from, to, 1); this.layoutDone(); return; }
+    this.lay = { from, to, t0: performance.now() };
+    this.wires.obj.visible = false; this.peaks.visible = false; this.out.visible = false;   // вернутся после сдвига
+  }
+  placeAt(from, to, e) {
+    const L = (a, b) => a + (b - a) * e;
+    this.plates.forEach((p, i) => p.setX(L(from.plates[i], to.plates[i])));
+    this.xl.forEach(({ o }, i) => { o.position.x = L(from.sprites[i], to.sprites[i]); });
+    this.outX = L(from.out, to.out);
+  }
+  layoutDone() {
+    this.wires.obj.visible = this.wiresOn !== false; this.peaks.visible = true;
+    if (this.step) this.set(this.step, false, this.dur); else this.buildPeaks();
+  }
+  showWires(on) { this.wiresOn = on; this.wires.obj.visible = on && !this.lay; }
 
   // короткая подпись у плитки под курсором
   setTip(plate, i) {
@@ -364,14 +426,16 @@ export class View3D {
     const w = this.box.clientWidth, h = this.box.clientHeight;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
+    setBackdrop(this.scene, w, h, window.devicePixelRatio || 1);
     this.renderer.domElement.style.width = '100%'; this.renderer.domElement.style.height = '100%';
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
-    this.preset(this.view || 'perspective', false);
+    if (!this.userMoved) this.preset(this.view || 'perspective', false);
   }
 
   // ракурсы: перспектива, сбоку (пластины ребром — как схема нейросети), вдоль потока
   preset(name, animate = true) {
     this.view = name;
+    if (animate) this.userMoved = false;         // кнопка ракурса — явный сброс камеры
     const span = this.outX + 4.5, cx = span / 2 - 2.2;   // outX растёт вместе с «раздвинуть»
     const target = new THREE.Vector3(cx, 0, 0);
     const vfov = THREE.MathUtils.degToRad(this.camera.fov), hfov = 2 * Math.atan(Math.tan(vfov / 2) * this.camera.aspect);
@@ -483,6 +547,11 @@ export class View3D {
   }
 
   tick() {
+    if (this.lay) {
+      const k = Math.min(1, (performance.now() - this.lay.t0) / 380), e = k * k * (3 - 2 * k);
+      this.placeAt(this.lay.from, this.lay.to, e);
+      if (k >= 1) { this.lay = null; this.layoutDone(); }
+    }
     if (this.camTo) {
       const k = Math.min(1, (performance.now() - this.camT0) / 600), e = k * k * (3 - 2 * k);
       this.camera.position.lerpVectors(this.camFrom.p, this.camTo.p, e);
