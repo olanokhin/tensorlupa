@@ -180,5 +180,5 @@
   'about.soon': 'скоро',
   'about.site': 'Сайт автора',
   'about.free': 'Бесплатно.',
-  'about.by': 'Автор — Oleksandr Anokhin',
+  'about.by': 'Автор — Алекс Анохин',
 };

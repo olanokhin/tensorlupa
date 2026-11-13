@@ -195,5 +195,5 @@
   'about.soon': 'soon',
   'about.site': 'Author’s site',
   'about.free': 'Free to use.',
-  'about.by': 'Made by Oleksandr Anokhin',
+  'about.by': 'Made by Alex Anokhin',
 };
