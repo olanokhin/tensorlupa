@@ -78,10 +78,10 @@ function buildPane() {
   const L = (k) => t('set.' + k);
   const fs = new Controls(S.deck.add('sampling', t('card.sampling')), P)
     .slider('temperature', L('temperature'), 0.05, 1.5, 0.05).slider('topK', L('topK'), 1, 64, 1)
-    .slider('seed', L('seed'), 1, 99999, 1).toggle('randomSeed', L('randomSeed'));
+    .slider('seed', L('seed'), 1, 99999, 1).toggle('randomSeed', L('randomSeed')).toggle('loopPenalty', L('loopPenalty'));
   const fo = new Controls(S.deck.add('order', t('card.order')), P)
     .slider('wbBase', L('wbBase'), 0, 6, 0.25).slider('wbTau', L('wbTau'), 10, 400, 10)
-    .slider('wbStart', L('wbStart'), 0, 1, 0.25).toggle('fsm', L('fsm')).toggle('loopPenalty', L('loopPenalty'));
+    .slider('wbStart', L('wbStart'), 0, 1, 0.25).toggle('fsm', L('fsm'));
   const fp = new Controls(S.deck.add('run', t('card.run')), P)
     .slider('maxNew', L('maxNew'), 20, 220, 10).slider('speed', L('speed'), 1, 120, 1)
     .toggle('autoplay', L('autoplay'));
