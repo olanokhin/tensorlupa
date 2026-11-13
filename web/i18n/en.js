@@ -11,7 +11,6 @@
   'status.loading': 'loading the model…',
   'status.fail': 'could not load the model: {msg}',
   'status.model': (v, h) => `${v.layers} ${h.plural(v.layers, { one: 'layer', other: 'layers' })} × ${v.dim}, ${v.heads} ${h.plural(v.heads, { one: 'head', other: 'heads' })}, vocabulary ${v.vocab} · WebAssembly`,
-  'status.files': ' · files from {time}',
 
   // model view
   'model.title': 'Model',
@@ -179,4 +178,22 @@
   'empty.title': 'Step details',
   'empty.insp': 'After a run, every step is explained here: what the model looked at, how sure it was, and what nudged the requested words.',
   'lang.title': 'Language',
+  // brand, model, about
+  'model.pill.title': 'Model',
+  'model.current': 'Current model',
+  'model.arch': 'Qwen3 architecture, layer for layer — in miniature',
+  'model.params': (v, h) => `${h.num(v.n)} parameters`,
+  'model.size': '{mb} MB · 4-bit weights (W4R)',
+  'model.vocab': 'its own vocabulary of 4096 tokens',
+  'model.data': 'trained from scratch on TinyStories, then taught to write stories from requested words',
+  'model.esp': 'the same C code runs on an ESP32-S3 microcontroller at ~60 tok/s',
+  'about.title': 'About TensorLupa',
+  'about.tagline': 'A magnifying glass for neural networks',
+  'about.lead': 'Watch a tiny language model think — token by token, layer by layer, right in your browser. Nothing to install, and nothing leaves your computer.',
+  'about.model': 'Inside is micro-qwen3: the Qwen3 architecture rebuilt layer by layer at about a million parameters. The model weighs 0.68 MB — less than a phone photo — and the same code runs on a $5 microcontroller.',
+  'about.links': 'Links',
+  'about.soon': 'soon',
+  'about.site': 'Author’s site',
+  'about.free': 'Free to use.',
+  'about.by': 'Made by Oleksandr Anokhin',
 };

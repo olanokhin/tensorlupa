@@ -3,6 +3,7 @@
 import { Deck } from './cards.js';
 import { Stage } from './stage.js';
 import { navPad } from './navpad.js';
+import { popover } from './popover.js';
 import { Controls } from './controls.js';
 import { t, lang, LANGS, setLang } from './i18n.js';
 import { loadEngine, Engine } from './engine/engine.js';
@@ -18,6 +19,8 @@ const P = {
   maxNew: 200, speed: 24, autoplay: true,
 };
 const S = { engine: null, run: null, cur: 0, timer: null, items: [] };
+// модели студии: пока одна; новые добавляются сюда и появляются в меню модели
+const MODELS = [{ id: 'micro-qwen3', file: 'model.bin', params: 1056656 }];
 const ICON_PLAY = '<svg viewBox="0 0 16 16"><path d="M5 3.1v9.8a.7.7 0 0 0 1.06.6l7.7-4.9a.7.7 0 0 0 0-1.2l-7.7-4.9A.7.7 0 0 0 5 3.1z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 16 16"><rect x="4" y="3" width="2.8" height="10" rx="0.9"/><rect x="9.2" y="3" width="2.8" height="10" rx="0.9"/></svg>';
 window.__viz = S;   // для отладки из консоли
@@ -25,7 +28,8 @@ window.__viz = S;   // для отладки из консоли
 // ---------------------------------------------------------------- загрузка
 async function boot() {
   try {
-    const buf = new Uint8Array(await (await fetch('model.bin')).arrayBuffer());
+    const buf = new Uint8Array(await (await fetch(MODELS[0].file)).arrayBuffer());
+    S.modelBytes = buf.length;
     S.engine = await loadEngine(buf);
   } catch (e) {
     $('status').textContent = t('status.fail', { msg: e.message });
@@ -33,11 +37,6 @@ async function boot() {
   }
   const i = S.engine.info;
   $('status').textContent = t('status.model', { layers: i.layers, dim: i.dim, heads: i.heads, vocab: i.vocab });
-  // отметка версии файлов: время изменения view3d.js на сервере — видно, свежая ли загружена страница
-  fetch('view3d.js', { method: 'HEAD', cache: 'no-store' }).then((r) => {
-    const tm = new Date(r.headers.get('Last-Modified'));
-    if (!isNaN(tm)) $('status').textContent += t('status.files', { time: tm.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }) });
-  }).catch(() => {});
   S.strip = new LogitStrip($('logits-canvas'), $('tip'), S.engine.tokenText);
   S.amode = 'look';
   S.attn = new AttentionView($('attn-canvas'), (sel) => { if (S.a3d) S.a3d.setSel(sel); tintStory(); renderInspector(S.run.steps[S.cur]); });
@@ -363,11 +362,19 @@ function bindUI() {
   });
 }
 
+const CHECK = '<svg viewBox="0 0 20 20"><path d="M5 10.5l3.2 3.2L15 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const navBtn = (host, svg, title) => {
+  const b = document.createElement('button'); b.className = 'navpad-btn lang-btn'; b.innerHTML = svg; b.title = title;
+  $(host).appendChild(b); return b;
+};
+
 // каркас интерфейса — сразу, до загрузки модели: карточки настроек, пустые состояния, меню языка.
 // Модель и 3D потом подгружаются внутрь уже стоящих рамок — ничего не появляется и не прыгает.
 buildPane();
 S.deck.sync(`<h4>${t('empty.title')}</h4><div class="note">${t('empty.insp')}</div>`);
 $('story-text').innerHTML = `<div class="empty-hint">${t('empty.story')}</div>`;
+modelMenu();
+aboutMenu();
 langMenu();
 // огоньки «Generate»: скорость меняется плавно, без перезапуска анимации (иначе угол прыгает)
 function genSpeed() {
@@ -389,28 +396,57 @@ $('gen').addEventListener('click', generate);
 $('words').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
 $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
 
-// язык: кнопка-глобус, по щелчку — стеклянное меню со списком языков (как панель камеры)
+
+// язык: кнопка-глобус, по щелчку — отдельные стеклянные модули со списком языков
 function langMenu() {
   const GLOBE = '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.8 10h14.4M10 2.8c2.2 2.4 2.2 12 0 14.4M10 2.8c-2.2 2.4-2.2 12 0 14.4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
-  const CHECK = '<svg viewBox="0 0 20 20"><path d="M5 10.5l3.2 3.2L15 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  // меню — на верхнем уровне страницы, а не внутри навбара: стекло навбара не дало бы размыть то, что под меню;
-  // каждый язык — отдельный парящий модуль, без общей подложки (как панель камеры)
-  const box = $('lang'), btn = document.createElement('button'), pop = document.createElement('div');
-  btn.className = 'navpad-btn lang-btn'; btn.innerHTML = GLOBE; btn.title = t('lang.title');
-  pop.className = 'lang-pop'; pop.hidden = true;
+  const btn = navBtn('lang', GLOBE, t('lang.title')), pop = document.createElement('div');
+  pop.className = 'lang-pop';
   for (const L of LANGS) {
     const b = document.createElement('button'); b.className = 'cc-mod lang-item' + (L.code === lang ? ' on' : '');
     b.innerHTML = `<span>${L.name}</span>${L.code === lang ? CHECK : ''}`;
-    b.addEventListener('click', () => { if (L.code !== lang) setLang(L.code); else open(false); });
+    b.addEventListener('click', () => { if (L.code !== lang) setLang(L.code); else m.open(false); });
     pop.appendChild(b);
   }
-  const place = () => { const r = btn.getBoundingClientRect(); pop.style.top = (r.bottom + 10) + 'px'; pop.style.right = (innerWidth - r.right) + 'px'; };
-  const open = (on) => { if (on) place(); pop.hidden = !on; box.classList.toggle('open', on); };
-  btn.addEventListener('click', (e) => { e.stopPropagation(); open(pop.hidden); });
-  document.addEventListener('pointerdown', (e) => { if (!box.contains(e.target) && !pop.contains(e.target)) open(false); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') open(false); });
-  addEventListener('resize', () => { if (!pop.hidden) place(); });
-  box.append(btn); document.body.appendChild(pop);
+  const m = popover(btn, pop);
+}
+
+// модель: «пилюля» в навбаре; меню — текущая модель и её карточка (появятся другие — добавятся строками)
+function modelMenu() {
+  const pop = document.createElement('div'); pop.className = 'lang-pop model-pop';
+  const cur = MODELS[0];
+  const item = document.createElement('button'); item.className = 'cc-mod lang-item on';
+  item.innerHTML = `<span>${cur.id}</span>${CHECK}`;
+  const card = document.createElement('div'); card.className = 'cc-mod info-card';
+  const fill = () => {
+    const mb = S.modelBytes ? (S.modelBytes / 1e6).toFixed(2) : '0.68';
+    card.innerHTML = `<div class="ic-title">${t('model.current')}</div><ul>` +
+      [t('model.arch'), t('model.params', { n: cur.params }), t('model.size', { mb: lang === 'ru' ? mb.replace('.', ',') : mb }),
+        t('model.vocab'), t('model.data'), t('model.esp')].map((x) => `<li>${x}</li>`).join('') + '</ul>';
+  };
+  pop.append(item, card);
+  const m = popover($('model-pill'), pop, { align: 'left', onOpen: fill });
+  item.addEventListener('click', () => m.open(false));
+}
+
+// «О проекте»: что это, что внутри, ссылки, автор
+function aboutMenu() {
+  const INFO = '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 9v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="10" cy="6.3" r="1" fill="currentColor"/></svg>';
+  const btn = navBtn('about', INFO, t('about.title')), pop = document.createElement('div');
+  pop.className = 'lang-pop about-pop';
+  // ссылки: пока нет адреса — пункт «скоро» (адреса появятся здесь, одной строкой)
+  const LINKS = [
+    { name: 'GitHub', url: '' }, { name: 'Hugging Face', url: '' }, { name: 'Zenodo', url: '' },
+    { name: 'LinkedIn', url: '' }, { name: t('about.site'), url: 'https://olanokhin.com' },
+  ];
+  const links = LINKS.map((l) => l.url
+    ? `<a class="ab-link" href="${l.url}" target="_blank" rel="noopener">${l.name}</a>`
+    : `<span class="ab-link soon">${l.name}<small>${t('about.soon')}</small></span>`).join('');
+  pop.innerHTML = `<div class="cc-mod info-card ab-head"><div class="ab-name">TensorLupa</div><div class="ab-tag">${t('about.tagline')}</div><p>${t('about.lead')}</p></div>` +
+    `<div class="cc-mod info-card"><p>${t('about.model')}</p></div>` +
+    `<div class="cc-mod info-card"><div class="ic-title">${t('about.links')}</div><div class="ab-links">${links}</div></div>` +
+    `<div class="cc-mod info-card ab-foot"><span>${t('about.by')}</span><span>${t('about.free')}</span></div>`;
+  popover(btn, pop);
 }
 
 boot();

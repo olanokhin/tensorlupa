@@ -280,7 +280,9 @@ export class View3D {
     const gapL = k > 0 ? p.x - xs[k - 1] : SEL_GAP, gapR = k < xs.length - 1 ? xs[k + 1] - p.x : this.outX - p.x - 0.3;
     const LENL = 0.9 * gapL, LENR = 0.9 * gapR;          // плюс — влево, минус — вправо: не дальше соседа
     const geo = new THREE.BoxGeometry(1, w, w); geo.translate(0.5, 0, 0);
-    const mesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.9, depthWrite: false }), p.n);
+    // столбики — сплошные бруски: непрозрачные, с записью глубины — ближний всегда закрывает дальний
+    // (полупрозрачные без глубины рисовались по порядку экземпляров, и сиреневые «пробивали» янтарные)
+    const mesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ transparent: false, depthWrite: true }), p.n);
     const m = new THREE.Matrix4(), c = new THREE.Color(), order = [];
     for (let i = 0; i < p.n; i++) {
       const v = p.to[i], len = Math.max(0.004, (v >= 0 ? LENL : LENR) * Math.abs(v)), at = p.at(i);
