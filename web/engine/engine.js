@@ -10,7 +10,6 @@ export async function loadEngine(modelBytes, wasmOptions = {}) {
   return e;
 }
 
-export const WORD_STATES = ['ждём', 'начали', 'собираем', 'готово', 'использовано'];
 
 export class Engine {
   constructor(M) {
@@ -45,7 +44,7 @@ export class Engine {
     M.HEAPU8.set(bytes, p);
     const rc = this.f.load(p, bytes.length);
     M._free(p);
-    if (rc) throw new Error('модель не загрузилась: ' + rc);
+    if (rc) throw new Error('model failed to load: ' + rc);
     const i = (k) => this.f.info(k);
     this.info = { vocab: i(0), dim: i(1), inter: i(2), layers: i(3), heads: i(4), kvHeads: i(5), headDim: i(6), maxPos: i(7) };
     // словарь: байты и текст каждого токена (кусок многобайтового символа покажется как �)

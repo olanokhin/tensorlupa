@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { setBackdrop } from './backdrop.js';
+import { t as tx } from './i18n.js';
 
 const SIDE = 3.2;
 const GOLD = new THREE.Color(0xffe08a);
@@ -60,8 +61,8 @@ export class AttnStack3D {
       const bar = new THREE.Mesh(new THREE.PlaneGeometry(SIDE, 0.025).rotateX(-Math.PI / 2),
         new THREE.MeshBasicMaterial({ color: GOLD, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false }));
       // слева — «слой N» один раз на слой; «голова N» видна только у карты в фокусе (иначе 12 подписей накладываются)
-      const tag = label(h === 0 ? `слой ${l + 1}` : `голова ${h + 1}`, h === 0 ? '#c9ced6' : '#8a919c');
-      const htag = label(`голова ${h + 1}`, '#f2b33d'); htag.visible = false;
+      const tag = label(h === 0 ? tx('a.layer', { n: l + 1 }) : tx('a.head', { n: h + 1 }), h === 0 ? '#c9ced6' : '#8a919c');
+      const htag = label(tx('a.head', { n: h + 1 }), '#f2b33d'); htag.visible = false;
       htag.position.set(-SIDE / 2 - 0.15, 0.12, -SIDE / 2 + 0.2); htag.center.set(1, 0);
       const ridge = new THREE.Group();            // рельеф строки текущего токена (только у карты в фокусе)
       const g = new THREE.Group(); g.add(mesh, edge, bar, tag, ridge, htag);
@@ -70,7 +71,7 @@ export class AttnStack3D {
       this.cards.push({ l, h, cv, ctx: cv.getContext('2d'), tex, mat, mesh, edge, bar, g, tag, ridge, htag });
     }
     // подпись предела контекста у верхней карты
-    this.limitTag = label(`предел контекста ${maxPos}`, '#5b616b', 36, 0.22);
+    this.limitTag = label(tx('a.limit', { n: maxPos }), '#5b616b', 36, 0.22);
     this.scene.add(this.limitTag);
     this.layoutCards();
     this.ray = new THREE.Raycaster(); this.mouse = new THREE.Vector2();
@@ -82,6 +83,7 @@ export class AttnStack3D {
     el.addEventListener('pointerup', (e) => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 4) this.pick(e, true); });
     new ResizeObserver(() => this.resize()).observe(container);
     this.resize();
+    this.style();                               // подписи голов — только у карты в фокусе, с первого кадра
     const loop = () => { requestAnimationFrame(loop); this.controls.update(); this.renderer.render(this.scene, this.camera); this.drawCallouts(); };
     loop();
   }
@@ -123,7 +125,10 @@ export class AttnStack3D {
     const w = this.box.clientWidth, h = this.box.clientHeight;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
-    setBackdrop(this.scene, w, h, window.devicePixelRatio || 1);
+    // подложка тяжёлая (зерно по пикселям): пересчитываем, когда размер устоялся (анимация сворачивания карточек)
+    clearTimeout(this.bdT);
+    if (!this.scene.background) setBackdrop(this.scene, w, h, window.devicePixelRatio || 1);
+    else this.bdT = setTimeout(() => setBackdrop(this.scene, w, h, window.devicePixelRatio || 1), 160);
     this.renderer.domElement.style.width = '100%'; this.renderer.domElement.style.height = '100%';
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
     this.fit();
@@ -210,9 +215,9 @@ export class AttnStack3D {
     const w = st.attnP.subarray((f.layer * H + f.head) * n, (f.layer * H + f.head + 1) * n);
     const top = Array.from(w.keys()).sort((a, b) => w[b] - w[a]).slice(0, 6);
     const ent = -Array.from(w).reduce((s, p) => s + (p > 0 ? p * Math.log2(p) : 0), 0);
-    return `<h4>Attention: слой ${f.layer + 1}, голова ${f.head + 1}</h4><div class="note">текущий токен смотрит на: ${top.map((t) =>
-      `<span class="tokpill">${(this.tokenText[this.steps[t].input] || '').replace(/\n/g, '↵').replace(/ /g, '·')}</span> ${(100 * w[t]).toFixed(0)}%`).join(' ')}</div>
-      <div class="note">рассеянность внимания: ${ent.toFixed(1)} бит из ${Math.log2(n).toFixed(1)} возможных (0 — смотрит в одну точку)</div>`;
+    const list = top.map((t) => `<span class="tokpill">${(this.tokenText[this.steps[t].input] || '').replace(/\n/g, '↵').replace(/ /g, '·')}</span> ${(100 * w[t]).toFixed(0)}%`).join(' ');
+    return `<h4>${tx('a.desc.head', { layer: f.layer + 1, head: f.head + 1 })}</h4><div class="note">${tx('a.desc.looks', { list })}</div>
+      <div class="note">${tx('a.desc.entropy', { x: ent.toFixed(1), max: Math.log2(n).toFixed(1) })}</div>`;
   }
 
   setSel(sel) { this.sel = { ...sel }; this.layoutCards(); this.style(); this.ridges(); }

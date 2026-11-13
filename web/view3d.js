@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { setBackdrop } from './backdrop.js';
+import { t as tx } from './i18n.js';
 
 // палитра из двух комплементарных цветов: жёлтый (плюс, путь к выбранному токену) — сиреневый (минус, attention)
 const POS = new THREE.Color(0xf2b33d), NEG = new THREE.Color(0xa98cf0), DIM = new THREE.Color(0x4b4f56);
@@ -205,17 +206,17 @@ export class View3D {
       this.mid.push(new Plate(d, 8, x0 + X_MID));
       this.mlp.push(new Plate(I, 16, x0 + X_MLP, 1));
       this.res.push(new Plate(d, 8, x0 + LAYER_DX));
-      const t = label(`слой ${l + 1}`, '#f0b37a', 52, 0.5); t.position.set(x0 + LAYER_DX / 2, 3.1, 0); this.scene.add(t);
+      const t = label(tx('m.layer', { n: l + 1 }), '#f0b37a', 52, 0.5); t.position.set(x0 + LAYER_DX / 2, 3.1, 0); this.scene.add(t);
     }
-    this.res.forEach((p, l) => Object.assign(p, { tag: 'res' + l, kind: 'resid', layer: l, name: l === 0 ? 'эмбеддинг' : `поток после слоя ${l}` }));
-    this.mid.forEach((p, l) => Object.assign(p, { tag: 'mid' + l, kind: 'mid', layer: l, name: `поток после attention слоя ${l + 1}` }));
-    this.heads.forEach((p, l) => Object.assign(p, { tag: 'heads' + l, kind: 'heads', layer: l, name: `головы attention слоя ${l + 1}` }));
-    this.mlp.forEach((p, l) => Object.assign(p, { tag: 'mlp' + l, kind: 'mlp', layer: l, name: `нейроны MLP слоя ${l + 1}` }));
+    this.res.forEach((p, l) => Object.assign(p, { tag: 'res' + l, kind: 'resid', layer: l, name: l === 0 ? tx('m.embedding') : tx('m.resAfter', { n: l }) }));
+    this.mid.forEach((p, l) => Object.assign(p, { tag: 'mid' + l, kind: 'mid', layer: l, name: tx('m.midAfter', { n: l + 1 }) }));
+    this.heads.forEach((p, l) => Object.assign(p, { tag: 'heads' + l, kind: 'heads', layer: l, name: tx('m.headsOf', { n: l + 1 }) }));
+    this.mlp.forEach((p, l) => Object.assign(p, { tag: 'mlp' + l, kind: 'mlp', layer: l, name: tx('m.mlpOf', { n: l + 1 }) }));
     this.plates = [...this.res, ...this.heads, ...this.mid, ...this.mlp];
     for (const p of this.plates) { this.scene.add(p.points); this.scene.add(p.glass, p.frame); }
     const sub = (p, t, c = '#6b7280') => { const s = label(t, c, 38, 0.28); s.position.set(p.x, -p.height / 2 - 0.35, 0); this.scene.add(s); };
-    sub(this.res[0], 'эмбеддинг', '#8a919c');
-    for (let l = 0; l < L; l++) { sub(this.heads[l], 'головы', '#b79cff'); sub(this.mlp[l], `MLP · ${I}`); sub(this.res[l + 1], 'поток'); sub(this.mid[l], '+ attention'); }
+    sub(this.res[0], tx('m.embedding'), '#8a919c');
+    for (let l = 0; l < L; l++) { sub(this.heads[l], tx('m.sub.heads'), '#b79cff'); sub(this.mlp[l], `MLP · ${I}`); sub(this.res[l + 1], tx('m.sub.stream')); sub(this.mid[l], '+ attention'); }
     // базовые x для ползунка «раздвинуть»: пластины и подписи
     this.spread = 1;
     for (const p of this.plates) p.bx = p.x;
@@ -295,7 +296,7 @@ export class View3D {
     // (как в attention): концы соседних столбиков бывают рядом, и подписи у них накладывались бы
     order.sort((a, b) => Math.abs(p.to[b]) - Math.abs(p.to[a]));
     const picks = order.slice(0, 3).sort((a, b) => a - b);
-    const name = p.kind === 'mlp' ? 'нейрон' : p.kind === 'heads' ? 'голова' : 'число';
+    const name = tx(p.kind === 'mlp' ? 'm.neuron' : p.kind === 'heads' ? 'm.head' : 'm.number');
     const lead = [], leadCol = [];
     picks.forEach((i, k) => {
       const v = this.value(p, i), at = p.at(i), len = (p.to[i] >= 0 ? LENL : LENR) * Math.abs(p.to[i]);
@@ -362,7 +363,7 @@ export class View3D {
 
   // короткая подпись у плитки под курсором
   setTip(plate, i) {
-    const v = this.value(plate, i), name = plate.kind === 'mlp' ? `нейрон ${i}` : plate.kind === 'heads' ? `голова ${i + 1}` : `число ${i}`;
+    const v = this.value(plate, i), name = `${tx(plate.kind === 'mlp' ? 'm.neuron' : plate.kind === 'heads' ? 'm.head' : 'm.number')} ${plate.kind === 'heads' ? i + 1 : i}`;
     let t = `${name}: ${v >= 0 ? '+' : ''}${v.toFixed(2)}`;
     if (plate.kind === 'mlp') t += ` → ${this.push(plate.layer, i, 3).map((x) => x.w).join(', ')}`;
     this.scene.remove(this.tip);
@@ -396,18 +397,18 @@ export class View3D {
     if (!this.sel || !this.step) return '';
     const { plate, idx } = this.sel, { dim: d, inter: I, heads: H, headDim: hd } = this.e.info, st = this.step, l = plate.layer;
     const pill = (w) => `<span class="tokpill">${w}</span>`, pct = (p) => (100 * p).toFixed(0) + '%';
-    let h = `<h4>В 3D выбрано: ${plate.name}</h4>`;
+    let h = `<h4>${tx('m.selected', { name: plate.name })}</h4>`;
     if (plate.kind === 'resid' || plate.kind === 'mid') {
       const v = new Float32Array(d);
       for (let i = 0; i < d; i++) v[i] = plate.kind === 'resid' ? st.resid[l * d + i] : st.resid[l * d + i] + st.attnOut[l * d + i];
-      h += `<div class="note">logit lens — что модель сказала бы, остановившись здесь:</div><div class="note">${this.lensTop(v, 5).map((x) => pill(x.w) + ' ' + pct(x.p)).join(' ')}</div>`;
-      h += `<div class="note">число ${idx}: ${v[idx].toFixed(3)}</div>`;
+      h += `<div class="note">${tx('m.lens')}</div><div class="note">${this.lensTop(v, 5).map((x) => pill(x.w) + ' ' + pct(x.p)).join(' ')}</div>`;
+      h += `<div class="note">${tx('m.value', { i: idx, v: v[idx].toFixed(3) })}</div>`;
     } else if (plate.kind === 'mlp') {
       const a = st.mlpAct.subarray(l * I, (l + 1) * I), order = Array.from(a.keys()).sort((x, y) => Math.abs(a[y]) - Math.abs(a[x]));
       const active = a.filter((x) => Math.abs(x) > 0.1 * Math.abs(a[order[0]])).length;
-      h += `<div class="note">активно ${active} из ${I} нейронов (больше 10% от сильнейшего). Сильнейшие и слова, которые каждый толкает вверх — прямой вклад одного нейрона через logit lens, без учёта остального потока; у маленькой модели это часто куски слов:</div>`;
+      h += `<div class="note">${tx('m.active', { active, total: I })}</div>`;
       for (const j of [idx, ...order.filter((j) => j !== idx).slice(0, 4)]) {
-        h += `<div class="note">${j === idx ? '▸ ' : ''}нейрон ${j} (${a[j] >= 0 ? '+' : ''}${a[j].toFixed(2)}) → ${this.push(l, j, 3).map((x) => pill(x.w)).join(' ')}</div>`;
+        h += `<div class="note">${tx('m.neuronLine', { mark: j === idx ? '▸ ' : '', j, a: (a[j] >= 0 ? '+' : '') + a[j].toFixed(2), list: this.push(l, j, 3).map((x) => pill(x.w)).join(' ') })}</div>`;
       }
     } else {
       const Wo = this.e.weights(l, 'o'), n = st.pos + 1;
@@ -416,17 +417,20 @@ export class View3D {
         const look = Array.from(w.keys()).sort((a, b) => w[b] - w[a]).slice(0, 3);
         const c = new Float32Array(d);
         for (let i = 0; i < d; i++) { let s = 0; for (let j = 0; j < hd; j++) s += Wo[i * H * hd + hh * hd + j] * st.headOut[(l * H + hh) * hd + j]; c[i] = s; }
-        h += `<div class="note">${hh === idx ? '▸ ' : ''}голова ${hh + 1}: смотрит на ${look.map((t) => pill(show(this.e.tokenText[this.steps[t].input])) + ' ' + pct(w[t])).join(' ')}; пишет в поток → ${this.lensTop(c, 3).map((x) => pill(x.w)).join(' ')}</div>`;
+        h += `<div class="note">${tx('m.headLine', { mark: hh === idx ? '▸ ' : '', h: hh + 1, look: look.map((t) => pill(show(this.e.tokenText[this.steps[t].input])) + ' ' + pct(w[t])).join(' '), list: this.lensTop(c, 3).map((x) => pill(x.w)).join(' ') })}</div>`;
       }
     }
-    return h + `<div class="note" style="color:var(--dim)">линии, не связанные с этой пластиной, приглушены · щелчок по пустому месту — снять выбор</div>`;
+    return h + `<div class="note" style="color:var(--dim)">${tx('m.dimNote')}</div>`;
   }
 
   resize() {
     const w = this.box.clientWidth, h = this.box.clientHeight;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
-    setBackdrop(this.scene, w, h, window.devicePixelRatio || 1);
+    // подложка тяжёлая (зерно по пикселям): пересчитываем, когда размер устоялся (анимация сворачивания карточек)
+    clearTimeout(this.bdT);
+    if (!this.scene.background) setBackdrop(this.scene, w, h, window.devicePixelRatio || 1);
+    else this.bdT = setTimeout(() => setBackdrop(this.scene, w, h, window.devicePixelRatio || 1), 160);
     this.renderer.domElement.style.width = '100%'; this.renderer.domElement.style.height = '100%';
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
     if (!this.userMoved) this.preset(this.view || 'perspective', false);

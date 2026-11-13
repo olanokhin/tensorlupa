@@ -1,3 +1,4 @@
+import { t as tx } from './i18n.js';
 // Карты внимания: 3 слоя × 4 головы. Строка = позиция токена-запроса (шаг), столбец = позиция, на которую он смотрит.
 // Показаны все шаги до текущего; текущая строка обведена. Щелчок по голове выбирает её для подсветки истории.
 
@@ -100,12 +101,12 @@ export class AttentionView {
     g2.font = '10px ' + mono; g2.textBaseline = 'middle';
     for (let l = 0; l < g.L; l++) {
       g2.fillStyle = css('--muted'); g2.textAlign = 'right';
-      g2.fillText('слой ' + (l + 1), g.padL - 6, g.padT + l * (g.ch + g.gap) + g.labelH + g.side / 2);
+      g2.fillText(tx('a.layer', { n: l + 1 }), g.padL - 6, g.padT + l * (g.ch + g.gap) + g.labelH + g.side / 2);
       for (let h = 0; h < g.NH; h++) {
         const cx = g.padL + h * (g.cw + g.gap), cy = g.padT + l * (g.ch + g.gap) + g.labelH;
         if (l === 0) {
           g2.fillStyle = css('--muted'); g2.textAlign = 'left';
-          g2.fillText(`голова ${h + 1}` + (this.info.kvHeads < this.info.heads ? ` · kv ${Math.floor(h / (this.info.heads / this.info.kvHeads)) + 1}` : ''), cx, g.padT + 4);
+          g2.fillText(tx('a.head', { n: h + 1 }) + (this.info.kvHeads < this.info.heads ? ` · kv ${Math.floor(h / (this.info.heads / this.info.kvHeads)) + 1}` : ''), cx, g.padT + 4);
         }
         // карта: n×n пикселей, затем масштаб
         const img = new ImageData(n, n), d = img.data;

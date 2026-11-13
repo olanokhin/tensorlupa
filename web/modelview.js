@@ -1,3 +1,4 @@
+import { t as tx } from './i18n.js';
 // Схема модели (2D, до 3D-вида): путь текущего токена сверху вниз. Каждый вектор — полоса клеток (сиреневый < 0 < жёлтый,
 // нормировка по самому вектору), справа — logit lens: что модель предсказала бы, если остановиться здесь.
 
@@ -35,12 +36,12 @@ export class ModelView {
 
   rows() {
     const { layers: L, dim: d, inter: I } = this.e.info, s = this.step, out = [];
-    out.push({ name: 'эмбеддинг', sub: `«${show(this.e.tokenText[s.input])}»`, v: s.resid.subarray(0, d), lens: 0, kind: 'resid' });
+    out.push({ name: tx('s.embedding'), sub: `«${show(this.e.tokenText[s.input])}»`, v: s.resid.subarray(0, d), lens: 0, kind: 'resid' });
     for (let l = 0; l < L; l++) {
-      out.push({ name: `слой ${l + 1}: attention`, v: s.attnOut.subarray(l * d, (l + 1) * d), kind: 'attn', layer: l });
-      out.push({ name: `слой ${l + 1}: нейроны MLP`, sub: `${I}`, v: s.mlpAct.subarray(l * I, (l + 1) * I), kind: 'mlp', layer: l, wide: true });
-      out.push({ name: `слой ${l + 1}: вклад MLP`, v: s.mlpOut.subarray(l * d, (l + 1) * d), kind: 'mlpout', layer: l });
-      out.push({ name: `поток после слоя ${l + 1}`, v: s.resid.subarray((l + 1) * d, (l + 2) * d), lens: l + 1, kind: 'resid' });
+      out.push({ name: tx('s.attn', { n: l + 1 }), v: s.attnOut.subarray(l * d, (l + 1) * d), kind: 'attn', layer: l });
+      out.push({ name: tx('s.mlp', { n: l + 1 }), sub: `${I}`, v: s.mlpAct.subarray(l * I, (l + 1) * I), kind: 'mlp', layer: l, wide: true });
+      out.push({ name: tx('s.mlpOut', { n: l + 1 }), v: s.mlpOut.subarray(l * d, (l + 1) * d), kind: 'mlpout', layer: l });
+      out.push({ name: tx('s.res', { n: l + 1 }), v: s.resid.subarray((l + 1) * d, (l + 2) * d), lens: l + 1, kind: 'resid' });
     }
     return out;
   }

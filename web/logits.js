@@ -1,3 +1,4 @@
+import { t as tx } from './i18n.js';
 // Полоса логитов: 64 лучших кандидата шага + один столбик «хвоста». Высота — вероятность на логарифмической шкале
 // (после доплаты, маски и температуры, до отсечения top-k). Цвет: в top-k / за чертой top-k / выбран.
 // Белая черта — вероятность того же токена БЕЗ вмешательств (по исходным логитам модели): видно, куда сдвинула доплата.
@@ -89,7 +90,7 @@ export class LogitStrip {
     const x = padL + this.bars.length * bw, top = y(this.tail);
     { const w = Math.max(1, Math.min(bw * 0.58, 14)); glassBar(g, x + (bw - w) / 2, top, w, padT + chartH - top, '#8a93a3', 0.3, 0.05, false); }
     g.save(); g.translate(x + bw / 2 + 3, padT + chartH + 4); g.rotate(-Math.PI / 2); g.textAlign = 'right';
-    g.textBaseline = 'middle'; g.fillStyle = css('--dim'); g.font = '9px ' + css('--mono'); g.fillText('хвост', 0, 0); g.restore();
+    g.textBaseline = 'middle'; g.fillStyle = css('--dim'); g.font = '9px ' + css('--mono'); g.fillText(tx('lg.tail'), 0, 0); g.restore();
     this.layout.push({ x, w: bw, tail: true });
   }
 
@@ -100,20 +101,20 @@ export class LogitStrip {
     if (!it) { this.tip.hidden = true; return; }
     let s;
     if (it.tail) {
-      s = `хвост: ещё ${this.tailCount} токенов\nсуммарно p = ${fmtP(this.tail)}` + (this.masked ? `\nзапрещено автоматом: ${this.masked}` : '');
+      s = tx('lg.tip.tail', { n: this.tailCount, p: fmtP(this.tail), masked: this.masked });
     } else {
       const b = it.b;
-      s = `«${show(this.tokenText[b.tok])}»  #${b.tok}${b.chosen ? '   ← выбран' : ''}\n` +
-        `логит модели      ${b.raw.toFixed(2)}\n` +
-        (this.forcedView ? (b.chosen ? `автомат           этот кусок задан\n` : `автомат           запрещён: собирается слово\n`) :
-          b.bias ? `доплата          +${b.bias.toFixed(2)}\n` : '') +
-        `p без вмешательств ${fmtP(b.pRaw)}\n` +
-        `p после них       ${fmtP(b.p)}\n` +
-        (this.forcedView ? '' : b.inTopk ? `p в top-k         ${fmtP(b.pTopk)}` : `за чертой top-k — не может быть выбран`);
+      s = `«${show(this.tokenText[b.tok])}»  #${b.tok}${b.chosen ? tx('lg.tip.chosen') : ''}\n` +
+        tx('lg.tip.logit', { x: b.raw.toFixed(2) }) + '\n' +
+        (this.forcedView ? tx(b.chosen ? 'lg.tip.fsmSet' : 'lg.tip.fsmBan') + '\n' :
+          b.bias ? tx('lg.tip.bias', { x: b.bias.toFixed(2) }) + '\n' : '') +
+        tx('lg.tip.pRaw', { x: fmtP(b.pRaw) }) + '\n' +
+        tx('lg.tip.p', { x: fmtP(b.p) }) + '\n' +
+        (this.forcedView ? '' : b.inTopk ? tx('lg.tip.pTopk', { x: fmtP(b.pTopk) }) : tx('lg.tip.outTopk'));
     }
     this.tip.textContent = s; this.tip.hidden = false;
-    const tx = Math.min(mx + 14, r.width - this.tip.offsetWidth - 6);
-    this.tip.style.left = Math.max(4, tx) + 'px'; this.tip.style.top = '8px';
+    const tipX = Math.min(mx + 14, r.width - this.tip.offsetWidth - 6);
+    this.tip.style.left = Math.max(4, tipX) + "px"; this.tip.style.top = '8px';
   }
 }
 

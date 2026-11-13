@@ -1,12 +1,14 @@
 // Редактор micro-qwen3: генерирует историю тем же движком, что на ESP32-S3 (WebAssembly), записывает трассу каждого
 // шага и даёт откатиться на любой токен. Версия 1: полоса логитов, история, таймлайн, настройки, инспектор.
-import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
-import { loadEngine, Engine, WORD_STATES } from './engine/engine.js';
+import { Deck } from './cards.js';
+import { Stage } from './stage.js';
+import { navPad } from './navpad.js';
+import { Controls } from './controls.js';
+import { t, lang, LANGS, setLang } from './i18n.js';
+import { loadEngine, Engine } from './engine/engine.js';
 import { LogitStrip, show } from './logits.js';
 import { AttentionView } from './attention.js';
 import { ModelView } from './modelview.js';
-import { View3D } from './view3d.js';
-import { AttnStack3D } from './attn3d.js';
 import { GrowthChart } from './growth.js';
 
 const $ = (id) => document.getElementById(id);
@@ -26,15 +28,15 @@ async function boot() {
     const buf = new Uint8Array(await (await fetch('model.bin')).arrayBuffer());
     S.engine = await loadEngine(buf);
   } catch (e) {
-    $('status').textContent = 'не удалось загрузить модель: ' + e.message;
+    $('status').textContent = t('status.fail', { msg: e.message });
     return;
   }
   const i = S.engine.info;
-  $('status').textContent = `${i.layers} слоя × ${i.dim}, ${i.heads} головы, словарь ${i.vocab} · WebAssembly`;
+  $('status').textContent = t('status.model', { layers: i.layers, dim: i.dim, heads: i.heads, vocab: i.vocab });
   // отметка версии файлов: время изменения view3d.js на сервере — видно, свежая ли загружена страница
   fetch('view3d.js', { method: 'HEAD', cache: 'no-store' }).then((r) => {
-    const t = new Date(r.headers.get('Last-Modified'));
-    if (!isNaN(t)) $('status').textContent += ` · файлы от ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const tm = new Date(r.headers.get('Last-Modified'));
+    if (!isNaN(tm)) $('status').textContent += t('status.files', { time: tm.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }) });
   }).catch(() => {});
   S.strip = new LogitStrip($('logits-canvas'), $('tip'), S.engine.tokenText);
   S.amode = 'look';
@@ -42,6 +44,9 @@ async function boot() {
   S.attn.engine = S.engine; S.attn.mode = S.amode;
   if (S.a3d) { S.a3d.weightsFn = (sel) => S.attn.weights(S.amode, sel); S.a3d.mode = S.amode; }
   S.aview = '3d';
+  let View3D = null, AttnStack3D = null;
+  try { ({ View3D } = await import('./view3d.js')); ({ AttnStack3D } = await import('./attn3d.js')); }   // Three.js с CDN
+  catch (e) { console.error(e); }
   try { S.a3d = new AttnStack3D($('attn-3d'), S.engine.info, (sel) => { S.attn.sel = { ...sel }; tintStory(); renderInspector(S.run.steps[S.cur]); }, S.engine.tokenText); }
   catch (e) { S.a3d = null; console.error(e); }
   S.growth = new GrowthChart($('growth-canvas'), S.engine.info);
@@ -49,36 +54,45 @@ async function boot() {
   S.view = '3d';
   try { S.v3d = new View3D($('model-3d'), S.engine); S.v3d.onSelect = () => renderInspector(S.run.steps[S.cur]); }
   catch (e) { S.v3d = null; switchView('schema'); console.error(e); }
-  buildPane();
+  // управление 3D-видами: выпадающая стеклянная панель в углу (камера, раздвинуть, линии, сброс)
+  S.spreadK = 1; S.explodeK = 0.25;
+  if (S.v3d) navPad($('model-3d'), {
+    view: () => S.v3d,
+    spread: { get: () => (S.spreadK - 0.6) / 1.4, set: (f) => { S.spreadK = 0.6 + 1.4 * f; S.v3d.setSpread(S.spreadK); } },
+    toggles: [{ label: t('nav.traces'), icon: 'lines', get: () => S.v3d.wiresOn !== false, set: (on) => S.v3d.showWires(on) }],
+    reset: () => { S.spreadK = 1; S.v3d.setSpread(1); S.v3d.preset('perspective', true); },
+  });
+  if (S.a3d) navPad($('attn-3d'), {
+    view: () => S.a3d, layersLabel: t('nav.maps'),
+    spread: { get: () => S.explodeK, set: (f) => { S.explodeK = f; S.a3d.setExplode(f); } },
+    reset: () => { S.explodeK = 0.25; S.a3d.userMoved = false; S.a3d.setExplode(0.25); },
+  });
   bindUI();
-  generate();
+  S.booted = true;
+  if (S.pendingGen) generate();                // нажали «Сгенерировать», пока модель грузилась
 }
 
 // ---------------------------------------------------------------- панель настроек
 function buildPane() {
-  const pane = new Pane({ container: $('pane'), title: 'Настройки' });
-  const fs = pane.addFolder({ title: 'Сэмплинг' });
-  fs.addBinding(P, 'temperature', { label: 'температура', min: 0.05, max: 1.5, step: 0.05 });
-  fs.addBinding(P, 'topK', { label: 'top-k', min: 1, max: 64, step: 1 });
-  fs.addBinding(P, 'seed', { label: 'seed', min: 1, max: 99999, step: 1 });
-  fs.addBinding(P, 'randomSeed', { label: 'новый seed' });
-  const fo = pane.addFolder({ title: 'Заказ слов' });
-  fo.addBinding(P, 'wbBase', { label: 'доплата base', min: 0, max: 6, step: 0.25 });
-  fo.addBinding(P, 'wbTau', { label: 'нарастание τ', min: 10, max: 400, step: 10 });
-  fo.addBinding(P, 'wbStart', { label: 'старт каскада', min: 0, max: 1, step: 0.25 });
-  fo.addBinding(P, 'fsm', { label: 'автомат' });
-  fo.addBinding(P, 'loopPenalty', { label: 'штраф за циклы' });
-  const fp = pane.addFolder({ title: 'Прогон' });
-  fp.addBinding(P, 'maxNew', { label: 'макс. токенов', min: 20, max: 220, step: 10 });
-  fp.addBinding(P, 'speed', { label: 'скорость, ток/с', min: 1, max: 120, step: 1 });
-  fp.addBinding(P, 'autoplay', { label: 'печатать по токену' });
-  pane.addButton({ title: 'Сгенерировать заново' }).on('click', generate);
-  S.pane = pane;
+  // настройки — три карточки картотеки; элементы в стиле панели камеры (controls.js)
+  S.deck = new Deck($('side'));
+  const L = (k) => t('set.' + k);
+  const fs = new Controls(S.deck.add('sampling', t('card.sampling')), P)
+    .slider('temperature', L('temperature'), 0.05, 1.5, 0.05).slider('topK', L('topK'), 1, 64, 1)
+    .slider('seed', L('seed'), 1, 99999, 1).toggle('randomSeed', L('randomSeed'));
+  const fo = new Controls(S.deck.add('order', t('card.order')), P)
+    .slider('wbBase', L('wbBase'), 0, 6, 0.25).slider('wbTau', L('wbTau'), 10, 400, 10)
+    .slider('wbStart', L('wbStart'), 0, 1, 0.25).toggle('fsm', L('fsm')).toggle('loopPenalty', L('loopPenalty'));
+  const fp = new Controls(S.deck.add('run', t('card.run')), P)
+    .slider('maxNew', L('maxNew'), 20, 220, 10).slider('speed', L('speed'), 1, 120, 1)
+    .toggle('autoplay', L('autoplay'));
+  const panes = [fs, fo, fp];
+  S.pane = { refresh: () => panes.forEach((x) => x.refresh()) };
 }
 
 // ---------------------------------------------------------------- генерация
 function generate() {
-  if (!S.engine) return;
+  if (!S.engine) { S.pendingGen = true; return; }   // модель ещё грузится — запустим сразу после загрузки
   stop();
   const mode = $('mode').value;
   const words = mode === 'order' ? $('words').value.trim() : '';
@@ -91,8 +105,14 @@ function generate() {
   const ms = performance.now() - t0;
   const gen = S.run.steps.filter((s) => s.kind === 'gen');
   const last = S.run.steps[S.run.steps.length - 1];
-  $('story-sub').textContent = `· ${gen.length} токенов ответа за ${ms.toFixed(0)} мс в браузере` +
-    (last && last.words.length ? ` · слова ${last.wordsUsed}/${last.words.length}` : '') + ` · seed ${P.seed}`;
+  $('story-sub').textContent = t('story.sub', { gen: gen.length, ms: ms.toFixed(0), seed: P.seed,
+    words: last && last.words.length ? `${last.wordsUsed}/${last.words.length}` : '' });
+  // квитанция прогона: доказательство, что история посчитана здесь и сейчас
+  const tps = gen.length / Math.max(ms, 1) * 1000, at = new Date().toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const ri = $('run-info');
+  const rv = { at, np: S.run.nPrompt, ng: gen.length, ms: ms.toFixed(0), tps: Math.round(tps), seed: P.seed };
+  ri.innerHTML = t('run.info', rv); ri.title = t('run.title', rv);
+  if (S.booted) { ri.classList.remove('fresh'); void ri.offsetWidth; ri.classList.add('fresh'); }   // не при загрузке
   buildStory();
   const firstGen = Math.max(0, S.run.nPrompt - 1);
   $('t-range').max = S.run.steps.length - 1;
@@ -131,15 +151,19 @@ function setCur(i) {
     it.el.classList.toggle('future', it.step > S.cur);
   }
   const curEl = S.items.find((it) => it.step === S.cur);
-  if (curEl) curEl.el.scrollIntoView({ block: 'nearest' });
+  // прокручиваем только текст истории (scrollIntoView прокрутил бы и родителей — всю левую часть)
+  if (curEl) {
+    const box = $('story-text'), r = curEl.el.getBoundingClientRect(), b = box.getBoundingClientRect();
+    if (r.bottom > b.bottom - 4) box.scrollTop += r.bottom - b.bottom + 8;
+    else if (r.top < b.top + 4) box.scrollTop -= b.top - r.top + 8;
+  }
   $('t-range').value = S.cur; fillRange($('t-range'));
-  const g = step.kind === 'gen' ? `ответ, токен ${step.genIndex + 1}` : 'промпт';
-  $('t-label').textContent = `шаг ${S.cur + 1}/${S.run.steps.length} · ${g}`;
+  $('t-label').textContent = step.kind === 'gen' ? t('t.label.gen', { step: S.cur + 1, total: S.run.steps.length, tok: step.genIndex + 1 })
+    : t('t.label.prompt', { step: S.cur + 1, total: S.run.steps.length });
   S.strip.set(step, P.temperature > 0 ? S.run.settings.temperature : 1);
-  $('logits-sub').textContent = `· шаг ${S.cur + 1}: следующий токен после «${show(S.engine.tokenText[step.input])}»` +
-    (step.forced >= 0 ? ' · кусок задан автоматом — показано, что выбрала бы модель сама'
-      : step.kind === 'prompt' ? ' · промпт: токен известен, показан прогноз модели'
-        : ` · T ${S.run.settings.temperature}, top-k ${S.run.settings.topK} · белая черта — p без доплаты`);
+  $('logits-sub').textContent = t('logits.sub.head', { step: S.cur + 1, tok: show(S.engine.tokenText[step.input]) }) +
+    (step.forced >= 0 ? t('logits.sub.forced') : step.kind === 'prompt' ? t('logits.sub.prompt')
+      : t('logits.sub.gen', { temp: S.run.settings.temperature, topk: S.run.settings.topK }));
   if (S.aview === '2d') S.attn.set(S.run.steps, S.cur, S.engine.info);
   else { S.attn.steps = S.run.steps; S.attn.cur = S.cur; S.attn.info = S.engine.info; if (S.a3d) S.a3d.set(S.run.steps, S.cur); }
   S.growth.set(step.pos);
@@ -153,9 +177,9 @@ function setCur(i) {
 function tintStory() {
   const w = S.attn.weights(S.amode);
   const sel = S.attn.sel, rgb = S.amode === 'contrib' ? '169,140,240' : '217,137,74';
-  const what = S.amode === 'contrib' ? 'вкладом' : 'вниманием';
-  $('attn-sub').textContent = sel.layer < 0 ? `· история подсвечена ${what} всех голов · щёлкни карту — одна голова`
-    : `· голова ${sel.head + 1} слоя ${sel.layer + 1}: подсветка ${what} · щёлкни ещё раз — все головы`;
+  const contrib = S.amode === 'contrib';
+  $('attn-sub').textContent = sel.layer < 0 ? t('attn.sub.all', { contrib })
+    : t('attn.sub.one', { contrib, head: sel.head + 1, layer: sel.layer + 1 });
   for (const it of S.items) {
     const key = it.step + 1;                       // позиция токена в тексте (первый токен промпта — 0)
     const v = w && key <= S.cur ? w[key] : 0;
@@ -168,82 +192,91 @@ function play() {
   if (!S.run) return;
   if (S.cur >= S.run.steps.length - 1) setCur(Math.max(0, S.run.nPrompt - 1));
   stop();
-  $('t-play').innerHTML = ICON_PAUSE;
+  $('t-play').innerHTML = ICON_PAUSE; $('gen').classList.add('busy'); genSpeed();   // огоньки кнопки бегут быстрее, пока печатается
   S.timer = setInterval(() => {
     if (S.cur >= S.run.steps.length - 1) { stop(); return; }
     setCur(S.cur + 1);
   }, 1000 / P.speed);
 }
-function stop() { if (S.timer) clearInterval(S.timer); S.timer = null; $('t-play').innerHTML = ICON_PLAY; }
+function stop() { if (S.timer) clearInterval(S.timer); S.timer = null; $('t-play').innerHTML = ICON_PLAY; $('gen').classList.remove('busy'); genSpeed(); }
 
 // ---------------------------------------------------------------- инспектор шага
 function renderInspector(s) {
   const tt = S.engine.tokenText, pill = (t) => `<span class="tokpill">${esc(show(tt[t]))}</span>`;
   const chosen = s.topk.find((c) => c.tok === s.output);
-  const how = s.kind === 'prompt' ? 'известен (промпт)' : s.forced >= 0 ? 'задан автоматом' : 'выбран сэмплингом';
+  const how = t(s.kind === 'prompt' ? 'insp.how.prompt' : s.forced >= 0 ? 'insp.how.forced' : 'insp.how.sampled');
   let h = (S.v3d && S.view === '3d' ? S.v3d.describe() : '') + (S.a3d ? S.a3d.describe() : '');
   if (S.run && S.attn.steps) {
     const sel = S.attn.sel, look = S.attn.weights('look'), con = S.attn.weights('contrib');
     if (look && con) {
       const top = Array.from(look.keys()).sort((a, b) => (look[b] + con[b]) - (look[a] + con[a])).slice(0, 6);
-      const who = sel.layer >= 0 ? `голова ${sel.head + 1} слоя ${sel.layer + 1}` : 'все головы вместе';
-      h += `<h4>Внимание и вклад · ${who}</h4><table class="cmp"><tr><th>токен</th><th class="bar-look">смотрит</th><th class="bar-contrib">вклад</th></tr>` +
+      const who = sel.layer >= 0 ? t('insp.cmp.one', { head: sel.head + 1, layer: sel.layer + 1 }) : t('insp.cmp.all');
+      h += `<h4>${t('insp.cmp.head', { who })}</h4><table class="cmp"><tr><th>${t('insp.cmp.token')}</th><th class="bar-look">${t('insp.cmp.look')}</th><th class="bar-contrib">${t('insp.cmp.contrib')}</th></tr>` +
         top.map((t) => `<tr><td>${pill(S.run.steps[t].input)} <span style="color:var(--dim)">#${t}</span></td><td class="bar-look">${(100 * look[t]).toFixed(0)}%</td><td class="bar-contrib">${(100 * con[t]).toFixed(0)}%</td></tr>`).join('') +
-        `</table><div class="note">смотрит — вес внимания; вклад — вес × сила того, что голова реально забирает из токена (‖W_o·value‖)</div>`;
+        `</table><div class="note">${t('insp.cmp.note')}</div>`;
     }
   }
-  h += `<h4>Шаг ${S.cur + 1}</h4><div class="kv">
-    <div>позиция</div><div>${s.pos}</div>
-    <div>вход</div><div>${pill(s.input)}</div>
-    <div>выход</div><div>${pill(s.output)} <span style="color:var(--muted)">${how}</span></div>
-    <div>p выхода</div><div>${s.forced >= 0 ? '100% (принудительно)' : chosen ? (100 * chosen.p).toFixed(1) + '%' : '—'}</div>
-    <div>энтропия</div><div>${s.entropy.toFixed(2)} бит</div>
-    ${s.kind === 'gen' && s.forced < 0 ? `<div>бросок</div><div>${(100 * s.sampleR).toFixed(1)}% массы</div>` : ''}
+  h += `<h4>${t('insp.step', { n: S.cur + 1 })}</h4><div class="kv">
+    <div>${t('insp.pos')}</div><div>${s.pos}</div>
+    <div>${t('insp.in')}</div><div>${pill(s.input)}</div>
+    <div>${t('insp.out')}</div><div>${pill(s.output)} <span style="color:var(--muted)">${how}</span></div>
+    <div>${t('insp.pout')}</div><div>${s.forced >= 0 ? t('insp.forced100') : chosen ? (100 * chosen.p).toFixed(1) + '%' : '—'}</div>
+    <div>${t('insp.entropy')}</div><div>${t('insp.bits', { x: s.entropy.toFixed(2) })}</div>
+    ${s.kind === 'gen' && s.forced < 0 ? `<div>${t('insp.draw')}</div><div>${t('insp.drawMass', { x: (100 * s.sampleR).toFixed(1) })}</div>` : ''}
   </div>`;
   if (s.words.length) {
-    h += `<h4>Заказанные слова</h4><table class="words"><tr><th>слово</th><th>состояние</th><th>куски</th></tr>`;
+    h += `<h4>${t('insp.words')}</h4><table class="words"><tr><th>${t('insp.word')}</th><th>${t('insp.state')}</th><th>${t('insp.pieces')}</th></tr>`;
     for (const w of s.words) {
-      h += `<tr><td>${esc(w.text)}</td><td><span class="st st${w.state}">${WORD_STATES[w.state]}</span></td>` +
+      h += `<tr><td>${esc(w.text)}</td><td><span class="st st${w.state}">${t('word.state')[w.state]}</span></td>` +
         `<td>${w.state === 1 || w.state === 2 ? w.k + '/' : ''}${w.pieces}</td></tr>`;
     }
     h += '</table>';
     const b = s.wb, val = b.base * (b.u + b.u0 + 1) * (1 + b.t / b.tau);
-    if (s.kind === 'prompt') h += `<h4>Доплата</h4><div class="note">на шагах промпта не действует — следующий токен известен</div>`;
-    else if (s.wordsUsed >= s.words.length) h += `<h4>Доплата</h4><div class="note">все заказанные слова уже в тексте — доплаты нет, работает только правило «после слова — без мусорных суффиксов»</div>`;
-    else h += `<h4>Доплата</h4><div class="formula">base·(u + u0 + 1)·(1 + t/τ)<br>= ${b.base}·(${b.u} + ${b.u0} + 1)·(1 + ${b.t}/${b.tau})<br>= <b>${val.toFixed(2)}</b> к логиту каждого ещё не найденного слова</div>
-      <div class="note">u — слов уже в тексте, u0 — старт каскада, t — токенов с последнего найденного слова</div>`;
+    const bt = `<h4>${t('insp.bias')}</h4>`;
+    if (s.kind === 'prompt') h += bt + `<div class="note">${t('insp.bias.prompt')}</div>`;
+    else if (s.wordsUsed >= s.words.length) h += bt + `<div class="note">${t('insp.bias.done')}</div>`;
+    else h += bt + `<div class="formula"><div class="f-gen">base·(u + u0 + 1)·(1 + t/τ)</div><div class="f-sub">= ${b.base}·(${b.u} + ${b.u0} + 1)·(1 + ${b.t}/${b.tau})</div><div class="f-res">${t('insp.bias.formula', { val: val.toFixed(2) })}</div></div>
+      <div class="note">${t('insp.bias.legend')}</div>`;
     const pushes = s.bias.filter((x) => x.val < 1e8);
-    if (pushes.length) h += `<div class="note">подтолкнуты: ${pushes.map((x) => pill(x.tok) + ' +' + x.val.toFixed(2)).join(' ')}</div>`;
-    if (s.forced >= 0) h += `<div class="note">автомат собирает слово: разрешён только ${pill(s.forced)}</div>`;
+    if (pushes.length) h += `<div class="note">${t('insp.pushed', { list: pushes.map((x) => pill(x.tok) + ' +' + x.val.toFixed(2)).join(' ') })}</div>`;
+    if (s.forced >= 0) h += `<div class="note">${t('insp.fsm', { tok: pill(s.forced) })}</div>`;
     if (s.form >= 0) {
       const banned = s.logitsFinal.reduce((n, v) => n + (v <= -1e29), 0);
-      h += `<div class="note">слово только что закончилось: запрещено ${banned} буквенных продолжений` +
-        (s.allowed.length ? `, кроме ${s.allowed.map(pill).join(' ')}` : '') + '</div>';
+      h += `<div class="note">${t('insp.ended', { n: banned, except: s.allowed.length ? s.allowed.map(pill).join(' ') : '' })}</div>`;
     }
-    if (s.loop.length) h += `<div class="note">штраф за циклы: ${s.loop.map((x) => pill(x.tok) + ' ' + x.val.toFixed(2)).join(' ')}</div>`;
+    if (s.loop.length) h += `<div class="note">${t('insp.loop', { list: s.loop.map((x) => pill(x.tok) + ' ' + x.val.toFixed(2)).join(' ') })}</div>`;
   }
-  $('inspector').innerHTML = h;
+  S.deck.sync(h);
 }
 const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // ---------------------------------------------------------------- управление
+// выбор из двух: подпись · тумблер · подпись; щелчок по подписи выбирает её вариант, по тумблеру — переключает
+function setPair(id, v) {
+  const el = $(id), opts = el.querySelectorAll('.pair-o');
+  opts.forEach((o) => o.classList.toggle('on', o.dataset.v === v));
+  el.querySelector('input').checked = opts[1].dataset.v === v;
+  el.dataset.value = v;
+}
+function bindPair(id, fn) {
+  const el = $(id), opts = el.querySelectorAll('.pair-o');
+  opts.forEach((o) => o.addEventListener('click', () => fn(o.dataset.v)));
+  el.querySelector('input').addEventListener('change', (e) => fn(opts[e.target.checked ? 1 : 0].dataset.v));
+}
 function switchAttn(v) {
   S.aview = v;
-  document.querySelectorAll('.tab[data-aview]').forEach((b) => b.classList.toggle('on', b.dataset.aview === v));
-  $('attn-3d').hidden = v !== '3d'; $('attn-canvas').hidden = v !== '2d'; $('explode-box').hidden = v !== '3d';
+  setPair('aview-pair', v);
+  $('attn-3d').hidden = v !== '3d'; $('attn-canvas').hidden = v !== '2d';
   if (S.run) setCur(S.cur);
   if (v === '3d' && S.a3d) { S.a3d.resize(); S.a3d.setSel(S.attn.sel); }
 }
 
 function switchView(v) {
   S.view = v;
-  document.querySelectorAll('.vp-tabs .tab[data-view]').forEach((b) => b.classList.toggle('on', b.dataset.view === v));
+  setPair('view-pair', v);
   $('model-3d').hidden = v !== '3d'; $('model-canvas').hidden = v !== 'schema';
-  $('cams').hidden = v !== '3d';
-  $('spread-box').hidden = v !== '3d'; $('wires-tog').hidden = v !== '3d';
   $('model-sub').hidden = v === '3d';
-  $('model-sub').textContent = v === '3d' ? '· поток слева направо · мышь — вращать'
-    : '· путь токена через слои · справа — logit lens';
+  $('model-sub').textContent = t(v === '3d' ? 'model.sub.3d' : 'model.sub.schema');
   if (S.run) { const st = S.run.steps[S.cur]; if (v === 'schema') S.model.set(st); else if (S.v3d) { S.v3d.resize(); S.v3d.set(st, false); } }
 }
 
@@ -291,32 +324,25 @@ function glassRange(el) {
 }
 // положение ручек обновляется при прокрутке, изменении окна и переключении видов
 addEventListener('resize', () => glassRanges.forEach(placeKnob));
+// левая часть — картотека: логиты и историю можно свернуть, модель и attention забирают освободившееся место
+S.stage = new Stage($('stage'), {
+  views: $('views'), player: $('player'),
+  folds: [{ key: 'logits', el: $('logits'), share: 0.2, min: 118, max: 230 },
+          { key: 'story', el: $('story'), share: 0.3, min: 160, max: 380 }],
+  onLayout: () => glassRanges.forEach(placeKnob),
+});
 addEventListener('scroll', () => glassRanges.forEach(placeKnob), true);
 new MutationObserver(() => glassRanges.forEach(placeKnob)).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['hidden'] });
 
 function bindUI() {
-  document.querySelectorAll('input[type=range]').forEach((el) => { glassRange(el); el.addEventListener('input', () => fillRange(el)); });
-  document.querySelectorAll('.tab.amode').forEach((b) => b.addEventListener('click', () => {
-    S.amode = b.dataset.amode; S.attn.mode = S.amode; if (S.a3d) { S.a3d.mode = S.amode; S.a3d.ridges(); }
-    document.querySelectorAll('.tab.amode').forEach((x) => x.classList.toggle('on', x === b));
-    tintStory(); if (S.run) renderInspector(S.run.steps[S.cur]);
-  }));
-  document.querySelectorAll('.tab[data-aview]').forEach((b) => b.addEventListener('click', () => switchAttn(b.dataset.aview)));
-  $('explode').addEventListener('input', (e) => { if (S.a3d) S.a3d.setExplode(Number(e.target.value)); });
-  $('spread').addEventListener('input', (e) => { if (S.v3d) S.v3d.setSpread(Number(e.target.value)); });
-  $('wires-tog').addEventListener('click', (e) => {
-    const on = !e.currentTarget.classList.contains('on');
-    e.currentTarget.classList.toggle('on', on);
-    if (S.v3d) S.v3d.showWires(on);
+  // стеклянные ручки — у ползунков интерфейса; у ползунков панели камеры свой вид (как в Пункте управления)
+  document.querySelectorAll('input[type=range]').forEach((el) => { if (el.closest('.cc, .cc-track')) return; glassRange(el); el.addEventListener('input', () => fillRange(el)); });
+  bindPair('amode-pair', (v) => {
+    S.amode = v; S.attn.mode = v; if (S.a3d) { S.a3d.mode = v; S.a3d.ridges(); }
+    setPair('amode-pair', v); tintStory(); if (S.run) renderInspector(S.run.steps[S.cur]);
   });
-  document.querySelectorAll('.vp-tabs .tab[data-view]').forEach((b) => b.addEventListener('click', () => switchView(b.dataset.view)));
-  document.querySelectorAll('.tab.cam').forEach((b) => b.addEventListener('click', () => {
-    document.querySelectorAll('.tab.cam').forEach((x) => x.classList.toggle('on', x === b));
-    if (S.v3d) S.v3d.preset(b.dataset.cam);
-  }));
-  $('gen').addEventListener('click', generate);
-  $('words').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
-  $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
+  bindPair('aview-pair', switchAttn);
+  bindPair('view-pair', switchView);
   $('mode').addEventListener('change', () => {
     const order = $('mode').value === 'order';
     $('words').hidden = !order; $('prompt').hidden = order;
@@ -335,6 +361,56 @@ function bindUI() {
     else if (e.key === 'Home') { stop(); setCur(Math.max(0, S.run.nPrompt - 1)); }
     else if (e.key === 'End') { stop(); setCur(S.run.steps.length - 1); }
   });
+}
+
+// каркас интерфейса — сразу, до загрузки модели: карточки настроек, пустые состояния, меню языка.
+// Модель и 3D потом подгружаются внутрь уже стоящих рамок — ничего не появляется и не прыгает.
+buildPane();
+S.deck.sync(`<h4>${t('empty.title')}</h4><div class="note">${t('empty.insp')}</div>`);
+$('story-text').innerHTML = `<div class="empty-hint">${t('empty.story')}</div>`;
+langMenu();
+// огоньки «Generate»: скорость меняется плавно, без перезапуска анимации (иначе угол прыгает)
+function genSpeed() {
+  const g = $('gen'), a = g.getAnimations().find((x) => x.animationName === 'gen-orbit');
+  if (!a) return;
+  const target = g.classList.contains('busy') ? 2.6 : g.matches(':hover') ? 1.7 : 1;
+  const from = a.playbackRate, t0 = performance.now();
+  cancelAnimationFrame(genSpeed.raf);
+  const step = () => {                                  // разгон/торможение за 400 мс
+    const k = Math.min(1, (performance.now() - t0) / 400);
+    a.updatePlaybackRate(from + (target - from) * k * (2 - k));
+    if (k < 1) genSpeed.raf = requestAnimationFrame(step);
+  };
+  step();
+}
+$('gen').addEventListener('pointerenter', genSpeed);
+$('gen').addEventListener('pointerleave', genSpeed);
+$('gen').addEventListener('click', generate);
+$('words').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
+$('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
+
+// язык: кнопка-глобус, по щелчку — стеклянное меню со списком языков (как панель камеры)
+function langMenu() {
+  const GLOBE = '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.8 10h14.4M10 2.8c2.2 2.4 2.2 12 0 14.4M10 2.8c-2.2 2.4-2.2 12 0 14.4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+  const CHECK = '<svg viewBox="0 0 20 20"><path d="M5 10.5l3.2 3.2L15 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // меню — на верхнем уровне страницы, а не внутри навбара: стекло навбара не дало бы размыть то, что под меню;
+  // каждый язык — отдельный парящий модуль, без общей подложки (как панель камеры)
+  const box = $('lang'), btn = document.createElement('button'), pop = document.createElement('div');
+  btn.className = 'navpad-btn lang-btn'; btn.innerHTML = GLOBE; btn.title = t('lang.title');
+  pop.className = 'lang-pop'; pop.hidden = true;
+  for (const L of LANGS) {
+    const b = document.createElement('button'); b.className = 'cc-mod lang-item' + (L.code === lang ? ' on' : '');
+    b.innerHTML = `<span>${L.name}</span>${L.code === lang ? CHECK : ''}`;
+    b.addEventListener('click', () => { if (L.code !== lang) setLang(L.code); else open(false); });
+    pop.appendChild(b);
+  }
+  const place = () => { const r = btn.getBoundingClientRect(); pop.style.top = (r.bottom + 10) + 'px'; pop.style.right = (innerWidth - r.right) + 'px'; };
+  const open = (on) => { if (on) place(); pop.hidden = !on; box.classList.toggle('open', on); };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); open(pop.hidden); });
+  document.addEventListener('pointerdown', (e) => { if (!box.contains(e.target) && !pop.contains(e.target)) open(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') open(false); });
+  addEventListener('resize', () => { if (!pop.hidden) place(); });
+  box.append(btn); document.body.appendChild(pop);
 }
 
 boot();
