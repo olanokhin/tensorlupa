@@ -449,7 +449,7 @@ export class View3D {
     let dir, dist, tgt = target;
     if (name === 'side') { dir = new THREE.Vector3(0, 0.05, 1); dist = Math.max(fitW, fitH); }
     else if (name === 'along') { dir = new THREE.Vector3(-1, 0.32, 0.42); tgt = new THREE.Vector3(cx * 0.85, 0, 0); dist = span * 0.95; }
-    else { dir = new THREE.Vector3(-0.62, 0.36, 0.78); tgt = new THREE.Vector3(cx, 0, 0); dist = span * 1.05; }
+    else { dir = new THREE.Vector3(-0.62, 0.36, 0.78); tgt = new THREE.Vector3(cx, 0, 0); dist = Math.max(span * 1.05, fitW * 0.95); }   // узкий вид — дальше, чтобы слои не обрезались
     dir.normalize();
     const pos = tgt.clone().addScaledVector(dir, dist);
     this.camera.near = dist / 80; this.camera.far = dist * 6; this.camera.updateProjectionMatrix();

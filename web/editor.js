@@ -22,6 +22,7 @@ const P = {
   maxNew: 200, speed: 24, autoplay: true,
 };
 const S = { engine: null, run: null, cur: 0, timer: null, items: [] };
+let engineReady; S.ready = new Promise((r) => { engineReady = r; });   // модель загружена и интерфейс привязан
 
 // ссылка на эксперимент: слова (или текст), seed, шаг и настройки, отличные от умолчаний, — в адресе страницы.
 // Прогон детерминирован, поэтому по ссылке у получателя ровно та же история и тот же шаг.
@@ -36,7 +37,7 @@ function readLink() {
     P[key] = typeof DEF[key] === 'boolean' ? v === '1' : Number(v);
   }
   P.seed = Math.max(1, Math.min(99999, Number(q.get('seed')) || 1));
-  if (q.get('mode') === 'lab' || q.get('mode') === 'guide') S.mode = q.get('mode');
+  if (q.get('mode') === 'lab' || q.get('mode') === 'guide') { S.mode = q.get('mode'); S.modeFromLink = true; }   // только на эту загрузку
   if (q.has('p')) { $('mode').value = 'continue'; $('prompt').value = q.get('p'); $('words').hidden = true; $('prompt').hidden = false; }
   else if (q.has('w')) $('words').value = q.get('w');
   return { step: q.has('s') ? Number(q.get('s')) : -1 };
@@ -56,11 +57,11 @@ const LINK = readLink();
 
 // Гайд · Лаб: Гайд — главное простыми словами (простые логиты, одна карточка «что произошло», только сэмплинг,
 // 3D и веса attention), Лаб — весь редактор. Названия про вид, а не про человека.
-function setMode(m) {
+function setMode(m, persist = true) {
   S.mode = m;
   document.body.dataset.mode = m;
   setPair('mode-pair', m);
-  try { localStorage.setItem('mq.mode', m); } catch { /* без памяти — только на эту загрузку */ }
+  if (persist) try { localStorage.setItem('mq.mode', m); } catch { /* без памяти — только на эту загрузку */ }
   if (S.deck) { S.deck.show('order', m === 'lab'); S.deck.show('run', m === 'lab'); }
   if (m === 'guide' && S.engine) {
     if (S.view !== '3d') switchView('3d');
@@ -120,6 +121,7 @@ async function boot() {
   });
   bindUI();
   S.booted = true;
+  engineReady();
   offerTour();
   if (LINK) generate({ atStep: LINK.step });      // открыли ссылку на эксперимент — показать ровно его
   else if (S.pendingGen) generate();                // нажали «Сгенерировать», пока модель грузилась
@@ -153,13 +155,38 @@ function live(key) {
   live.raf = requestAnimationFrame(() => { live.raf = 0; generate({ live: true }); });
 }
 
+// Ключевые слова: движок понимает до трёх английских слов (a–z, дефис, апостроф, до 23 букв), разделители — пробел
+// или запятая. Лишние и неанглийские слова не уходят ни в движок, ни в промпт (иначе модель просят то, что не подталкивают),
+// а под полем появляется тихая подсказка.
+const WORD_RE = /^[a-z][a-z'-]{0,22}$/i;
+function parseWords(raw) {
+  const all = raw.split(/[ ,]+/).filter(Boolean);
+  const ok = all.filter((w) => WORD_RE.test(w)).map((w) => w.toLowerCase());
+  return { words: ok.slice(0, 3), foreign: ok.length < all.length, extra: ok.length > 3 };
+}
+function wordsHint(key) {
+  let h = document.getElementById('words-hint');
+  if (!key) { h?.remove(); return; }
+  if (!h) { h = document.createElement('div'); h.id = 'words-hint'; h.className = 'cc-mod words-hint'; document.body.appendChild(h); }
+  h.textContent = t(key);
+  const r = $('words').getBoundingClientRect();
+  h.style.left = r.left + 'px'; h.style.top = (r.bottom + 8) + 'px';
+  clearTimeout(wordsHint.tm); wordsHint.tm = setTimeout(() => h.remove(), 5000);
+}
+
 // newSeed — «другая история»; live — пересчёт после изменения настройки (без анимации, на том же шаге)
 function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
   if (!S.engine) { S.pendingGen = true; return; }   // модель ещё грузится — запустим сразу после загрузки
   const keepStep = isLive ? S.cur : -1;
   stop();
   const mode = $('mode').value;
-  const words = mode === 'order' ? $('words').value.trim() : '';
+  let words = '';
+  if (mode === 'order') {
+    const pw = parseWords($('words').value);
+    if (!pw.words.length) { wordsHint(pw.foreign ? 'words.foreign' : 'words.empty'); return; }   // пустой заказ не запускаем
+    wordsHint(pw.foreign ? 'words.foreign' : pw.extra ? 'words.extra' : null);
+    words = pw.words.join(', ');
+  }
   const prompt = mode === 'order' ? Engine.orderPrompt(words) : $('prompt').value;
   if (newSeed) { P.seed = 1 + Math.floor(Math.random() * 99999); S.pane.refresh(); }
   S.engine.settings({ temperature: P.temperature, topK: P.topK, seed: P.seed, wbBase: P.wbBase, wbTau: P.wbTau,
@@ -275,7 +302,7 @@ function renderSimpleLogits(s) {
   const tt = S.engine.tokenText, top = s.topk.slice().sort((a, b) => b.p - a.p).slice(0, 5);
   box.innerHTML = `<div class="ls-title"><span data-term="logits">${t('g.choose')}</span></div>` + top.map((c) => `<div class="ls-row${c.tok === s.output ? ' on' : ''}">` +
     `<span class="tokpill">${esc(show(tt[c.tok]))}</span><span class="ls-bar"><i style="width:${(100 * c.p).toFixed(1)}%"></i></span>` +
-    `<span class="ls-p">${(100 * c.p).toFixed(0)}%</span></div>`).join('');
+    `<span class="ls-p">${c.p < 0.01 ? '<1' : (100 * c.p).toFixed(0)}%</span></div>`).join('');
 }
 
 // Гайд: что произошло на шаге — простыми словами, с отраслевым термином там, где он нужен
@@ -478,7 +505,7 @@ $('story-text').innerHTML = `<div class="empty-hint">${t('empty.story')}</div>`;
 modelMenu();
 aboutMenu();
 langMenu();
-bindPair('mode-pair', setMode);
+bindPair('mode-pair', (m) => setMode(m));
 glossary();
 
 // тур по Гайду: глубины 1–3. Перед шагом — нужная панель раскрыта и есть история на понятном шаге.
@@ -486,18 +513,39 @@ function openFold(stageKey, deckKey) {
   if (stageKey && S.stage.closed.delete(stageKey)) S.stage.layout();
   if (deckKey && S.deck.closed.delete(deckKey)) S.deck.layout();
 }
-function runTour() {
+async function runTour() {
   try { localStorage.setItem('mq.tour.seen', '1'); } catch { /* без памяти — предложим снова */ }
   $('tour-offer')?.remove();
   if (S.mode !== 'guide') setMode('guide');
+  // согласились на тур — сначала дождаться модели и показать историю, иначе первые шаги смотрят на пустые панели
+  if (!S.engine) await S.ready;
+  if (!S.run) generate({ atStep: 40 });
+  const firstGen = () => Math.max(0, S.run.nPrompt - 1);
   const ready = () => { if (!S.run) generate({ atStep: 40 }); else { stop(); if (S.cur < S.run.nPrompt) setCur(Math.min(S.run.nPrompt + 12, S.run.steps.length - 1)); } };
+  // шаг, где модель выбрала НЕ фаворита (текст тура говорит «обычно фаворит, но не всегда»)
+  const notFavourite = () => {
+    const st = S.run.steps;
+    for (let k = firstGen() + 4; k < st.length; k++) {
+      const x = st[k]; if (x.kind !== 'gen' || x.forced >= 0 || x.output <= 2) continue;
+      const top = x.topk.slice().sort((a, b) => b.p - a.p)[0];
+      if (top && top.tok !== x.output && top.p < 0.8) return k;
+    }
+    return S.cur;
+  };
   startTour([
     { key: 'tour.what', anchor: '#gen', before: ready },
     { key: 'tour.story', anchor: '#story', before: () => openFold('story') },
-    { key: 'tour.logits', anchor: '#logits', before: () => openFold('logits') },
-    { key: 'tour.temp', anchor: '#side .card', before: () => openFold(null, 'sampling') },
+    { key: 'tour.logits', anchor: '#logits', before: () => { openFold('logits'); setCur(notFavourite()); } },
+    // температура: подсвечены и ползунок, и история; стоим на первом токене ответа — контекст (промпт) не меняется,
+    // и видно, как температура сплющивает и заостряет одно и то же распределение
+    { key: 'tour.temp', anchor: ['#side .card', '#story', '#logits'], before: () => { openFold('story'); openFold('logits'); openFold(null, 'sampling'); setCur(firstGen()); } },
     { key: 'tour.attn', anchor: '#view-attn' },
     { key: 'tour.model', anchor: '#view-model' },
+    { key: 'tour.end', actions: [
+      { label: t('tour.act.words'), fn: () => { const w = $('words'); w.focus(); w.select(); } },
+      { label: t('tour.act.dice'), fn: () => generate({ newSeed: true }) },
+      { label: t('tour.act.lab'), fn: () => setMode('lab') },
+    ] },
   ], t);
 }
 function offerTour() {
@@ -533,7 +581,7 @@ function glossary() {
   });
   document.addEventListener('pointerdown', hide); addEventListener('scroll', hide, true);
 }
-setMode(S.mode);
+setMode(S.mode, !S.modeFromLink);   // режим из ссылки не перезаписывает сохранённый выбор получателя
 // огоньки «Generate»: скорость меняется плавно, без перезапуска анимации (иначе угол прыгает)
 function genSpeed() {
   const g = $('gen'), a = g.getAnimations().find((x) => x.animationName === 'gen-orbit');
@@ -560,6 +608,7 @@ $('copy-link').addEventListener('click', async () => {
   setTimeout(() => { b.classList.remove('done'); b.title = t('link.copy'); }, 1600);
 });
 $('words').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
+$('words').addEventListener('input', () => wordsHint(null));
 $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
 
 

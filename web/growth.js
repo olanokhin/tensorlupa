@@ -40,7 +40,8 @@ export class GrowthChart {
     ];
     lines.forEach(([t, c], i) => { g.fillStyle = c; g.fillText(t, 10, 6 + i * 15); });
     // график накопленной работы: ось продлена за контекст модели, чтобы была видна вся парабола
-    const x0 = Math.round(W * 0.55), x1 = W - 12, y0 = Hh - 15, y1 = 8, K = Math.ceil(xc * 1.15);
+    const textW = Math.max(...lines.map(([s]) => g.measureText(s).width)) + 10;
+    const x0 = Math.round(Math.max(W * 0.55, textW + 24)), x1 = W - 12, y0 = Hh - 15, y1 = 8, K = Math.ceil(xc * 1.15);
     if (x1 - x0 < 80) return;
     const cumA = (k) => this.A1 * k * (k + 1) / 2, cumM = (k) => this.M * k;
     const top = Math.max(cumA(K), cumM(K));
