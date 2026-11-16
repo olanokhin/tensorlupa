@@ -502,7 +502,8 @@ function runTour() {
 }
 function offerTour() {
   let seen = false; try { seen = !!localStorage.getItem('mq.tour.seen'); } catch { /* нет памяти */ }
-  if (seen || S.mode !== 'guide' || LINK) return;           // по ссылке на эксперимент — не мешаем
+  // предлагаем всем, кто тур ещё не видел (адрес после любого прогона сам становится ссылкой — по нему не судим)
+  if (seen || S.mode !== 'guide') return;
   const o = document.createElement('div'); o.id = 'tour-offer'; o.className = 'cc-mod tour-offer';
   o.innerHTML = `<span>${t('tour.offer')}</span><button class="to-go">${t('tour.start')}</button><button class="to-no">${t('tour.later')}</button>`;
   o.querySelector('.to-go').onclick = runTour;
@@ -551,6 +552,7 @@ $('gen').addEventListener('pointerenter', genSpeed);
 $('gen').addEventListener('pointerleave', genSpeed);
 $('gen').addEventListener('click', () => generate());
 $('reroll').addEventListener('click', () => generate({ newSeed: true }));
+$('tour-btn').addEventListener('click', () => runTour());
 $('copy-link').addEventListener('click', async () => {
   writeLink();
   try { await navigator.clipboard.writeText(location.href); } catch { /* без доступа к буферу — адрес всё равно в строке браузера */ }

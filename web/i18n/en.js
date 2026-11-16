@@ -239,6 +239,7 @@
   // tour (Guide)
   'tour.offer': 'New here? Take a one-minute tour of what you are looking at.',
   'tour.start': 'Take the tour',
+  'tour.btn': 'Tour',
   'tour.later': 'Not now',
   'tour.next': 'Next', 'tour.back': 'Back', 'tour.skip': 'Skip', 'tour.done': 'Done',
   'tour.what.title': 'A real language model, in your browser',
