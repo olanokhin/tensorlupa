@@ -7,3 +7,6 @@ Copyright 2026 Alex Anokhin
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 The micro-qwen3 model follows the Qwen3 architecture; it is trained from scratch
 and contains no Qwen weights.
+
+This product includes Three.js 0.170.0 (web/vendor/three), Copyright 2010-2024 three.js authors,
+licensed under the MIT License (see web/vendor/three/LICENSE).
