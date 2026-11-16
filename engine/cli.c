@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../esp/microqwen.h"
+#include "microqwen.h"
 #include "viz.h"
 
 static uint8_t *read_file(const char *p, long *n) {

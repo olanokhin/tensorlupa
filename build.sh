@@ -1,11 +1,11 @@
 #!/bin/sh
 # Сборка движка визуализации: WebAssembly для браузера + нативная программа проверки, затем проверки.
-#   sh viz/build.sh            — собрать
-#   sh viz/build.sh check      — собрать и проверить (нужна модель esp/models/tsim900-sft-x-w4r.bin и node)
+#   sh build.sh            — собрать
+#   sh build.sh check      — собрать и проверить (нужен node)
 set -e
 cd "$(dirname "$0")"
-MODEL=../esp/models/tsim900-sft-x-w4r.bin
-SRC="engine/viz.c ../esp/microqwen.c"
+MODEL=models/micro-qwen3.bin
+SRC="engine/viz.c engine/microqwen.c"
 FUNCS=$(grep -oE "^[a-z].* \*?(viz_[a-z_]+)\(" engine/viz.h | grep -oE "viz_[a-z_]+" | sed "s/.*/'_&'/" | paste -sd, -)
 
 emcc -O2 -std=c11 -DMQ_TRACE $SRC -o web/engine/mqviz.js \

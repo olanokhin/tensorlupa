@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../esp/microqwen.h"
+#include "microqwen.h"
 
 static MQModel M;
 static int loaded;

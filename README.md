@@ -1,17 +1,26 @@
-# micro-qwen3 editor
+# TensorLupa
 
-An interactive, desktop-first editor that runs the same C engine as the ESP32-S3 firmware in the browser
-(WebAssembly), records every step of a run and lets you scrub back to any token.
+A magnifying glass for neural networks: a real language model running in your browser, with every step of its
+work laid out — the story token by token, the logits it chose from, where attention looks, and what flows
+through each layer. Scrub back to any token, move a slider and watch the story rewrite itself.
+
+The built-in model is [micro-qwen3](models/README.md): the Qwen3 architecture at about one million parameters,
+trained from scratch. The engine is the same C code that runs it on an ESP32-S3 microcontroller, compiled to
+WebAssembly with tracing turned on.
+
+Live preview: https://tensorlupa.vercel.app
+
+## Run locally
 
 ```bash
-sh viz/build.sh          # WebAssembly engine + native check tool + copies the demo model to viz/web/model.bin
-sh viz/build.sh check    # …and run the checks (needs node)
-python3 viz/serve.py     # http://127.0.0.1:8765 (no-cache dev server)
+sh build.sh          # WebAssembly engine (needs emcc) + native check tool + copies the model to web/model.bin
+sh build.sh check    # …and run the checks (needs node)
+python3 serve.py     # http://127.0.0.1:8765 (no-cache dev server)
 ```
 
-Panels: 3D model view (residual stream plates, attention heads, MLP neurons, strongest flow lines; click a plate
-to see its values, logit lens and neuron effects), attention (3D stack or 2D grid, "where it looks" vs
-"contribution", quadratic growth chart), logits strip (all decoding stages), story with timeline, settings and
-inspector. The trace format is described in [TRACE.md](TRACE.md).
+The engine sources in `engine/microqwen.{c,h}` are a copy from micro-qwen3; refresh them with
+`sh scripts/sync-engine.sh <path to micro-qwen3>`. The trace format is described in [TRACE.md](TRACE.md).
 
-The firmware is unaffected: tracing code in `esp/microqwen.c` is compiled only with `-DMQ_TRACE`.
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). TensorLupa by Alex Anokhin.

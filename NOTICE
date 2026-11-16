@@ -1,0 +1,9 @@
+TensorLupa — a magnifying glass for neural networks
+Copyright 2026 Alex Anokhin
+
+micro-qwen3 (model code, firmware and weights)
+Copyright 2026 Alex Anokhin
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+The micro-qwen3 model follows the Qwen3 architecture; it is trained from scratch
+and contains no Qwen weights.
