@@ -74,6 +74,9 @@ export class Deck {
     this.layout();
   }
 
+  // показать/спрятать постоянную карточку по ключу (режимы Гайд/Лаб)
+  show(key, on) { const c = this.cards.find((x) => x.key === key); if (c) c.el.hidden = !on; this.layout(); }
+
   toggle(c) {
     this.closed.has(c.key) ? this.closed.delete(c.key) : this.closed.add(c.key);
     try { localStorage.setItem(STORE, JSON.stringify([...this.closed])); } catch { /* без памяти — не страшно */ }
@@ -85,9 +88,11 @@ export class Deck {
   layout() {
     // 1) позиции и собственные высоты; 2) с конца: содержимое закрытой карточки не выходит за нижний край
     // карточки, что лежит на ней (иначе выглядывает из-под закрытой последней)
-    const n = this.cards.length, top = [], h = [], open = [];
+    // скрытые карточки (например, в режиме «Гайд») в стопке не участвуют
+    const cards = this.cards.filter((c) => !c.el.hidden);
+    const n = cards.length, top = [], h = [], open = [];
     let y = 0;
-    this.cards.forEach((c, i) => {
+    cards.forEach((c, i) => {
       open[i] = !this.closed.has(c.key);
       const full = HEAD + c.body.scrollHeight, last = i === n - 1;
       h[i] = open[i] ? full : last ? HEAD : Math.min(full, HEAD + PEEK);
@@ -95,7 +100,7 @@ export class Deck {
       y += open[i] ? (last ? full : full - OVERLAP) : HEAD;
     });
     for (let i = n - 2; i >= 0; i--) if (!open[i]) h[i] = Math.min(h[i], top[i + 1] + h[i + 1] - top[i]);
-    this.cards.forEach((c, i) => {
+    cards.forEach((c, i) => {
       c.el.classList.toggle('open', open[i]);
       c.el.style.top = top[i] + 'px'; c.el.style.height = h[i] + 'px'; c.el.style.zIndex = String(i + 1);
     });

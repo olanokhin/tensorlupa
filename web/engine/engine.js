@@ -21,6 +21,8 @@ export class Engine {
         'number', 'number', 'number', 'number']),
       begin: c('viz_begin', 'number', ['string', 'string']),
       force: c('viz_force', null, ['number', 'number']),
+      extra: c('viz_extra', 'number', []),             // добавка к логитам шага (эксперименты)
+      extraOn: c('viz_extra_on', null, ['number']),
       step: c('viz_step', 'number', []),
       lens: c('viz_lens', null, ['number']),
       info: c('viz_info', 'number', ['number']),

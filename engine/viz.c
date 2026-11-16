@@ -128,6 +128,12 @@ static void word_states(int form) {
     si[I_WORDS] = wb.n; si[I_USED] = used;
 }
 
+// добавка к логитам на шаге генерации (не для прошивки): JS пишет в буфер, затем включает
+static float extra[8192];
+static int extra_on;
+float *viz_extra(void) { return extra; }
+void viz_extra_on(int on) { extra_on = on; }
+
 void viz_force(const int *answer, int n) {
     n_force = n < 0 ? 0 : n > 256 ? 256 : n;
     if (n_force) memcpy(force_ans, answer, n_force * sizeof(int));
@@ -178,6 +184,8 @@ int viz_step(void) {
             }
             si[I_NL] = m;
         }
+        // добавка к логитам извне (эксперименты: штраф с учётом корпуса считается снаружи по уже написанному тексту)
+        if (extra_on) for (int t = 0; t < M.vocab; t++) lg[t] += extra[t];
     }
     memcpy(logits_final, lg, M.vocab * 4);
     topk_probs(lg);

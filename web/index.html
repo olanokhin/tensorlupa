@@ -24,14 +24,16 @@
     <div class="brand"><span class="brand-name">TensorLupa</span><span class="brand-by">by Alex Anokhin</span></div>
     <button id="model-pill" class="model-pill" data-i18n-title="model.pill.title"><span class="mp-name">micro-qwen3</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <div class="order">
-      <select id="mode" data-i18n-title="mode.title">
+      <select id="mode" data-term="mode">
         <option value="order" data-i18n="mode.order"></option>
         <option value="continue" data-i18n="mode.continue"></option>
       </select>
       <input id="words" type="text" value="dragon, cookie, school" data-i18n-ph="words.ph" spellcheck="false">
       <input id="prompt" type="text" value="Once upon a time" data-i18n-ph="prompt.ph" spellcheck="false" hidden>
       <button id="gen" class="primary"><span class="gen-core" aria-hidden="true"></span><span class="gen-star" aria-hidden="true"></span><span data-i18n="gen"></span></button>
+      <button id="reroll" class="navpad-btn reroll" data-i18n-title="gen.another" aria-label="another story"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.2" y="3.2" width="13.6" height="13.6" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="7" r="1.25" fill="currentColor"/><circle cx="13" cy="7" r="1.25" fill="currentColor"/><circle cx="10" cy="10" r="1.25" fill="currentColor"/><circle cx="7" cy="13" r="1.25" fill="currentColor"/><circle cx="13" cy="13" r="1.25" fill="currentColor"/></svg></button>
     </div>
+    <span class="pair mode-pair" id="mode-pair" data-i18n-title="mode.title"><button class="pair-o on" data-v="guide" data-i18n="mode.guide"></button><input type="checkbox" class="ctl-sw" aria-label="Guide / Lab"><button class="pair-o" data-v="lab" data-i18n="mode.lab"></button></span>
     <div id="status" class="status" data-i18n="status.loading"></div>
     <div id="about" class="lang"></div>
     <div id="lang" class="lang"></div>
@@ -42,15 +44,15 @@
   <main id="stage">
     <div id="views">
   <section id="view-model" class="viewport">
-    <div class="vp-title vp-tabs" data-i18n-title="model.hint"><span data-i18n="model.title"></span>
+    <div class="vp-title vp-tabs" data-i18n-title="model.hint"><span data-i18n="model.title" data-term="model"></span>
       <span class="pair" id="view-pair"><button class="pair-o on" data-v="3d" data-i18n="view.3d"></button><input type="checkbox" class="ctl-sw" aria-label="3D / 2D"><button class="pair-o" data-v="schema" data-i18n="view.schema"></button></span>
       <span id="model-sub" hidden></span></div>
     <div class="vp-body"><div class="sig" aria-hidden="true">TensorLupa · by Alex Anokhin</div><div id="model-3d" class="fill"></div><canvas id="model-canvas" class="fill" hidden></canvas></div>
   </section>
   <section id="view-attn" class="viewport">
-    <div class="vp-title vp-tabs"><span data-i18n="attn.title"></span>
+    <div class="vp-title vp-tabs"><span data-i18n="attn.title" data-term="attention"></span>
       <span class="pair" id="aview-pair"><button class="pair-o on" data-v="3d" data-i18n="view.3d"></button><input type="checkbox" class="ctl-sw" aria-label="3D / 2D"><button class="pair-o" data-v="2d" data-i18n="aview.2d"></button></span>
-      <span class="pair amode-pair" id="amode-pair"><button class="pair-o on" data-v="look" data-i18n="amode.look" data-i18n-title="amode.look.title"></button><input type="checkbox" class="ctl-sw" aria-label="look / contribution"><button class="pair-o" data-v="contrib" data-i18n="amode.contrib" data-i18n-title="amode.contrib.title"></button></span>
+      <span class="pair amode-pair" id="amode-pair"><button class="pair-o on" data-v="look" data-i18n="amode.look" data-term="weights"></button><input type="checkbox" class="ctl-sw" aria-label="look / contribution"><button class="pair-o" data-v="contrib" data-i18n="amode.contrib" data-term="valueWeighted"></button></span>
       <span id="attn-sub" data-i18n="attn.sub.default"></span></div>
     <div class="vp-body attn-body">
       <div class="attn-view"><div id="attn-3d" class="fill"></div><canvas id="attn-canvas" class="fill" hidden></canvas></div>
@@ -59,8 +61,8 @@
   </section>
     </div>
   <section id="logits" class="viewport">
-    <div class="vp-title"><span data-i18n="logits.title"></span> <span id="logits-sub"></span></div>
-    <div class="vp-body"><canvas id="logits-canvas"></canvas><div id="tip" class="tip" hidden></div></div>
+    <div class="vp-title"><span data-i18n="logits.title" data-term="logits"></span> <span id="logits-sub"></span></div>
+    <div class="vp-body"><canvas id="logits-canvas"></canvas><div id="logits-simple" class="logits-simple"></div><div id="tip" class="tip" hidden></div></div>
   </section>
   <section id="story" class="viewport">
     <div class="vp-title"><span data-i18n="story.title"></span> <span id="story-sub"></span></div>
@@ -76,6 +78,7 @@
       <input id="t-range" type="range" min="0" max="0" value="0">
       <span id="t-label" class="mono"></span>
       <span id="run-info" class="run-info" data-i18n-title="run.title.empty"></span>
+      <button id="copy-link" class="copy-link" data-i18n-title="link.copy" aria-label="copy link"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 11.5a3.2 3.2 0 0 0 4.5 0l2.6-2.6a3.2 3.2 0 0 0-4.5-4.5l-.9.9M11.5 8.5a3.2 3.2 0 0 0-4.5 0l-2.6 2.6a3.2 3.2 0 0 0 4.5 4.5l.9-.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
     </div>
   </section>
   </main>

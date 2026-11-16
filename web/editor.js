@@ -4,6 +4,7 @@ import { Deck } from './cards.js';
 import { Stage } from './stage.js';
 import { navPad } from './navpad.js';
 import { popover } from './popover.js';
+import { startTour } from './tour.js';
 import { Controls } from './controls.js';
 import { t, lang, LANGS, setLang } from './i18n.js';
 import { loadEngine, Engine } from './engine/engine.js';
@@ -14,11 +15,62 @@ import { GrowthChart } from './growth.js';
 
 const $ = (id) => document.getElementById(id);
 const P = {
-  temperature: 0.6, topK: 40, seed: 1, randomSeed: true,
+  // seed по умолчанию — лучшая демо-история для слов по умолчанию (dragon, cookie, school): подобран перебором 3000 seed
+  // (все слова на месте, закончилась сама, без повторов 4-грамм) и прочитан глазами; кубик даёт случайные
+  temperature: 0.6, topK: 40, seed: 2779,
   wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, loopPenalty: false,
   maxNew: 200, speed: 24, autoplay: true,
 };
 const S = { engine: null, run: null, cur: 0, timer: null, items: [] };
+
+// ссылка на эксперимент: слова (или текст), seed, шаг и настройки, отличные от умолчаний, — в адресе страницы.
+// Прогон детерминирован, поэтому по ссылке у получателя ровно та же история и тот же шаг.
+const DEF = { temperature: 0.6, topK: 40, wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, loopPenalty: false, maxNew: 200 };
+const QK = { temperature: 't', topK: 'k', wbBase: 'wb', wbTau: 'tau', wbStart: 'cs', fsm: 'fsm', loopPenalty: 'rp', maxNew: 'n' };
+function readLink() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('seed')) return null;
+  for (const [key, short] of Object.entries(QK)) {
+    if (!q.has(short)) continue;
+    const v = q.get(short);
+    P[key] = typeof DEF[key] === 'boolean' ? v === '1' : Number(v);
+  }
+  P.seed = Math.max(1, Math.min(99999, Number(q.get('seed')) || 1));
+  if (q.get('mode') === 'lab' || q.get('mode') === 'guide') S.mode = q.get('mode');
+  if (q.has('p')) { $('mode').value = 'continue'; $('prompt').value = q.get('p'); $('words').hidden = true; $('prompt').hidden = false; }
+  else if (q.has('w')) $('words').value = q.get('w');
+  return { step: q.has('s') ? Number(q.get('s')) : -1 };
+}
+function writeLink() {
+  if (!S.run) return;
+  const q = new URLSearchParams();
+  if ($('mode').value === 'continue') q.set('p', $('prompt').value); else q.set('w', $('words').value.split(/[ ,]+/).filter(Boolean).join(','));
+  q.set('seed', P.seed);
+  for (const [key, short] of Object.entries(QK)) if (P[key] !== DEF[key]) q.set(short, typeof DEF[key] === 'boolean' ? (P[key] ? 1 : 0) : P[key]);
+  q.set('s', S.cur);
+  if (S.mode === 'lab') q.set('mode', 'lab');
+  history.replaceState(null, '', '?' + q.toString().replace(/%2C/g, ','));
+}
+try { S.mode = localStorage.getItem('mq.mode') || 'guide'; } catch { S.mode = 'guide'; }
+const LINK = readLink();
+
+// Гайд · Лаб: Гайд — главное простыми словами (простые логиты, одна карточка «что произошло», только сэмплинг,
+// 3D и веса attention), Лаб — весь редактор. Названия про вид, а не про человека.
+function setMode(m) {
+  S.mode = m;
+  document.body.dataset.mode = m;
+  setPair('mode-pair', m);
+  try { localStorage.setItem('mq.mode', m); } catch { /* без памяти — только на эту загрузку */ }
+  if (S.deck) { S.deck.show('order', m === 'lab'); S.deck.show('run', m === 'lab'); }
+  if (m === 'guide' && S.engine) {
+    if (S.view !== '3d') switchView('3d');
+    if (S.aview !== '3d') switchAttn('3d');
+    if (S.amode !== 'look') { S.amode = 'look'; S.attn.mode = 'look'; if (S.a3d) { S.a3d.mode = 'look'; S.a3d.ridges(); } setPair('amode-pair', 'look'); }
+  }
+  if (S.stage) S.stage.layout();
+  if (S.run) { setCur(S.cur); writeLink(); }
+  requestAnimationFrame(() => { if (S.a3d) S.a3d.resize(); if (S.strip) S.strip.draw(); });
+}
 // модели студии: пока одна; новые добавляются сюда и появляются в меню модели
 const MODELS = [{ id: 'micro-qwen3', file: 'model.bin', params: 1056656 }];
 const ICON_PLAY = '<svg viewBox="0 0 16 16"><path d="M5 3.1v9.8a.7.7 0 0 0 1.06.6l7.7-4.9a.7.7 0 0 0 0-1.2l-7.7-4.9A.7.7 0 0 0 5 3.1z"/></svg>';
@@ -68,7 +120,9 @@ async function boot() {
   });
   bindUI();
   S.booted = true;
-  if (S.pendingGen) generate();                // нажали «Сгенерировать», пока модель грузилась
+  offerTour();
+  if (LINK) generate({ atStep: LINK.step });      // открыли ссылку на эксперимент — показать ровно его
+  else if (S.pendingGen) generate();                // нажали «Сгенерировать», пока модель грузилась
 }
 
 // ---------------------------------------------------------------- панель настроек
@@ -76,13 +130,13 @@ function buildPane() {
   // настройки — три карточки картотеки; элементы в стиле панели камеры (controls.js)
   S.deck = new Deck($('side'));
   const L = (k) => t('set.' + k);
-  const fs = new Controls(S.deck.add('sampling', t('card.sampling')), P)
+  const fs = new Controls(S.deck.add('sampling', t('card.sampling')), P, live)
     .slider('temperature', L('temperature'), 0.05, 1.5, 0.05).slider('topK', L('topK'), 1, 64, 1)
-    .slider('seed', L('seed'), 1, 99999, 1).toggle('randomSeed', L('randomSeed')).toggle('loopPenalty', L('loopPenalty'));
-  const fo = new Controls(S.deck.add('order', t('card.order')), P)
+    .slider('seed', L('seed'), 1, 99999, 1).toggle('loopPenalty', L('loopPenalty'));
+  const fo = new Controls(S.deck.add('order', t('card.order')), P, live)
     .slider('wbBase', L('wbBase'), 0, 6, 0.25).slider('wbTau', L('wbTau'), 10, 400, 10)
     .slider('wbStart', L('wbStart'), 0, 1, 0.25).toggle('fsm', L('fsm'));
-  const fp = new Controls(S.deck.add('run', t('card.run')), P)
+  const fp = new Controls(S.deck.add('run', t('card.run')), P, live)
     .slider('maxNew', L('maxNew'), 20, 220, 10).slider('speed', L('speed'), 1, 120, 1)
     .toggle('autoplay', L('autoplay'));
   const panes = [fs, fo, fp];
@@ -90,13 +144,24 @@ function buildPane() {
 }
 
 // ---------------------------------------------------------------- генерация
-function generate() {
+// живые настройки: любое изменение, влияющее на текст, пересчитывает историю с тем же seed (~90 мс), без анимации,
+// на том же шаге — видно, что меняет именно эта настройка. Не чаще раза за кадр.
+const LIVE = new Set(['temperature', 'topK', 'seed', 'wbBase', 'wbTau', 'wbStart', 'fsm', 'loopPenalty', 'maxNew']);
+function live(key) {
+  if (!LIVE.has(key) || !S.run) return;
+  if (live.raf) return;
+  live.raf = requestAnimationFrame(() => { live.raf = 0; generate({ live: true }); });
+}
+
+// newSeed — «другая история»; live — пересчёт после изменения настройки (без анимации, на том же шаге)
+function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
   if (!S.engine) { S.pendingGen = true; return; }   // модель ещё грузится — запустим сразу после загрузки
+  const keepStep = isLive ? S.cur : -1;
   stop();
   const mode = $('mode').value;
   const words = mode === 'order' ? $('words').value.trim() : '';
   const prompt = mode === 'order' ? Engine.orderPrompt(words) : $('prompt').value;
-  if (P.randomSeed) { P.seed = 1 + Math.floor(Math.random() * 99999); S.pane.refresh(); }
+  if (newSeed) { P.seed = 1 + Math.floor(Math.random() * 99999); S.pane.refresh(); }
   S.engine.settings({ temperature: P.temperature, topK: P.topK, seed: P.seed, wbBase: P.wbBase, wbTau: P.wbTau,
     wbStart: P.wbStart, fsm: P.fsm, loopImm: P.loopPenalty ? 3 : 0, loopMult: P.loopPenalty ? 1 : 0, maxNew: P.maxNew });
   const t0 = performance.now();
@@ -111,11 +176,13 @@ function generate() {
   const ri = $('run-info');
   const rv = { at, np: S.run.nPrompt, ng: gen.length, ms: ms.toFixed(0), tps: Math.round(tps), seed: P.seed };
   ri.innerHTML = t('run.info', rv); ri.title = t('run.title', rv);
-  if (S.booted) { ri.classList.remove('fresh'); void ri.offsetWidth; ri.classList.add('fresh'); }   // не при загрузке
+  if (S.booted && !isLive) { ri.classList.remove('fresh'); void ri.offsetWidth; ri.classList.add('fresh'); }   // не при загрузке и не на живом пересчёте
   buildStory();
   const firstGen = Math.max(0, S.run.nPrompt - 1);
   $('t-range').max = S.run.steps.length - 1;
-  if (P.autoplay) { setCur(firstGen); play(); } else setCur(S.run.steps.length - 1);
+  if (atStep >= 0) setCur(Math.min(atStep, S.run.steps.length - 1));
+  else if (isLive) setCur(Math.min(Math.max(keepStep, firstGen), S.run.steps.length - 1));
+  else if (P.autoplay) { setCur(firstGen); play(); } else setCur(S.run.steps.length - 1);
 }
 
 // ---------------------------------------------------------------- история: токены, по которым можно ходить
@@ -144,6 +211,7 @@ function buildStory() {
 function setCur(i) {
   if (!S.run || !S.run.steps.length) return;
   S.cur = Math.max(0, Math.min(S.run.steps.length - 1, i));
+  clearTimeout(setCur.lt); setCur.lt = setTimeout(writeLink, 300);
   const step = S.run.steps[S.cur];
   for (const it of S.items) {
     it.el.classList.toggle('cur', it.step === S.cur);
@@ -160,6 +228,7 @@ function setCur(i) {
   $('t-label').textContent = step.kind === 'gen' ? t('t.label.gen', { step: S.cur + 1, total: S.run.steps.length, tok: step.genIndex + 1 })
     : t('t.label.prompt', { step: S.cur + 1, total: S.run.steps.length });
   S.strip.set(step, P.temperature > 0 ? S.run.settings.temperature : 1);
+  renderSimpleLogits(step);
   $('logits-sub').textContent = t('logits.sub.head', { step: S.cur + 1, tok: show(S.engine.tokenText[step.input]) }) +
     (step.forced >= 0 ? t('logits.sub.forced') : step.kind === 'prompt' ? t('logits.sub.prompt')
       : t('logits.sub.gen', { temp: S.run.settings.temperature, topk: S.run.settings.topK }));
@@ -200,7 +269,40 @@ function play() {
 function stop() { if (S.timer) clearInterval(S.timer); S.timer = null; $('t-play').innerHTML = ICON_PLAY; $('gen').classList.remove('busy'); genSpeed(); }
 
 // ---------------------------------------------------------------- инспектор шага
+// Гайд: «модель выбирала между» — пять кандидатов с процентами вместо полосы из 64 столбиков
+function renderSimpleLogits(s) {
+  const box = $('logits-simple'); if (S.mode !== 'guide') return;
+  const tt = S.engine.tokenText, top = s.topk.slice().sort((a, b) => b.p - a.p).slice(0, 5);
+  box.innerHTML = `<div class="ls-title"><span data-term="logits">${t('g.choose')}</span></div>` + top.map((c) => `<div class="ls-row${c.tok === s.output ? ' on' : ''}">` +
+    `<span class="tokpill">${esc(show(tt[c.tok]))}</span><span class="ls-bar"><i style="width:${(100 * c.p).toFixed(1)}%"></i></span>` +
+    `<span class="ls-p">${(100 * c.p).toFixed(0)}%</span></div>`).join('');
+}
+
+// Гайд: что произошло на шаге — простыми словами, с отраслевым термином там, где он нужен
+function guideCard(s) {
+  const tt = S.engine.tokenText, pill = (x) => `<span class="tokpill">${esc(show(tt[x]))}</span>`;
+  const top = s.topk.slice().sort((a, b) => b.p - a.p)[0];
+  let h = `<h4>${t('g.title')}</h4>`;
+  if (s.kind === 'prompt') return h + `<div class="note">${t('g.prompt', { out: pill(s.output) })}</div>`;
+  if (s.output <= 2) h += `<div class="note">${t('g.end')}</div>`;
+  else h += `<div class="note">${t('g.read', { in: pill(s.input), out: pill(s.output) })}</div>`;
+  if (s.forced >= 0) h += `<div class="note">${t('g.forced')}</div>`;
+  else if (top && top.tok === s.output) h += `<div class="note">${t('g.top')}</div>`;
+  else if (top) h += `<div class="note">${t('g.notTop', { top: pill(top.tok), t: S.run.settings.temperature })}</div>`;
+  const pushes = s.bias.filter((x) => x.val < 1e8);
+  if (pushes.length) h += `<div class="note">${t('g.boost', { list: pushes.map((x) => pill(x.tok) + ' +' + x.val.toFixed(1)).join(' ') })}</div>`;
+  const level = s.entropy < 1 ? 0 : s.entropy < 3 ? 1 : 2;
+  h += `<div class="note">${t('g.conf', { level, bits: s.entropy.toFixed(1) })}</div>`;
+  if (s.words.length) {
+    h += `<h4>${t('insp.words')}</h4><table class="words"><tr><th>${t('insp.word')}</th><th>${t('insp.state')}</th></tr>`;
+    for (const w of s.words) h += `<tr><td>${esc(w.text)}</td><td><span class="st st${w.state}">${t('word.state')[w.state]}</span></td></tr>`;
+    h += '</table>';
+  }
+  return h;
+}
+
 function renderInspector(s) {
+  if (S.mode === 'guide') { S.deck.sync(guideCard(s)); return; }
   const tt = S.engine.tokenText, pill = (t) => `<span class="tokpill">${esc(show(tt[t]))}</span>`;
   const chosen = s.topk.find((c) => c.tok === s.output);
   const how = t(s.kind === 'prompt' ? 'insp.how.prompt' : s.forced >= 0 ? 'insp.how.forced' : 'insp.how.sampled');
@@ -210,7 +312,7 @@ function renderInspector(s) {
     if (look && con) {
       const top = Array.from(look.keys()).sort((a, b) => (look[b] + con[b]) - (look[a] + con[a])).slice(0, 6);
       const who = sel.layer >= 0 ? t('insp.cmp.one', { head: sel.head + 1, layer: sel.layer + 1 }) : t('insp.cmp.all');
-      h += `<h4>${t('insp.cmp.head', { who })}</h4><table class="cmp"><tr><th>${t('insp.cmp.token')}</th><th class="bar-look">${t('insp.cmp.look')}</th><th class="bar-contrib">${t('insp.cmp.contrib')}</th></tr>` +
+      h += `<h4>${t('insp.cmp.head', { who })}</h4><table class="cmp"><tr><th>${t('insp.cmp.token')}</th><th class="bar-look"><span data-term="weights">${t('insp.cmp.look')}</span></th><th class="bar-contrib"><span data-term="valueWeighted">${t('insp.cmp.contrib')}</span></th></tr>` +
         top.map((t) => `<tr><td>${pill(S.run.steps[t].input)} <span style="color:var(--dim)">#${t}</span></td><td class="bar-look">${(100 * look[t]).toFixed(0)}%</td><td class="bar-contrib">${(100 * con[t]).toFixed(0)}%</td></tr>`).join('') +
         `</table><div class="note">${t('insp.cmp.note')}</div>`;
     }
@@ -219,9 +321,9 @@ function renderInspector(s) {
     <div>${t('insp.pos')}</div><div>${s.pos}</div>
     <div>${t('insp.in')}</div><div>${pill(s.input)}</div>
     <div>${t('insp.out')}</div><div>${pill(s.output)} <span style="color:var(--muted)">${how}</span></div>
-    <div>${t('insp.pout')}</div><div>${s.forced >= 0 ? t('insp.forced100') : chosen ? (100 * chosen.p).toFixed(1) + '%' : '—'}</div>
-    <div>${t('insp.entropy')}</div><div>${t('insp.bits', { x: s.entropy.toFixed(2) })}</div>
-    ${s.kind === 'gen' && s.forced < 0 ? `<div>${t('insp.draw')}</div><div>${t('insp.drawMass', { x: (100 * s.sampleR).toFixed(1) })}</div>` : ''}
+    <div><span data-term="pOut">${t('insp.pout')}</span></div><div>${s.forced >= 0 ? t('insp.forced100') : chosen ? (100 * chosen.p).toFixed(1) + '%' : '—'}</div>
+    <div><span data-term="entropy">${t('insp.entropy')}</span></div><div>${t('insp.bits', { x: s.entropy.toFixed(2) })}</div>
+    ${s.kind === 'gen' && s.forced < 0 ? `<div><span data-term="sampleDraw">${t('insp.draw')}</span></div><div>${t('insp.drawMass', { x: (100 * s.sampleR).toFixed(1) })}</div>` : ''}
   </div>`;
   if (s.words.length) {
     h += `<h4>${t('insp.words')}</h4><table class="words"><tr><th>${t('insp.word')}</th><th>${t('insp.state')}</th><th>${t('insp.pieces')}</th></tr>`;
@@ -376,6 +478,61 @@ $('story-text').innerHTML = `<div class="empty-hint">${t('empty.story')}</div>`;
 modelMenu();
 aboutMenu();
 langMenu();
+bindPair('mode-pair', setMode);
+glossary();
+
+// тур по Гайду: глубины 1–3. Перед шагом — нужная панель раскрыта и есть история на понятном шаге.
+function openFold(stageKey, deckKey) {
+  if (stageKey && S.stage.closed.delete(stageKey)) S.stage.layout();
+  if (deckKey && S.deck.closed.delete(deckKey)) S.deck.layout();
+}
+function runTour() {
+  try { localStorage.setItem('mq.tour.seen', '1'); } catch { /* без памяти — предложим снова */ }
+  $('tour-offer')?.remove();
+  if (S.mode !== 'guide') setMode('guide');
+  const ready = () => { if (!S.run) generate({ atStep: 40 }); else { stop(); if (S.cur < S.run.nPrompt) setCur(Math.min(S.run.nPrompt + 12, S.run.steps.length - 1)); } };
+  startTour([
+    { key: 'tour.what', anchor: '#gen', before: ready },
+    { key: 'tour.story', anchor: '#story', before: () => openFold('story') },
+    { key: 'tour.logits', anchor: '#logits', before: () => openFold('logits') },
+    { key: 'tour.temp', anchor: '#side .card', before: () => openFold(null, 'sampling') },
+    { key: 'tour.attn', anchor: '#view-attn' },
+    { key: 'tour.model', anchor: '#view-model' },
+  ], t);
+}
+function offerTour() {
+  let seen = false; try { seen = !!localStorage.getItem('mq.tour.seen'); } catch { /* нет памяти */ }
+  if (seen || S.mode !== 'guide' || LINK) return;           // по ссылке на эксперимент — не мешаем
+  const o = document.createElement('div'); o.id = 'tour-offer'; o.className = 'cc-mod tour-offer';
+  o.innerHTML = `<span>${t('tour.offer')}</span><button class="to-go">${t('tour.start')}</button><button class="to-no">${t('tour.later')}</button>`;
+  o.querySelector('.to-go').onclick = runTour;
+  o.querySelector('.to-no').onclick = () => { try { localStorage.setItem('mq.tour.seen', '1'); } catch { /* — */ } o.remove(); };
+  document.body.appendChild(o);
+}
+
+// глоссарий: у терминов пунктирное подчёркивание, при наведении — стеклянная подсказка в одно предложение
+function glossary() {
+  const tip = document.createElement('div'); tip.className = 'gloss-tip'; tip.hidden = true; document.body.appendChild(tip);
+  let timer = 0, cur = null;
+  const hide = () => { clearTimeout(timer); tip.hidden = true; cur = null; };
+  document.addEventListener('pointerover', (e) => {
+    const el = e.target.closest('[data-term]');
+    if (el === cur) return;
+    hide(); if (!el) return;
+    const key = 'gl.' + el.dataset.term, text = t(key);
+    if (text === key) return;                       // термина нет в словаре — без подсказки
+    cur = el;
+    timer = setTimeout(() => {
+      tip.textContent = text; tip.hidden = false;
+      const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+      const x = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+      const y = r.bottom + 8 + h < innerHeight ? r.bottom + 8 : r.top - h - 8;
+      tip.style.left = x + 'px'; tip.style.top = y + 'px';
+    }, 250);
+  });
+  document.addEventListener('pointerdown', hide); addEventListener('scroll', hide, true);
+}
+setMode(S.mode);
 // огоньки «Generate»: скорость меняется плавно, без перезапуска анимации (иначе угол прыгает)
 function genSpeed() {
   const g = $('gen'), a = g.getAnimations().find((x) => x.animationName === 'gen-orbit');
@@ -392,7 +549,14 @@ function genSpeed() {
 }
 $('gen').addEventListener('pointerenter', genSpeed);
 $('gen').addEventListener('pointerleave', genSpeed);
-$('gen').addEventListener('click', generate);
+$('gen').addEventListener('click', () => generate());
+$('reroll').addEventListener('click', () => generate({ newSeed: true }));
+$('copy-link').addEventListener('click', async () => {
+  writeLink();
+  try { await navigator.clipboard.writeText(location.href); } catch { /* без доступа к буферу — адрес всё равно в строке браузера */ }
+  const b = $('copy-link'); b.classList.add('done'); b.title = t('link.copied');
+  setTimeout(() => { b.classList.remove('done'); b.title = t('link.copy'); }, 1600);
+});
 $('words').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
 $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
 
@@ -446,7 +610,10 @@ function aboutMenu() {
     `<div class="cc-mod info-card"><p>${t('about.model')}</p></div>` +
     `<div class="cc-mod info-card"><div class="ic-title">${t('about.links')}</div><div class="ab-links">${links}</div></div>` +
     `<div class="cc-mod info-card ab-foot"><span>${t('about.by')}</span><span>${t('about.free')}</span></div>`;
-  popover(btn, pop);
+  const tb = document.createElement('button'); tb.className = 'cc-mod lang-item about-tour'; tb.textContent = t('tour.start');
+  pop.appendChild(tb);
+  const m = popover(btn, pop);
+  tb.addEventListener('click', () => { m.open(false); runTour(); });
 }
 
 boot();

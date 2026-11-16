@@ -9,7 +9,7 @@ export class Controls {
     const dec = (String(step).split('.')[1] || '').length;          // знаков после точки — как у шага (0.25 → 2)
     const fmt = (v) => Number(v).toFixed(dec);
     const el = document.createElement('div'); el.className = 'ctl ctl-slider';
-    el.innerHTML = `<div class="ctl-h"><span class="ctl-l">${label}</span><input class="ctl-v" inputmode="decimal" spellcheck="false"></div>` +
+    el.innerHTML = `<div class="ctl-h"><span class="ctl-l" data-term="${key}">${label}</span><input class="ctl-v" inputmode="decimal" spellcheck="false"></div>` +
       `<div class="cc-track"><input type="range" min="${min}" max="${max}" step="${step}"></div>`;
     const rng = el.querySelector('input[type=range]'), val = el.querySelector('.ctl-v');
     const paint = () => rng.style.setProperty('--f', (rng.value - min) / (max - min));
@@ -30,7 +30,7 @@ export class Controls {
 
   toggle(key, label) {
     const el = document.createElement('label'); el.className = 'ctl ctl-toggle';
-    el.innerHTML = `<span class="ctl-l">${label}</span><input type="checkbox" class="ctl-sw">`;
+    el.innerHTML = `<span class="ctl-l" data-term="${key}">${label}</span><input type="checkbox" class="ctl-sw">`;
     const cb = el.querySelector('input');
     const sync = () => { cb.checked = !!this.obj[key]; };
     cb.addEventListener('change', () => { this.obj[key] = cb.checked; this.onChange?.(key); });

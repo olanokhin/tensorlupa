@@ -915,3 +915,84 @@ a.ab-link:hover { background: rgba(255, 255, 255, 0.16); }
 .ab-foot { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px !important; font-size: 12px; color: var(--ink-3); }
 /* тихая подпись на 3D-сцене — видна на каждом скриншоте, но не мешает */
 .sig { position: absolute; left: 12px; bottom: 6px; z-index: 5; pointer-events: none; font: 11px var(--ui); color: var(--ink-3); opacity: 0.55; letter-spacing: 0.01em; }
+/* «другая история» — круглая стеклянная кнопка рядом с Generate */
+.order .reroll { width: var(--ctl-h) !important; height: var(--ctl-h) !important; flex: none; opacity: 0.85; }
+.order .reroll:hover { opacity: 1; }
+.order .reroll svg { width: 17px; height: 17px; }
+.order .reroll:active svg { transform: rotate(90deg); transition: transform 200ms; }
+/* «скопировать ссылку на эксперимент» — рядом с квитанцией в плеере */
+.copy-link { flex: none; width: 30px !important; height: 30px !important; padding: 0 !important; margin-left: 6px; border-radius: 50% !important; color: var(--ink-2) !important; }
+.copy-link svg { width: 15px; height: 15px; }
+.copy-link.done { color: #fff !important; background: rgba(236, 238, 242, 0.25) !important; }
+
+/* ======================= Гайд · Лаб ======================= */
+.mode-pair { margin: 0 4px 0 0; }
+/* Гайд: без лабораторных деталей */
+body[data-mode="guide"] #growth-canvas,
+body[data-mode="guide"] #view-pair,
+body[data-mode="guide"] #aview-pair,
+body[data-mode="guide"] #amode-pair,
+body[data-mode="guide"] #logits-canvas,
+body[data-mode="guide"] #tip,
+body[data-mode="guide"] .run-info,
+body[data-mode="guide"] .sig,
+body[data-mode="guide"] #logits-sub { display: none !important; }
+body[data-mode="lab"] #logits-simple { display: none; }
+/* «модель выбирала между» — пять строк: токен, полоса, процент */
+.logits-simple { position: absolute; inset: 0; padding: 6px var(--s3) 0; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.ls-title { font: 500 12px var(--ui); color: var(--ink-3); margin-bottom: 2px; }
+.ls-row { display: grid; grid-template-columns: minmax(90px, 160px) 1fr 44px; align-items: center; gap: 10px; height: 22px; font: 12px var(--mono); color: var(--ink-2); }
+.ls-row .tokpill { justify-self: start; }
+.ls-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.ls-bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, rgba(242, 179, 61, 0.35), rgba(242, 179, 61, 0.75)); }
+.ls-p { text-align: right; color: var(--ink-2); }
+.ls-row.on { color: var(--ink-1); }
+.ls-row.on .ls-bar i { background: linear-gradient(90deg, #f2b33d, #ffd98a); box-shadow: 0 0 8px rgba(242, 179, 61, 0.5); }
+.ls-row.on .ls-p { color: #ffd98a; }
+.logits-simple .ls-row, .logits-simple .ls-title { max-width: 620px; }
+.logits-simple .ls-row { grid-template-columns: 150px 1fr 48px; }
+.logits-simple .tokpill { padding: 1px 6px; border-radius: var(--r-chip); background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); }
+.logits-simple .ls-row.on .tokpill { background: rgba(242, 179, 61, 0.22); color: #ffe6b0; }
+
+/* глоссарий: термин — тонкое пунктирное подчёркивание; подсказка — стеклянная карточка */
+[data-term] { text-decoration: underline dotted rgba(236, 238, 242, 0.32); text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: help; }
+select[data-term], .pair-o[data-term] { cursor: pointer; }
+.gloss-tip {
+  position: fixed; z-index: 200; max-width: 300px; padding: 10px 12px; border-radius: var(--r-control); pointer-events: none;
+  font: 12.5px/18px var(--ui); color: var(--ink-1);
+  background: rgba(30, 32, 38, 0.72); -webkit-backdrop-filter: blur(16px) saturate(170%); backdrop-filter: blur(16px) saturate(170%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+  animation: cc-drop 160ms ease-out;
+}
+.gloss-tip[hidden] { display: none; }
+
+/* ======================= тур ======================= */
+.tour-shade { position: fixed; z-index: 150; border-radius: var(--r-surface); pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(8, 9, 12, 0.62), 0 0 0 1.5px rgba(255, 255, 255, 0.35); transition: all 320ms cubic-bezier(.2, .8, .2, 1); }
+.tour-card { position: fixed !important; z-index: 160; width: 340px; padding: 14px 16px 12px !important; border-radius: var(--r-surface) !important; animation: cc-drop 220ms ease-out; }
+.tc-n { font: 11px var(--ui); color: var(--ink-3); margin-bottom: 4px; }
+.tc-title { font: 650 15px var(--ui); color: var(--ink-1); margin-bottom: 6px; }
+.tour-card p { margin: 0 0 12px; font: 13px/19px var(--ui); color: var(--ink-2); }
+.tc-btns { display: flex; align-items: center; gap: 8px; }
+.tc-sp { flex: 1; }
+.tc-btns button { height: 30px !important; padding: 0 14px !important; font: 600 12.5px var(--ui) !important; }
+.tc-skip { background: none !important; box-shadow: none !important; color: var(--ink-3) !important; padding: 0 4px !important; }
+.tc-skip::before { display: none !important; }
+.tc-next { background: rgba(236, 238, 242, 0.9) !important; color: #1c1d22 !important; }
+.tc-next::before { display: none !important; }
+/* предложение тура при первом визите */
+.tour-offer { position: fixed !important; z-index: 90; left: 50%; bottom: 84px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px 10px 16px !important; border-radius: var(--r-surface) !important; font: 13px var(--ui); color: var(--ink-1); animation: cc-drop 260ms ease-out; }
+.tour-offer button { height: 30px !important; padding: 0 14px !important; font: 600 12.5px var(--ui) !important; }
+.tour-offer .to-go { background: rgba(236, 238, 242, 0.9) !important; color: #1c1d22 !important; }
+.tour-offer .to-go::before { display: none !important; }
+.tour-offer .to-no { background: none !important; box-shadow: none !important; color: var(--ink-3) !important; }
+.tour-offer .to-no::before { display: none !important; }
+/* предложение тура центрировано сдвигом — своя анимация, иначе на время появления сдвиг пропадает */
+.tour-offer { animation: offer-in 260ms ease-out !important; }
+@keyframes offer-in { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%); } }
+/* центрирование без transform: эффект нажатия стеклянных модулей (:active → scale) перезаписывал сдвиг,
+   и карточка прыгала под курсором — щелчок по кнопке терялся */
+.tour-offer { left: 0 !important; right: 0 !important; margin: 0 auto; width: max-content; transform: none !important; animation: offer-in2 260ms ease-out !important; }
+.tour-offer:active { transform: none !important; }
+@keyframes offer-in2 { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
