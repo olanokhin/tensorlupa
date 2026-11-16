@@ -1,0 +1,6 @@
+# в превью — только то, что нужно странице
+engine/test_*.mjs
+*.md
+.DS_Store
+.env*
+.vercel

@@ -194,6 +194,6 @@
   'about.links': 'Links',
   'about.soon': 'soon',
   'about.site': 'Author’s site',
-  'about.free': 'Free to use.',
+  'about.free': 'Free and open source · Apache 2.0',
   'about.by': 'Made by Alex Anokhin',
 };
