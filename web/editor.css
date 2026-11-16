@@ -1038,3 +1038,12 @@ body[data-mode="guide"] .status { display: none !important; }
 @media (max-width: 1500px) { .brand-by { display: none; } }
 /* подсказка под полем слов: пусто, больше трёх, не английские */
 .words-hint { position: fixed; z-index: 120; max-width: 360px; padding: 8px 12px !important; font: 500 12px/1.4 var(--ui); color: var(--ink-1); pointer-events: none; }
+/* проверенные заказы под полем слов */
+.words-picks { position: fixed; z-index: 120; padding: 6px !important; display: flex; flex-direction: column; gap: 2px; }
+.words-picks[hidden] { display: none !important; }
+.wp-title { font: 500 11.5px var(--ui); color: var(--ink-3); padding: 4px 8px 6px; }
+.wp-row { all: unset; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 6px 8px; border-radius: var(--r-chip); cursor: pointer;
+  font: 500 13px var(--mono, ui-monospace, monospace); color: var(--ink-1); }
+.wp-row small { font: 400 11px var(--ui); color: var(--ink-3); }
+.wp-row:hover, .wp-row:focus-visible { background: rgba(255, 255, 255, 0.1); }
+.wp-row[hidden] { display: none !important; }

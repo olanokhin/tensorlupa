@@ -6,6 +6,8 @@
   'mode.order': 'Instruct',
   'mode.continue': 'Completion',
   'words.ph': 'up to three words: a verb, a noun, an adjective',
+  'prompt.empty': 'Type the beginning of a story — for example: Once upon a time, a little dog',
+  'picks.title': 'Tried and tested — click to write',
   'words.empty': 'Type one to three English words — for example: dragon, cookie, school',
   'words.extra': 'The model takes up to three words — using the first three',
   'words.foreign': 'Only English words (a–z) — the model learned on English stories; other words are skipped',
@@ -61,7 +63,7 @@
   // settings
   'card.sampling': 'Sampling',
   'card.order': 'Constraints',
-  'card.run': 'Run',
+  'card.run': 'Playback',
   'set.temperature': 'temperature',
   'set.topK': 'top-k',
   'set.seed': 'seed',
@@ -71,7 +73,7 @@
   'set.fsm': 'constrained decoding (FSM)',
   'set.loopPenalty': 'repetition penalty',
   'set.maxNew': 'max new tokens',
-  'set.speed': 'playback speed, tok/s',
+  'set.speed': 'speed, tok/s',
   'set.autoplay': 'play token by token',
 
   // camera popover

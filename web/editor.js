@@ -62,7 +62,7 @@ function setMode(m, persist = true) {
   document.body.dataset.mode = m;
   setPair('mode-pair', m);
   if (persist) try { localStorage.setItem('mq.mode', m); } catch { /* без памяти — только на эту загрузку */ }
-  if (S.deck) { S.deck.show('order', m === 'lab'); S.deck.show('run', m === 'lab'); }
+  if (S.deck) { S.deck.show('order', m === 'lab'); }
   if (m === 'guide' && S.engine) {
     if (S.view !== '3d') switchView('3d');
     if (S.aview !== '3d') switchAttn('3d');
@@ -129,17 +129,19 @@ async function boot() {
 
 // ---------------------------------------------------------------- панель настроек
 function buildPane() {
-  // настройки — три карточки картотеки; элементы в стиле панели камеры (controls.js)
+  // настройки — три карточки картотеки; элементы в стиле панели камеры (controls.js).
+  // Всё, что меняет сам вывод модели, — в «Сэмплинге» и «Ограничениях»; «Воспроизведение» только показывает готовый
+  // прогон (скорость, по токену) и есть в обоих режимах.
   S.deck = new Deck($('side'));
   const L = (k) => t('set.' + k);
   const fs = new Controls(S.deck.add('sampling', t('card.sampling')), P, live)
     .slider('temperature', L('temperature'), 0.05, 1.5, 0.05).slider('topK', L('topK'), 1, 64, 1)
-    .slider('seed', L('seed'), 1, 99999, 1).toggle('loopPenalty', L('loopPenalty'));
+    .slider('seed', L('seed'), 1, 99999, 1).slider('maxNew', L('maxNew'), 20, 220, 10).toggle('loopPenalty', L('loopPenalty'));
   const fo = new Controls(S.deck.add('order', t('card.order')), P, live)
     .slider('wbBase', L('wbBase'), 0, 6, 0.25).slider('wbTau', L('wbTau'), 10, 400, 10)
     .slider('wbStart', L('wbStart'), 0, 1, 0.25).toggle('fsm', L('fsm'));
   const fp = new Controls(S.deck.add('run', t('card.run')), P, live)
-    .slider('maxNew', L('maxNew'), 20, 220, 10).slider('speed', L('speed'), 1, 120, 1)
+    .slider('speed', L('speed'), 1, 120, 1)
     .toggle('autoplay', L('autoplay'));
   const panes = [fs, fo, fp];
   S.pane = { refresh: () => panes.forEach((x) => x.refresh()) };
@@ -164,14 +166,49 @@ function parseWords(raw) {
   const ok = all.filter((w) => WORD_RE.test(w)).map((w) => w.toLowerCase());
   return { words: ok.slice(0, 3), foreign: ok.length < all.length, extra: ok.length > 3 };
 }
-function wordsHint(key) {
+function wordsHint(key, field = 'words') {
   let h = document.getElementById('words-hint');
   if (!key) { h?.remove(); return; }
   if (!h) { h = document.createElement('div'); h.id = 'words-hint'; h.className = 'cc-mod words-hint'; document.body.appendChild(h); }
   h.textContent = t(key);
-  const r = $('words').getBoundingClientRect();
+  const r = $(field).getBoundingClientRect();
   h.style.left = r.left + 'px'; h.style.top = (r.bottom + 8) + 'px';
   clearTimeout(wordsHint.tm); wordsHint.tm = setTimeout(() => h.remove(), 5000);
+}
+
+// Проверенные заказы: слова + seed, отобранные перебором 600 seed на комбинацию и чтением историй
+// (все слова на месте, история закончилась сама, мало повторов). Клик — вписать и сгенерировать.
+const PICKS = [
+  ['dragon, cookie, school', 2779], ['share, toy, kind', 147], ['find, treasure, brave', 319],
+  ['run, dog, fast', 231], ['fly, kite, red', 326], ['play, ball, happy', 273], ['robot, moon', 552],
+];
+function picksMenu() {
+  const w = $('words'), box = document.createElement('div');
+  box.className = 'cc-mod words-picks'; box.hidden = true;
+  box.innerHTML = `<div class="wp-title">${t('picks.title')}</div>` +
+    PICKS.map(([ws, seed], i) => `<button class="wp-row" data-i="${i}"><span>${ws}</span><small>seed ${seed}</small></button>`).join('');
+  document.body.appendChild(box);
+  const place = () => { const r = w.getBoundingClientRect(); box.style.left = r.left + 'px'; box.style.top = (r.bottom + 8) + 'px'; box.style.minWidth = Math.max(260, r.width) + 'px'; };
+  // при фокусе — весь список; при наборе — строки, где есть все набранные слова; пустое поле — снова весь список
+  const filter = (byText) => {
+    const q = byText ? w.value.toLowerCase().split(/[ ,]+/).filter(Boolean) : [];
+    const all = !q.length;
+    let n = 0;
+    box.querySelectorAll('.wp-row').forEach((b) => { const ws = PICKS[Number(b.dataset.i)][0]; const on = all || q.every((x) => ws.includes(x)); b.hidden = !on; n += on; });
+    return n;
+  };
+  const show = (on, byText = false) => { if (on && filter(byText)) { wordsHint(null); place(); box.hidden = false; } else box.hidden = true; };
+  w.addEventListener('focus', () => show(true));
+  w.addEventListener('blur', () => show(false));
+  w.addEventListener('input', () => show(true, true));
+  w.addEventListener('keydown', (e) => { if (e.key === 'Escape' || e.key === 'Enter') show(false); });
+  box.addEventListener('mousedown', (e) => e.preventDefault());   // клик по списку не уводит фокус раньше времени
+  box.addEventListener('click', (e) => {
+    const b = e.target.closest('.wp-row'); if (!b) return;
+    const [ws, seed] = PICKS[Number(b.dataset.i)];
+    w.value = ws; P.seed = seed; S.pane.refresh(); w.blur(); generate();
+  });
+  addEventListener('resize', () => { if (!box.hidden) place(); });
 }
 
 // newSeed — «другая история»; live — пересчёт после изменения настройки (без анимации, на том же шаге)
@@ -186,7 +223,8 @@ function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
     if (!pw.words.length) { wordsHint(pw.foreign ? 'words.foreign' : 'words.empty'); return; }   // пустой заказ не запускаем
     wordsHint(pw.foreign ? 'words.foreign' : pw.extra ? 'words.extra' : null);
     words = pw.words.join(', ');
-  }
+  } else if (!$('prompt').value.trim()) { wordsHint('prompt.empty', 'prompt'); return; }   // пустое начало — нечего продолжать
+  else wordsHint(null);
   const prompt = mode === 'order' ? Engine.orderPrompt(words) : $('prompt').value;
   if (newSeed) { P.seed = 1 + Math.floor(Math.random() * 99999); S.pane.refresh(); }
   S.engine.settings({ temperature: P.temperature, topK: P.topK, seed: P.seed, wbBase: P.wbBase, wbTau: P.wbTau,
@@ -609,6 +647,8 @@ $('copy-link').addEventListener('click', async () => {
 });
 $('words').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
 $('words').addEventListener('input', () => wordsHint(null));
+$('prompt').addEventListener('input', () => wordsHint(null));
+picksMenu();
 $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
 
 

@@ -4,6 +4,8 @@
   'mode.title': 'Режим',
   'mode.order': 'Instruct',
   'mode.continue': 'Completion',
+  'prompt.empty': 'Впишите начало истории по-английски — например: Once upon a time, a little dog',
+  'picks.title': 'Проверенные — нажмите, чтобы написать',
   'words.empty': 'Впишите от одного до трёх английских слов — например: dragon, cookie, school',
   'words.extra': 'Модель берёт до трёх слов — используются первые три',
   'words.foreign': 'Только английские слова (a–z) — модель училась на английских историях; остальные пропущены',
@@ -55,7 +57,7 @@
 
   'card.sampling': 'Сэмплинг',
   'card.order': 'Ограничения',
-  'card.run': 'Прогон',
+  'card.run': 'Воспроизведение',
   'set.temperature': 'температура',
   'set.topK': 'top-k',
   'set.seed': 'seed',
@@ -65,7 +67,7 @@
   'set.fsm': 'constrained decoding (FSM)',
   'set.loopPenalty': 'штраф за повторы',
   'set.maxNew': 'макс. новых токенов',
-  'set.speed': 'скорость показа, ток/с',
+  'set.speed': 'скорость, ток/с',
   'set.autoplay': 'показывать по токену',
 
   'nav.title': 'камера и вид',
