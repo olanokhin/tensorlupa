@@ -23,4 +23,5 @@ The engine sources in `engine/microqwen.{c,h}` are a copy from micro-qwen3; refr
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). TensorLupa by Alex Anokhin.
+Apache 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). TensorLupa by Alex Anokhin —
+[LinkedIn](https://www.linkedin.com/in/olanokhin/) · [Hugging Face](https://huggingface.co/olanokhin) · [olanokhin.com](https://olanokhin.com).

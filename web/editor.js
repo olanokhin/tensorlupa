@@ -689,10 +689,10 @@ function aboutMenu() {
   const INFO = '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 9v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="10" cy="6.3" r="1" fill="currentColor"/></svg>';
   const btn = navBtn('about', INFO, t('about.title')), pop = document.createElement('div');
   pop.className = 'lang-pop about-pop';
-  // ссылки: пока нет адреса — пункт «скоро» (адреса появятся здесь, одной строкой)
+  // ссылки: только рабочие адреса — пунктов «скоро» нет (новый адрес — одна строка здесь)
   const LINKS = [
-    { name: 'GitHub', url: '' }, { name: 'Hugging Face', url: '' }, { name: 'Zenodo', url: '' },
-    { name: 'LinkedIn', url: '' }, { name: t('about.site'), url: 'https://olanokhin.com' },
+    { name: 'GitHub', url: 'https://github.com/olanokhin/tensorlupa' }, { name: 'Hugging Face', url: 'https://huggingface.co/olanokhin' },
+    { name: 'LinkedIn', url: 'https://www.linkedin.com/in/olanokhin/' }, { name: t('about.site'), url: 'https://olanokhin.com' },
   ];
   const links = LINKS.map((l) => l.url
     ? `<a class="ab-link" href="${l.url}" target="_blank" rel="noopener">${l.name}</a>`
