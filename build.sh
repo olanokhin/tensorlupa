@@ -4,7 +4,7 @@
 #   sh build.sh check      — собрать и проверить (нужен node)
 set -e
 cd "$(dirname "$0")"
-MODEL=models/micro-qwen3.bin
+MODEL=web/model.bin
 SRC="engine/viz.c engine/microqwen.c"
 FUNCS=$(grep -oE "^[a-z].* \*?(viz_[a-z_]+)\(" engine/viz.h | grep -oE "viz_[a-z_]+" | sed "s/.*/'_&'/" | paste -sd, -)
 
@@ -12,9 +12,8 @@ emcc -O2 -std=c11 -DMQ_TRACE $SRC -o web/engine/mqviz.js \
   -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME=createMQViz -s ALLOW_MEMORY_GROWTH=1 -s ENVIRONMENT=web,node \
   -s "EXPORTED_FUNCTIONS=[$FUNCS,'_malloc','_free']" \
   -s "EXPORTED_RUNTIME_METHODS=['cwrap','HEAPU8','HEAP32','HEAPF32','UTF8ToString']"
-cc -O2 -Wall -Wextra -std=c11 -DMQ_TRACE -o engine/cli engine/cli.c $SRC -lm
-cp "$MODEL" web/model.bin
-echo "собрано: web/engine/mqviz.{js,wasm}, engine/cli, web/model.bin"
+cc -O2 -ffp-contract=off -Wall -Wextra -std=c11 -DMQ_TRACE -o engine/cli engine/cli.c $SRC -lm
+echo "собрано: web/engine/mqviz.{js,wasm}, engine/cli"
 
 if [ "$1" = check ]; then
   engine/cli "$MODEL" | tail -1
@@ -22,7 +21,8 @@ if [ "$1" = check ]; then
   for o in "play luxury shiny:1" "swim octopus funny:2" "moon:1"; do
     w=${o%:*}; seed=${o##*:}
     engine/cli "$MODEL" --dump "$w" "$seed" "$T" > /dev/null
-    printf '[%s, %s] ' "$w" "$seed"; node web/engine/test_replay.mjs "$MODEL" "$w" "$T"
+    printf '[%s, %s] ' "$w" "$seed"; node web/engine/test_replay.mjs "$MODEL" "$w" "$T" || FAIL=1
   done
   rm -f "$T"
+  [ -z "$FAIL" ] || { echo "проверка не прошла"; exit 1; }
 fi

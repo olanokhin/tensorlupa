@@ -27,3 +27,5 @@ for (let r; (r = e.step()) && s < n; s++) {
 }
 console.log(`${s} шагов из ${n}: макс. |разница логитов| ${maxAbs.toExponential(2)} (логиты до ${maxLogit.toFixed(1)}), ` +
   `лидер совпал на ${argmaxSame}/${s} шагах, заданный текст пройден: ${outSame}/${nt}`);
+// порог: браузер и нативная сборка — один код без FMA, расхождение логитов должно быть на уровне округления
+if (maxAbs > 1e-3 || argmaxSame !== s || outSame !== nt) { console.log('РАСХОЖДЕНИЕ'); process.exit(1); }

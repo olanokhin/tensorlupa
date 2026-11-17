@@ -2,4 +2,3 @@ engine/cli
 .DS_Store
 .vercel
 .env*
-web/model.bin

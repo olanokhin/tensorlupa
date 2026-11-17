@@ -1,6 +1,6 @@
 # micro-qwen3
 
-`micro-qwen3.bin` — the model built into TensorLupa (664 KB).
+`web/model.bin` — the model built into TensorLupa (676,934 bytes, 0.68 MB).
 
 - Architecture: Qwen3 (RoPE, grouped-query attention with 4 query / 2 key-value heads, QK-norm, SwiGLU),
   3 layers × 112 dimensions, 4096-token vocabulary, 1,056,656 parameters.
