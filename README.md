@@ -44,7 +44,7 @@ are small enough to see all at once.
 ## Run locally
 
 ```bash
-python3 serve.py     # http://127.0.0.1:8765 — the repository is ready to serve as is
+python3 serve.py     # http://127.0.0.1:8765 (landing), /studio (the studio) — ready to serve as is
 ```
 
 To rebuild the engine after changing the C code (needs Emscripten and node):

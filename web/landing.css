@@ -1,0 +1,145 @@
+/* Главная TensorLupa — та же визуальная система, что у студии: тёмный фон, стекло, моноширинный шрифт для токенов,
+   янтарный — выбранный токен, лиловый — вторичный. Смелость потрачена в одном месте: живая трасса на первом экране. */
+:root {
+  --bg: #16181c;
+  --ink-1: #eceef2;
+  --ink-2: rgba(236, 238, 242, 0.68);
+  --ink-3: rgba(236, 238, 242, 0.42);
+  --amber: #f2b33d;
+  --lilac: #a98cf0;
+  --glass: rgba(255, 255, 255, 0.055);
+  --rim: rgba(255, 255, 255, 0.12);
+  --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r-surface: 16px; --r-control: 10px; --r-chip: 6px;
+  --wrap: 1120px;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); color: var(--ink-1); -webkit-text-size-adjust: 100%; }
+body { margin: 0; font: 17px/1.55 var(--ui); background:
+  radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1.2px) 0 0 / 22px 22px fixed, var(--bg); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+h1, h2, h3 { margin: 0; font-weight: 650; letter-spacing: -0.015em; }
+p { margin: 0; }
+
+/* ---------------------------------------------------------------- шапка */
+.bar { max-width: var(--wrap); margin: 0 auto; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; }
+.logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 650; font-size: 16px; }
+.logo-mark { width: 18px; height: 18px; border-radius: 5px; background: var(--amber); position: relative; }
+.logo-mark::after { content: ""; position: absolute; inset: 5px; border-radius: 2px; background: var(--lilac); }
+.bar-links { display: flex; align-items: center; gap: 18px; font-size: 14px; }
+.bar-links a { color: var(--ink-2); text-decoration: none; }
+.bar-links a:hover { color: var(--ink-1); }
+.lang-btn { font: inherit; font-size: 14px; color: var(--ink-2); background: none; border: 0; padding: 4px 0; cursor: pointer; }
+.lang-btn:hover { color: var(--ink-1); }
+
+main { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+section { padding: 56px 0; }
+
+/* ---------------------------------------------------------------- первый экран */
+.hero { display: grid; grid-template-columns: 5fr 6fr; gap: 56px; align-items: center; padding-top: 40px; }
+h1 { font-size: clamp(40px, 5.2vw, 64px); line-height: 1.04; letter-spacing: -0.03em; max-width: 11ch; }
+.lede { margin-top: 22px; font-size: 19px; color: var(--ink-2); max-width: 34em; }
+.cta { margin-top: 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; }
+.cta-note { font-size: 14px; color: var(--ink-3); max-width: 24em; }
+.btn-open { display: inline-flex; align-items: center; justify-content: center; height: 46px; padding: 0 24px; border-radius: 12px; border: 0;
+  font: 600 16px var(--ui); color: #1b1c20; background: var(--ink-1); text-decoration: none; cursor: pointer;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), inset 0 -1px 0 rgba(0, 0, 0, 0.15); transition: background 0.15s; }
+.btn-open:hover { background: #fff; }
+.btn-ghost { display: inline-flex; align-items: center; height: 46px; padding: 0 18px; border-radius: 12px; font: 600 15px var(--ui); color: var(--ink-1);
+  background: var(--glass); border: 0; box-shadow: inset 0 0 0 1px var(--rim); cursor: pointer; }
+.btn-small { height: 40px; font-size: 14px; padding: 0 16px; }
+.phone { display: none; }
+
+/* трасса: стеклянная панель, как в студии */
+.trace { margin: 0; padding: 22px 24px 20px; border-radius: var(--r-surface); background: var(--glass);
+  -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: inset 0 0 0 1px var(--rim), 0 24px 60px rgba(0, 0, 0, 0.35); }
+.trace figcaption { font-size: 13px; color: var(--ink-3); }
+.trace-text { margin-top: 12px; min-height: 7.2em; font: 18px/1.8 var(--mono); white-space: pre-wrap; word-break: break-word; }
+.tok { border-radius: 4px; transition: background 0.12s; }
+.done .tok { cursor: pointer; }
+.done .tok:hover { background: rgba(255, 255, 255, 0.08); }
+.tok.on { background: rgba(242, 179, 61, 0.9); color: #1c1d22; }
+.caret { display: inline-block; width: 0.55em; height: 1.1em; margin-left: 1px; vertical-align: -0.18em; background: var(--amber); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.trace-chose { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.tc-label { font-size: 13px; color: var(--ink-3); margin-bottom: 8px; }
+.tc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tc-list li { display: grid; grid-template-columns: minmax(84px, 9em) 1fr 3.2em; align-items: center; gap: 12px; }
+.tc-list code { font: 14px var(--mono); color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tc-list .picked code { color: var(--amber); }
+.tc-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.tc-bar i { display: block; height: 100%; border-radius: 3px; background: rgba(169, 140, 240, 0.75); transition: width 0.15s; }
+.picked .tc-bar i { background: var(--amber); }
+.tc-list .p { font: 13px var(--mono); color: var(--ink-2); text-align: right; }
+.trace-hint { margin-top: 14px; font-size: 13px; color: var(--ink-3); }
+
+/* ---------------------------------------------------------------- видео студии */
+.film video { display: block; width: 100%; aspect-ratio: 1280 / 800; border-radius: var(--r-surface); background: #0f1013;
+  box-shadow: inset 0 0 0 1px var(--rim), 0 30px 80px rgba(0, 0, 0, 0.45); }
+.film-cap { margin-top: 14px; font-size: 15px; color: var(--ink-3); max-width: 60em; }
+
+/* ---------------------------------------------------------------- что можно увидеть */
+h2 { font-size: clamp(26px, 3vw, 34px); line-height: 1.15; }
+.see-grid { margin-top: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+h3 { font-size: 18px; margin-bottom: 8px; }
+.see-grid p, .chain-steps p { color: var(--ink-2); font-size: 16px; }
+
+/* ---------------------------------------------------------------- цепочка: настоящая последовательность, поэтому — путь */
+.chain-lede { margin-top: 12px; color: var(--ink-2); max-width: 40em; }
+.chain-steps { list-style: none; margin: 36px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; position: relative; }
+.chain-steps::before { content: ""; position: absolute; left: 6px; right: 6px; top: 6px; height: 1px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.18), rgba(242, 179, 61, 0.6)); }
+.chain-steps li { position: relative; padding-top: 28px; }
+.chain-steps li::before { content: ""; position: absolute; left: 0; top: 0; width: 13px; height: 13px; border-radius: 50%; background: var(--bg); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.4); }
+.chain-steps li.here::before { background: var(--amber); box-shadow: 0 0 0 4px rgba(242, 179, 61, 0.18); }
+.cs-n { display: block; font: 600 14px var(--mono); color: var(--ink-1); margin-bottom: 10px; }
+.here .cs-n { color: var(--amber); }
+.chain-steps h3 { font-size: 16px; margin-bottom: 4px; }
+.chain-steps p { font-size: 15px; }
+
+/* ---------------------------------------------------------------- ожидания и низ */
+.expect p { margin-top: 16px; color: var(--ink-2); max-width: 40em; font-size: 18px; }
+.cta-end { margin-top: 32px; }
+.foot { max-width: var(--wrap); margin: 0 auto; padding: 40px 24px 56px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px;
+  font-size: 14px; color: var(--ink-3); border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.foot nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.foot a { color: var(--ink-2); text-decoration: none; }
+.foot a:hover { color: var(--ink-1); }
+
+/* ---------------------------------------------------------------- планшет */
+@media (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; gap: 36px; }
+  h1 { max-width: 14ch; }
+  .see-grid { grid-template-columns: 1fr; gap: 24px; }
+  .chain-steps { grid-template-columns: 1fr; gap: 0; }
+  .chain-steps::before { left: 6px; right: auto; top: 8px; bottom: 8px; width: 1px; height: auto; background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(242, 179, 61, 0.6)); }
+  .chain-steps li { padding: 0 0 24px 32px; }
+  .chain-steps li::before { top: 4px; }
+  .cs-n { margin-bottom: 4px; }
+}
+
+/* ---------------------------------------------------------------- телефон: студия не открывается, даём ссылку для компьютера */
+@media (max-width: 699px) {
+  body { font-size: 16px; }
+  .bar { padding: 16px; }
+  main { padding: 0 16px; }
+  section { padding: 40px 0; }
+  .hero { padding-top: 12px; }
+  .lede { font-size: 17px; }
+  .cta { display: none; }
+  .phone { display: block; margin-top: 28px; padding: 16px; border-radius: var(--r-surface); background: var(--glass); box-shadow: inset 0 0 0 1px var(--rim); }
+  .phone p { font-size: 15px; color: var(--ink-2); }
+  .phone-row { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .phone-url { flex: 1 1 100%; font: 15px var(--mono); color: var(--ink-1); }
+  .trace { padding: 18px 16px; }
+  .trace-text { font-size: 15.5px; min-height: 9em; }
+  .tc-list li { grid-template-columns: 6.5em 1fr 3em; gap: 10px; }
+  .foot { padding: 32px 16px 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret { animation: none; }
+  .tok, .tc-bar i, .btn-open { transition: none; }
+}

@@ -1,0 +1,120 @@
+<!doctype html>
+<!-- TensorLupa — Copyright 2026 Alex Anokhin — Apache License 2.0 (LICENSE, NOTICE) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TensorLupa</title>
+<meta name="author" content="Alex Anokhin">
+<meta name="description" content="TensorLupa — a magnifying glass for neural networks. Watch a tiny language model think, token by token, right in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%222%22 y=%222%22 width=%2212%22 height=%2212%22 rx=%223%22 fill=%22%23f2b33d%22/%3E%3Crect x=%225%22 y=%225%22 width=%226%22 height=%226%22 rx=%221%22 fill=%22%23a98cf0%22/%3E%3C/svg%3E">
+<script>
+// студия — для большого экрана; с телефона ведём на главную, там объяснение и ссылка для компьютера
+if (matchMedia('(max-width: 699px)').matches) location.replace('./?from=studio');
+</script>
+<link rel="stylesheet" href="editor.css">
+<script src="i18n/en.js"></script>
+<script src="i18n/ru.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/three.module.min.js",
+  "three/addons/": "./vendor/three/addons/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <a class="brand" href="./" data-i18n-title="land.home"><span class="brand-name">TensorLupa</span><span class="brand-by">by Alex Anokhin</span></a>
+    <button id="model-pill" class="model-pill" data-i18n-title="model.pill.title"><span class="mp-name">micro-qwen3</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="order">
+      <select id="mode" data-term="mode">
+        <option value="order" data-i18n="mode.order"></option>
+        <option value="continue" data-i18n="mode.continue"></option>
+      </select>
+      <input id="words" type="text" value="dragon, cookie, school" data-i18n-ph="words.ph" spellcheck="false">
+      <input id="prompt" type="text" value="Once upon a time" data-i18n-ph="prompt.ph" spellcheck="false" hidden>
+      <button id="gen" class="primary"><span class="gen-core" aria-hidden="true"></span><span class="gen-star" aria-hidden="true"></span><span data-i18n="gen"></span></button>
+      <button id="reroll" class="navpad-btn reroll" data-i18n-title="gen.another" aria-label="another story"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.2" y="3.2" width="13.6" height="13.6" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="7" r="1.25" fill="currentColor"/><circle cx="13" cy="7" r="1.25" fill="currentColor"/><circle cx="10" cy="10" r="1.25" fill="currentColor"/><circle cx="7" cy="13" r="1.25" fill="currentColor"/><circle cx="13" cy="13" r="1.25" fill="currentColor"/></svg></button>
+    </div>
+    <button id="tour-btn" class="tour-btn" data-i18n-title="tour.start"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12.9 7.1l-1.8 4-4 1.8 1.8-4z" fill="currentColor"/></svg><span data-i18n="tour.btn"></span></button>
+    <span class="pair mode-pair" id="mode-pair" data-i18n-title="mode.title"><button class="pair-o on" data-v="guide" data-i18n="mode.guide"></button><input type="checkbox" class="ctl-sw" aria-label="Guide / Lab"><button class="pair-o" data-v="lab" data-i18n="mode.lab"></button></span>
+    <div id="status" class="status" data-i18n="status.loading"></div>
+    <div id="about" class="lang"></div>
+    <div id="lang" class="lang"></div>
+  </header>
+
+
+
+  <main id="stage">
+    <div id="views">
+  <section id="view-model" class="viewport">
+    <div class="vp-title vp-tabs" data-i18n-title="model.hint"><span data-i18n="model.title" data-term="model"></span>
+      <span class="pair" id="view-pair"><button class="pair-o on" data-v="3d" data-i18n="view.3d"></button><input type="checkbox" class="ctl-sw" aria-label="3D / 2D"><button class="pair-o" data-v="schema" data-i18n="view.schema"></button></span>
+      <span id="model-sub" hidden></span></div>
+    <div class="vp-body"><div class="sig" aria-hidden="true">TensorLupa · by Alex Anokhin</div><div id="model-3d" class="fill"></div><canvas id="model-canvas" class="fill" hidden></canvas></div>
+  </section>
+  <section id="view-attn" class="viewport">
+    <div class="vp-title vp-tabs"><span data-i18n="attn.title" data-term="attention"></span>
+      <span class="pair" id="aview-pair"><button class="pair-o on" data-v="3d" data-i18n="view.3d"></button><input type="checkbox" class="ctl-sw" aria-label="3D / 2D"><button class="pair-o" data-v="2d" data-i18n="aview.2d"></button></span>
+      <span class="pair amode-pair" id="amode-pair"><button class="pair-o on" data-v="look" data-i18n="amode.look" data-term="weights"></button><input type="checkbox" class="ctl-sw" aria-label="look / contribution"><button class="pair-o" data-v="contrib" data-i18n="amode.contrib" data-term="valueWeighted"></button></span>
+      <span id="attn-sub" data-i18n="attn.sub.default"></span></div>
+    <div class="vp-body attn-body">
+      <div class="attn-view"><div id="attn-3d" class="fill"></div><canvas id="attn-canvas" class="fill" hidden></canvas></div>
+      <canvas id="growth-canvas" class="growth"></canvas>
+    </div>
+  </section>
+    </div>
+  <section id="logits" class="viewport">
+    <div class="vp-title"><span data-i18n="logits.title" data-term="logits"></span> <span id="logits-sub"></span></div>
+    <div class="vp-body"><canvas id="logits-canvas"></canvas><div id="logits-simple" class="logits-simple"></div><div id="tip" class="tip" hidden></div></div>
+  </section>
+  <section id="story" class="viewport">
+    <div class="vp-title"><span data-i18n="story.title"></span> <span id="story-sub"></span></div>
+    <div class="vp-body"><div id="story-text" class="story-text"></div></div>
+  </section>
+  <section id="player" class="viewport">
+    <div id="timeline" class="timeline">
+      <button id="t-first" data-i18n-title="t.first"><svg viewBox="0 0 16 16"><rect x="2.5" y="3" width="1.8" height="10" rx="0.6"/><path d="M13 3.6v8.8a.6.6 0 0 1-.92.5L5.6 8.5a.6.6 0 0 1 0-1l6.48-4.4a.6.6 0 0 1 .92.5z"/></svg></button>
+      <button id="t-prev" data-i18n-title="t.prev"><svg viewBox="0 0 16 16"><path d="M11.5 3.6v8.8a.6.6 0 0 1-.92.5L4.1 8.5a.6.6 0 0 1 0-1l6.48-4.4a.6.6 0 0 1 .92.5z"/></svg></button>
+      <button id="t-play" data-i18n-title="t.play"><svg viewBox="0 0 16 16"><path d="M5 3.1v9.8a.7.7 0 0 0 1.06.6l7.7-4.9a.7.7 0 0 0 0-1.2l-7.7-4.9A.7.7 0 0 0 5 3.1z"/></svg></button>
+      <button id="t-next" data-i18n-title="t.next"><svg viewBox="0 0 16 16"><path d="M4.5 3.6v8.8a.6.6 0 0 0 .92.5L11.9 8.5a.6.6 0 0 0 0-1L5.42 3.1a.6.6 0 0 0-.92.5z"/></svg></button>
+      <button id="t-last" data-i18n-title="t.last"><svg viewBox="0 0 16 16"><path d="M3 3.6v8.8a.6.6 0 0 0 .92.5L10.4 8.5a.6.6 0 0 0 0-1L3.92 3.1a.6.6 0 0 0-.92.5z"/><rect x="11.7" y="3" width="1.8" height="10" rx="0.6"/></svg></button>
+      <input id="t-range" type="range" min="0" max="0" value="0">
+      <span id="t-label" class="mono"></span>
+      <span id="run-info" class="run-info" data-i18n-title="run.title.empty"></span>
+      <button id="copy-link" class="copy-link" data-i18n-title="link.copy" aria-label="copy link"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 11.5a3.2 3.2 0 0 0 4.5 0l2.6-2.6a3.2 3.2 0 0 0-4.5-4.5l-.9.9M11.5 8.5a3.2 3.2 0 0 0-4.5 0l-2.6 2.6a3.2 3.2 0 0 0 4.5 4.5l.9-.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    </div>
+  </section>
+  </main>
+
+  <aside id="side">
+  </aside>
+
+
+</div>
+<script>
+// Выбор языка и тексты разметки — обычным скриптом в конце <body>, синхронно, до первой отрисовки:
+// страница сразу появляется на нужном языке, ничего не мигает и не меняет ширину.
+// Язык: сохранённый выбор → язык браузера (если есть словарь) → английский.
+(function () {
+  var D = window.MQ_DICTS || {}, saved = null, L = null;
+  try { saved = localStorage.getItem('mq.lang'); } catch (e) { /* нет хранилища */ }
+  if (saved && D[saved]) L = saved;
+  if (!L) {
+    var prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
+    for (var i = 0; i < prefs.length && !L; i++) { var c = String(prefs[i]).slice(0, 2).toLowerCase(); if (D[c]) L = c; }
+  }
+  window.MQ_LANG = L || 'en';
+  var d = D[window.MQ_LANG] || {}, en = D.en || {};
+  function g(k) { var v = d[k] !== undefined ? d[k] : en[k]; return typeof v === 'string' ? v : k; }
+  document.documentElement.lang = window.MQ_LANG;
+  document.querySelectorAll('[data-i18n]').forEach(function (e) { e.textContent = g(e.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-title]').forEach(function (e) { e.title = g(e.dataset.i18nTitle); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(function (e) { e.placeholder = g(e.dataset.i18nPh); });
+})();
+</script>
+<!-- не рисовать страницу, пока главный модуль не построил каркас (Chrome; в Safari раскладку по умолчанию задаёт CSS) -->
+<script type="module" src="editor.js" blocking="render"></script>
+</body>
+</html>

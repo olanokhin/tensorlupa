@@ -10,6 +10,11 @@ from pathlib import Path
 
 
 class NoCache(http.server.SimpleHTTPRequestHandler):
+    def translate_path(self, path):
+        # адреса без расширения (/studio) — как на Vercel с cleanUrls: отдаём studio.html
+        p = super().translate_path(path)
+        return p + ".html" if not Path(p).exists() and Path(p + ".html").exists() else p
+
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, must-revalidate")
         super().end_headers()
