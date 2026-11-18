@@ -54,6 +54,10 @@ Step through the story and watch how short words, spaces and punctuation each ta
   and `<|endoftext|>` ends a text. You can see them in the [prompt](../prompt/).
 - Large models use the same idea with much bigger vocabularies; the smallest Qwen3 has about 150,000 tokens.
 
+## A bit of history
+
+Byte pair encoding started as a data compression algorithm, described by Philip Gage in 1994. In 2016 Rico Sennrich and colleagues adapted it to split rare words into pieces for neural translation. GPT-2 then made it work on raw bytes, so that any text can be encoded, and most language models still use a variant of it.
+
 ## Next
 
 [Prompt](../prompt/): what the model reads before it starts to answer.

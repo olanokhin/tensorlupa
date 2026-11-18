@@ -30,6 +30,12 @@ export default defineConfig({
             { slug: 'docs/glossary/prompt' },
             { slug: 'docs/glossary/completion' },
             { slug: 'docs/glossary/instruct' },
+            { slug: 'docs/glossary/transformer' },
+            { slug: 'docs/glossary/residual-stream' },
+            { slug: 'docs/glossary/attention' },
+            { slug: 'docs/glossary/mlp' },
+            { slug: 'docs/glossary/logits' },
+            { slug: 'docs/glossary/sampling' },
           ],
         },
         {

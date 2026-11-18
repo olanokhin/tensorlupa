@@ -64,6 +64,10 @@ We picked 0.6 by measuring 200 story orders of three words each:
 From 0.5 to 0.6 repetition drops by more than a third, while stories still end cleanly as often. Above 0.7 the
 model starts to make up words and finishes on its own less often.
 
+## A bit of history
+
+The name comes from statistical physics. Softmax with a temperature has the same form as the Boltzmann distribution, which describes how particles spread over energy states: at a high temperature all states become almost equally likely, at a low temperature the lowest-energy state wins. Language models borrowed both the formula and the word.
+
 ## Related
 
 - **Top-k** decides how many candidates get a chance at all; temperature then shapes their chances.

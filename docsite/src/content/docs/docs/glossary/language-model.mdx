@@ -58,6 +58,10 @@ second.
 Large models like the ones behind chat assistants do exactly the same loop. They have far more parameters, read
 far longer texts and were trained on far more data, but each step is still "score every token, draw one, add it".
 
+## A bit of history
+
+In 1948 Claude Shannon showed that English can be imitated with simple statistics: pick each next letter or word by how often it follows the previous ones. In 2003 Yoshua Bengio and colleagues replaced the counting with a neural network that predicts the next word. GPT in 2018 took the same next-token idea and scaled it up with a transformer.
+
 ## Next
 
 [Token](../token/): what the pieces of text are, and why "dragon" is one token while a rare word takes several.
