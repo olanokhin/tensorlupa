@@ -12,7 +12,7 @@ through each layer. Scrub back to any token, move a slider and the story rewrite
 
 The built-in model is **micro-qwen3**, and I built the whole chain behind it: the model trained from
 scratch in MLX on a MacBook → weights quantized to 4 bits → an inference engine in C → that same engine running on
-an $8 ESP32-S3 microcontroller (about 60 tokens per second) → and compiled to WebAssembly with tracing turned on.
+an ESP32-S3 microcontroller (about 60 tokens per second) → and compiled to WebAssembly with tracing turned on.
 What you see in TensorLupa is that very C code, recording every number of every step.
 
 **Set your expectations honestly.** micro-qwen3 has 1,056,656 parameters — about 560 times fewer than the
