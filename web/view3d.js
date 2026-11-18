@@ -399,11 +399,13 @@ export class View3D {
     if (!this.sel || !this.step) return '';
     const { plate, idx } = this.sel, { dim: d, inter: I, heads: H, headDim: hd } = this.e.info, st = this.step, l = plate.layer;
     const pill = (w) => `<span class="tokpill">${w}</span>`, pct = (p) => (100 * p).toFixed(0) + '%';
-    let h = `<h4>${tx('m.selected', { name: plate.name })}</h4>`;
+    // название пластины с подсказкой глоссария: эмбеддинг, остаточный поток, MLP, головы внимания
+    const term = plate.kind === 'mlp' ? 'mlp' : plate.kind === 'heads' ? 'head' : l === 0 && plate.kind === 'resid' ? 'embedding' : 'residualStream';
+    let h = `<h4>${tx('m.selected', { name: `<span data-term="${term}">${plate.name}</span>` })}</h4>`;
     if (plate.kind === 'resid' || plate.kind === 'mid') {
       const v = new Float32Array(d);
       for (let i = 0; i < d; i++) v[i] = plate.kind === 'resid' ? st.resid[l * d + i] : st.resid[l * d + i] + st.attnOut[l * d + i];
-      h += `<div class="note">${tx('m.lens')}</div><div class="note">${this.lensTop(v, 5).map((x) => pill(x.w) + ' ' + pct(x.p)).join(' ')}</div>`;
+      h += `<div class="note"><span data-term="logitLens">${tx('m.lens')}</span></div><div class="note">${this.lensTop(v, 5).map((x) => pill(x.w) + ' ' + pct(x.p)).join(' ')}</div>`;
       h += `<div class="note">${tx('m.value', { i: idx, v: v[idx].toFixed(3) })}</div>`;
     } else if (plate.kind === 'mlp') {
       const a = st.mlpAct.subarray(l * I, (l + 1) * I), order = Array.from(a.keys()).sort((x, y) => Math.abs(a[y]) - Math.abs(a[x]));

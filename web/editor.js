@@ -143,6 +143,7 @@ function buildPane() {
   const fp = new Controls(S.deck.add('run', t('card.run')), P, live)
     .slider('speed', L('speed'), 1, 120, 1)
     .toggle('autoplay', L('autoplay'));
+  document.querySelectorAll('#side .card-t').forEach((el) => { if (el.textContent === t('card.sampling')) el.dataset.term = 'sampling'; });
   const panes = [fs, fo, fp];
   S.pane = { refresh: () => panes.forEach((x) => x.refresh()) };
 }
@@ -396,7 +397,7 @@ function renderInspector(s) {
   }
   h += `<h4>${t('insp.step', { n: S.cur + 1 })}</h4><div class="kv">
     <div>${t('insp.pos')}</div><div>${s.pos}</div>
-    <div>${t('insp.in')}</div><div>${pill(s.input)}</div>
+    <div><span data-term="token">${t('insp.in')}</span></div><div>${pill(s.input)}</div>
     <div>${t('insp.out')}</div><div>${pill(s.output)} <span style="color:var(--muted)">${how}</span></div>
     <div><span data-term="pOut">${t('insp.pout')}</span></div><div>${s.forced >= 0 ? t('insp.forced100') : chosen ? (100 * chosen.p).toFixed(1) + '%' : '—'}</div>
     <div><span data-term="entropy">${t('insp.entropy')}</span></div><div>${t('insp.bits', { x: s.entropy.toFixed(2) })}</div>

@@ -40,7 +40,7 @@ if (matchMedia('(max-width: 699px)').matches) location.replace((/^\/ru(\/|$)/.te
   <h1 class="sr-only" data-i18n="studio.h1"></h1>
   <header id="top">
     <a class="brand" href="./" data-local data-i18n-title="land.home"><img class="brand-mark" src="media/logo.svg" alt="" width="20" height="20"><span class="brand-name">TensorLupa</span></a>
-    <button id="model-pill" class="model-pill" data-i18n-title="model.pill.title"><span class="mp-name">micro-qwen3</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button id="model-pill" class="model-pill" data-i18n-title="model.pill.title"><span class="mp-name" data-term="languageModel">micro-qwen3</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <div class="order">
       <select id="mode" data-term="mode">
         <option value="order" data-i18n="mode.order"></option>
@@ -85,7 +85,7 @@ if (matchMedia('(max-width: 699px)').matches) location.replace((/^\/ru(\/|$)/.te
     <div class="vp-body"><canvas id="logits-canvas"></canvas><div id="logits-simple" class="logits-simple"></div><div id="tip" class="tip" hidden></div></div>
   </section>
   <section id="story" class="viewport">
-    <div class="vp-title"><span data-i18n="story.title"></span> <span id="story-sub"></span></div>
+    <div class="vp-title"><span data-i18n="story.title" data-term="prompt"></span> <span id="story-sub"></span></div>
     <div class="vp-body"><div id="story-text" class="story-text"></div></div>
   </section>
   <section id="player" class="viewport">
