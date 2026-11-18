@@ -1074,3 +1074,9 @@ body[data-mode="lab"] .share-btn { display: inline-flex !important; }
 .sh-apps a { flex: 1; height: 30px; display: grid; place-items: center; border-radius: var(--r-control); font: 600 12px var(--ui); color: var(--ink-2);
   text-decoration: none; background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); }
 .sh-apps a:hover { color: var(--ink-1); background: rgba(255, 255, 255, 0.12); }
+/* отзыв первого зрителя: подсказки заметнее, пояснения к логитам и к скорости показа */
+[data-term] { text-decoration-color: rgba(236, 238, 242, 0.55); }
+.ls-note { margin-top: 6px; font-size: 11px; color: var(--ink-3); }
+.run-note { margin: 2px 0 4px; font-size: 11.5px; line-height: 1.45; color: var(--ink-3); }
+.hover-hint { position: fixed; left: 0; right: 0; bottom: 78px; margin: 0 auto; width: max-content; max-width: 90vw; z-index: 120;
+  padding: 9px 16px !important; font: 500 12.5px var(--ui); color: var(--ink-1); pointer-events: none; animation: cc-drop 200ms ease-out; }

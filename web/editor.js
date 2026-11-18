@@ -140,9 +140,12 @@ function buildPane() {
   const fo = new Controls(S.deck.add('order', t('card.order')), P, live)
     .slider('wbBase', L('wbBase'), 0, 6, 0.25).slider('wbTau', L('wbTau'), 10, 400, 10)
     .slider('wbStart', L('wbStart'), 0, 1, 0.25).toggle('fsm', L('fsm'));
-  const fp = new Controls(S.deck.add('run', t('card.run')), P, live)
+  const runHost = S.deck.add('run', t('card.run'));
+  const fp = new Controls(runHost, P, live)
     .slider('speed', L('speed'), 1, 120, 1)
     .toggle('autoplay', L('autoplay'));
+  // плеер — только показ готового прогона: модель уже всё посчитала, скорость показа на неё не влияет
+  const rn = document.createElement('div'); rn.id = 'run-note'; rn.className = 'run-note'; rn.textContent = t('card.runNote0'); runHost.appendChild(rn);
   document.querySelectorAll('#side .card-t').forEach((el) => { if (el.textContent === t('card.sampling')) el.dataset.term = 'sampling'; });
   const panes = [fs, fo, fp];
   S.pane = { refresh: () => panes.forEach((x) => x.refresh()) };
@@ -244,6 +247,8 @@ function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
   const t0 = performance.now();
   S.run = S.engine.run(prompt, words);
   const ms = performance.now() - t0;
+  if (!isLive && S.mode === 'guide' && !document.querySelector('.tour-card')) setTimeout(hoverHint, 1800);   // «наведите на подчёркнутое» — один раз
+  if ($('run-note')) $('run-note').textContent = t('card.runNote', { ms: ms < 10 ? ms.toFixed(1) : ms.toFixed(0) });
   const gen = S.run.steps.filter((s) => s.kind === 'gen');
   const last = S.run.steps[S.run.steps.length - 1];
   $('story-sub').textContent = t('story.sub', { gen: gen.length, ms: ms.toFixed(0), seed: P.seed,
@@ -348,13 +353,22 @@ function play() {
 function stop() { if (S.timer) clearInterval(S.timer); S.timer = null; $('t-play').innerHTML = ICON_PLAY; $('gen').classList.remove('busy'); genSpeed(); }
 
 // ---------------------------------------------------------------- инспектор шага
+// вероятности из логитов при температуре T (по всему словарю, как полоса логитов в Лабе)
+function softmaxT(l, T) {
+  let m = -Infinity; for (const x of l) if (x > m) m = x;
+  const p = new Float64Array(l.length); let z = 0;
+  for (let i = 0; i < l.length; i++) { const e = l[i] <= -1e29 ? 0 : Math.exp((l[i] - m) / T); p[i] = e; z += e; }
+  for (let i = 0; i < l.length; i++) p[i] /= z;
+  return p;
+}
 // Гайд: «модель выбирала между» — пять кандидатов с процентами вместо полосы из 64 столбиков
 function renderSimpleLogits(s) {
   const box = $('logits-simple'); if (S.mode !== 'guide') return;
   const tt = S.engine.tokenText, top = s.topk.slice().sort((a, b) => b.p - a.p).slice(0, 5);
   box.innerHTML = `<div class="ls-title"><span data-term="logits">${t('g.choose')}</span></div>` + top.map((c) => `<div class="ls-row${c.tok === s.output ? ' on' : ''}">` +
     `<span class="tokpill">${esc(show(tt[c.tok]))}</span><span class="ls-bar"><i style="width:${(100 * c.p).toFixed(1)}%"></i></span>` +
-    `<span class="ls-p">${c.p < 0.01 ? '<1' : (100 * c.p).toFixed(0)}%</span></div>`).join('');
+    `<span class="ls-p">${c.p < 0.01 ? '<1' : (100 * c.p).toFixed(0)}%</span></div>`).join('') +
+    `<div class="ls-note">${t('g.spaceNote')}</div>`;
 }
 
 // Гайд: что произошло на шаге — простыми словами, с отраслевым термином там, где он нужен
@@ -368,8 +382,16 @@ function guideCard(s) {
   if (s.forced >= 0) h += `<div class="note">${t('g.forced')}</div>`;
   else if (top && top.tok === s.output) h += `<div class="note">${t('g.top')}</div>`;
   else if (top) h += `<div class="note">${t('g.notTop', { top: pill(top.tok), t: S.run.settings.temperature })}</div>`;
+  // доплата к логиту сама по себе ничего не говорит новичку («+4,2 к чему?»), поэтому показываем её эффект:
+  // шанс слова без доплаты и с ней, при той же температуре (как белая черта на полосе логитов в Лабе)
   const pushes = s.bias.filter((x) => x.val < 1e8);
-  if (pushes.length) h += `<div class="note">${t('g.boost', { list: pushes.map((x) => pill(x.tok) + ' +' + x.val.toFixed(1)).join(' ') })}</div>`;
+  if (pushes.length) {
+    const T = S.run.settings.temperature, pRaw = softmaxT(s.logitsRaw, T), pFin = softmaxT(s.logitsFinal, T);
+    const nf1 = new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }), nf0 = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 });
+    const pc = (p) => (p < 0.001 ? '<' + nf1.format(0.1) + '%' : (p < 0.1 ? nf1 : nf0).format(100 * p) + '%');
+    const felt = pushes.filter((x) => pFin[x.tok] >= 0.01);   // доплата, которая на этом шаге заметно меняет шанс
+    h += `<div class="note">${felt.length ? t('g.boost', { list: felt.map((x) => `${pill(x.tok)} ${pc(pRaw[x.tok])} → ${pc(pFin[x.tok])}`).join(', ') }) : t('g.boostSmall')}</div>`;
+  }
   const level = s.entropy < 1 ? 0 : s.entropy < 3 ? 1 : 2;
   h += `<div class="note">${t('g.conf', { level, bits: s.entropy.toFixed(1) })}</div>`;
   if (s.words.length) {
@@ -587,6 +609,7 @@ async function runTour() {
   };
   startTour([
     { key: 'tour.what', anchor: '#gen', before: ready },
+    { key: 'tour.hover', anchor: ['#view-model .vp-title [data-term]', '#logits-simple .ls-title [data-term]'] },
     { key: 'tour.story', anchor: '#story', before: () => openFold('story') },
     { key: 'tour.logits', anchor: '#logits', before: () => { openFold('logits'); setCur(notFavourite()); } },
     // температура: подсвечены и ползунок, и история; стоим на первом токене ответа — контекст (промпт) не меняется,
@@ -625,6 +648,14 @@ const DOC_SLUG = {
 };
 let DOCS = new Set();
 fetch('/docs/pages.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.glossary) DOCS = new Set(j.glossary); }).catch(() => {});
+let hintSeen = false;
+try { hintSeen = !!localStorage.getItem('mq.hint.seen'); } catch { /* без памяти — покажем */ }
+function hoverHint() {
+  if (hintSeen || document.getElementById('hover-hint')) return;
+  const h = document.createElement('div'); h.id = 'hover-hint'; h.className = 'cc-mod hover-hint'; h.textContent = t('hint.hover');
+  document.body.appendChild(h);
+  setTimeout(() => h.remove(), 15000);
+}
 function glossary() {
   const tip = document.createElement('div'); tip.className = 'gloss-tip'; tip.hidden = true; document.body.appendChild(tip);
   let timer = 0, cur = null;
@@ -651,6 +682,7 @@ function glossary() {
         tip.appendChild(a);
       }
       tip.hidden = false;
+      if (!hintSeen) { hintSeen = true; try { localStorage.setItem('mq.hint.seen', '1'); } catch { /* только на этот раз */ } document.getElementById('hover-hint')?.remove(); }
       const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
       const x = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2));
       const y = r.bottom + 8 + h < innerHeight ? r.bottom + 8 : r.top - h - 8;
