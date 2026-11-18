@@ -39,7 +39,6 @@
         <a class="btn-open" href="studio" data-i18n="land.open"></a>
         <p class="cta-note" data-i18n="land.free"></p>
       </div>
-      <p class="stats" id="stats" hidden></p>
       <div class="phone">
         <p data-i18n="land.phone"></p>
         <div class="phone-row">
@@ -59,6 +58,31 @@
       </div>
       <p class="trace-hint" id="trace-hint" data-i18n="land.trace.hint"></p>
     </figure>
+  </section>
+
+  <section class="counters" id="counters" hidden aria-live="polite">
+      <div class="ctr ctr-runs">
+        <div class="ctr-ring">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="ctr-track" cx="100" cy="100" r="86"/>
+            <g class="ctr-ticks"><circle cx="100" cy="100" r="97"/></g>
+            <g class="ctr-sweep"><circle cx="100" cy="100" r="86"/></g>
+          </svg>
+          <div class="ctr-num" data-key="runs">0</div>
+        </div>
+        <p class="ctr-label" data-i18n="land.ctr.runs"></p>
+      </div>
+      <div class="ctr ctr-users">
+        <div class="ctr-ring">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="ctr-track" cx="100" cy="100" r="86"/>
+            <g class="ctr-ticks"><circle cx="100" cy="100" r="97"/></g>
+            <g class="ctr-sweep"><circle cx="100" cy="100" r="86"/></g>
+          </svg>
+          <div class="ctr-num" data-key="users">0</div>
+        </div>
+        <p class="ctr-label" data-i18n="land.ctr.users"></p>
+      </div>
   </section>
 
   <section class="film">

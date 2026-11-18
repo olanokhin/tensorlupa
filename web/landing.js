@@ -70,11 +70,35 @@ const other = L === 'ru' ? 'en' : 'ru';
 $('lang').textContent = other === 'ru' ? 'Русский' : 'English';
 $('lang').addEventListener('click', () => { try { localStorage.setItem('mq.lang', other); } catch { /* только на эту загрузку */ } location.reload(); });
 
-// ---------------------------------------------------------------- счётчики: сколько людей попробовали и сколько историй написано
-fetch('/api/stats').then((r) => (r.ok ? r.json() : null)).then((st) => {
-  if (!st || typeof st.runs !== 'number') return;
-  const nf = new Intl.NumberFormat(L);
-  const el = $('stats');
-  el.innerHTML = `<b>${nf.format(st.users)}</b> ${t('land.stats.users')(st.users)} · <b>${nf.format(st.runs)}</b> ${t('land.stats.runs')(st.runs)}`;
-  el.hidden = false;
-}).catch(() => {});
+// ---------------------------------------------------------------- счётчики: кольца с набегающими числами
+// Числа набегают от нуля, когда полоса впервые видна; потом страница раз в 30 секунд спрашивает свежие значения
+// и докручивает разницу — счётчик живой, пока страница открыта.
+const nf = new Intl.NumberFormat(L);
+const nums = { runs: document.querySelector('.ctr-num[data-key="runs"]'), users: document.querySelector('.ctr-num[data-key="users"]') };
+const shown = { runs: 0, users: 0 };
+let target = null, seen = false;
+function roll(key, to, ms) {
+  const from = shown[key], t0 = performance.now(), el = nums[key];
+  if (reduce || from === to) { shown[key] = to; el.textContent = nf.format(to); return; }
+  const tick = (now) => {
+    const k = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = nf.format(Math.round(from + (to - from) * e));
+    if (k < 1) requestAnimationFrame(tick); else shown[key] = to;
+  };
+  requestAnimationFrame(tick);
+}
+function render(first) {
+  if (!target || !seen) return;
+  for (const k of ['runs', 'users']) roll(k, target[k], first ? 1800 : 900);
+  for (const k of ['runs', 'users']) document.querySelector(`.ctr-${k} .ctr-label`).textContent = t(`land.ctr.${k}`)(target[k]);
+}
+async function load(first) {
+  try {
+    const r = await fetch('/api/stats', { cache: 'no-store' }); if (!r.ok) return;
+    const st = await r.json(); if (typeof st.runs !== 'number') return;
+    target = st; $('counters').hidden = false; render(first);
+  } catch { /* без сервера (локальная разработка) — полосы нет */ }
+}
+new IntersectionObserver(([e], o) => { if (e.isIntersecting) { seen = true; render(true); o.disconnect(); } }, { threshold: 0.4 }).observe($('counters'));
+load(true);
+setInterval(() => { if (!document.hidden) load(false); }, 30000);
