@@ -2,3 +2,5 @@ engine/cli
 .DS_Store
 .vercel
 .env*
+dist
+.wrangler

@@ -4,7 +4,7 @@
 the story it writes token by token, the candidates it chose between, where its attention looks, and what flows
 through each layer. Scrub back to any token, move a slider and the story rewrites itself on the spot.
 
-**[Open TensorLupa →](https://tensorlupa.vercel.app)** · desktop browser · nothing to install
+**[Open TensorLupa →](https://tensorlupa.com)** · desktop browser · nothing to install
 
 ![TensorLupa: the model writes a story, then the temperature slider rewrites it](docs/demo.gif)
 
@@ -49,6 +49,8 @@ are small enough to see all at once.
 ```bash
 python3 serve.py     # http://127.0.0.1:8765 (landing), /studio (the studio) — ready to serve as is
 ```
+
+To publish: `sh scripts/deploy.sh` (Cloudflare, see `wrangler.jsonc`).
 
 To rebuild the engine after changing the C code (needs Emscripten and node):
 
