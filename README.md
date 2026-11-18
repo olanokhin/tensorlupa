@@ -16,13 +16,16 @@ an $8 ESP32-S3 microcontroller (about 60 tokens per second) → and compiled to 
 What you see in TensorLupa is that very C code, recording every number of every step.
 
 **Set your expectations honestly.** micro-qwen3 has 1,056,656 parameters — about 560 times fewer than the
-smallest Qwen3 (0.6B) and about 380,000 times fewer than the largest open Llama (Llama 3.1 405B). It writes short
+smallest Qwen3 (0.6B). It writes short
 children's stories in English, not essays. But the mechanics are the same as in the big models, and here they
 are small enough to see all at once.
 
 - **A modern architecture, not a toy one:** the Qwen3 design — rotary position embeddings (RoPE), grouped-query
   attention (4 query heads share 2 key-value heads), QK-norm, SwiGLU feed-forward layers. 3 layers × 112
   dimensions, a 4096-token vocabulary.
+- **It follows instructions, not just continues text:** instruction-tuned in a chat format, it writes a story
+  with the words you ask for. Of the requested words, 5.7% made it into the story before tuning and 64% after; a decoding
+  rule that gives unused words a growing push brings it to 100% — all three words in every one of 200 test orders.
 - **Checked against the reference:** the training code's layer-by-layer model matches Qwen3 from mlx-lm
   numerically (a parity test in micro-qwen3, which is not public yet). In this repository `sh build.sh check`
   replays browser runs in a native build of the same C code: logits agree to about 10⁻⁶ and every token matches.

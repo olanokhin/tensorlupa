@@ -8,7 +8,8 @@
 <meta name="author" content="Alex Anokhin">
 <meta name="description" content="TensorLupa runs a real language model in your browser and shows every step of its work: which words it weighed, which one it picked, and where it was looking.">
 <meta name="color-scheme" content="dark">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%222%22 y=%222%22 width=%2212%22 height=%2212%22 rx=%223%22 fill=%22%23f2b33d%22/%3E%3Crect x=%225%22 y=%225%22 width=%226%22 height=%226%22 rx=%221%22 fill=%22%23a98cf0%22/%3E%3C/svg%3E">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="media/apple-touch-icon.png">
 <script>
 // старые ссылки на эксперименты вели на главную (/?w=…&seed=…) — отправляем их в студию с теми же параметрами
 (function () {
@@ -22,7 +23,7 @@
 </head>
 <body>
 <header class="bar">
-  <a class="logo" href="./"><span class="logo-mark" aria-hidden="true"></span>TensorLupa</a>
+  <a class="logo" href="./"><img class="logo-mark" src="media/logo.svg" alt="" width="26" height="26">TensorLupa</a>
   <nav class="bar-links">
     <a href="https://github.com/olanokhin/tensorlupa" rel="noopener">GitHub</a>
     <button id="lang" class="lang-btn" type="button"></button>
@@ -71,6 +72,17 @@
       <div><h3 data-i18n="land.see.2.h"></h3><p data-i18n="land.see.2"></p></div>
       <div><h3 data-i18n="land.see.3.h"></h3><p data-i18n="land.see.3"></p></div>
     </div>
+  </section>
+
+  <section class="inst">
+    <h2 data-i18n="land.inst.h"></h2>
+    <p class="inst-lede" data-i18n="land.inst"></p>
+    <p class="inst-cap" data-i18n="land.inst.cap"></p>
+    <ol class="inst-steps">
+      <li><span class="is-n" data-i18n="land.inst.1.n"></span><span class="is-bar"><i style="width:5.7%"></i></span><span data-i18n="land.inst.1"></span></li>
+      <li><span class="is-n" data-i18n="land.inst.2.n"></span><span class="is-bar"><i style="width:64%"></i></span><span data-i18n="land.inst.2"></span></li>
+      <li class="best"><span class="is-n" data-i18n="land.inst.3.n"></span><span class="is-bar"><i style="width:100%"></i></span><span data-i18n="land.inst.3"></span></li>
+    </ol>
   </section>
 
   <section class="chain">

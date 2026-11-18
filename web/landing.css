@@ -26,8 +26,7 @@ p { margin: 0; }
 /* ---------------------------------------------------------------- шапка */
 .bar { max-width: var(--wrap); margin: 0 auto; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; }
 .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 650; font-size: 16px; }
-.logo-mark { width: 18px; height: 18px; border-radius: 5px; background: var(--amber); position: relative; }
-.logo-mark::after { content: ""; position: absolute; inset: 5px; border-radius: 2px; background: var(--lilac); }
+.logo-mark { width: 26px; height: 26px; display: block; }
 .bar-links { display: flex; align-items: center; gap: 18px; font-size: 14px; }
 .bar-links a { color: var(--ink-2); text-decoration: none; }
 .bar-links a:hover { color: var(--ink-1); }
@@ -142,4 +141,21 @@ h3 { font-size: 18px; margin-bottom: 8px; }
 @media (prefers-reduced-motion: reduce) {
   .caret { animation: none; }
   .tok, .tc-bar i, .btn-open { transition: none; }
+}
+
+/* ---------------------------------------------------------------- инструкции: три замера по возрастанию — столбики одной шкалы */
+.inst-lede { margin-top: 16px; color: var(--ink-2); max-width: 40em; font-size: 18px; }
+.inst-cap { margin-top: 28px; font-size: 14px; color: var(--ink-3); }
+.inst-steps { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 12px; max-width: 760px; }
+.inst-steps li { display: grid; grid-template-columns: 4.2em minmax(120px, 1fr) minmax(0, 1.2fr); align-items: center; gap: 16px; }
+.is-n { font: 600 18px var(--mono); color: var(--ink-1); text-align: right; }
+.best .is-n { color: var(--amber); }
+.is-bar { height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.is-bar i { display: block; height: 100%; border-radius: 5px; background: rgba(169, 140, 240, 0.75); }
+.best .is-bar i { background: var(--amber); }
+.inst-steps li > span:last-child { font-size: 15px; color: var(--ink-2); }
+@media (max-width: 699px) {
+  .inst-steps li { grid-template-columns: 3.6em 1fr; gap: 6px 12px; }
+  .inst-steps li > span:last-child { grid-column: 2; }
+  .is-n { font-size: 16px; }
 }

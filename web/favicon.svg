@@ -1,0 +1,12 @@
+<!-- TensorLupa favicon: the mark on a dark tile so it reads on light and dark tab bars -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#16181c"/>
+  <g transform="translate(2.6 2.6) scale(.84)">
+    <rect x="7.6" y="7.6" width="4.6" height="4.6" rx="1.1" fill="#a98cf0" fill-opacity=".6"/>
+    <rect x="13.8" y="7.6" width="4.6" height="4.6" rx="1.1" fill="#a98cf0" fill-opacity=".6"/>
+    <rect x="7.6" y="13.8" width="4.6" height="4.6" rx="1.1" fill="#a98cf0" fill-opacity=".6"/>
+    <rect x="13.8" y="13.8" width="4.6" height="4.6" rx="1.1" fill="#f2b33d"/>
+    <circle cx="13" cy="13" r="10" fill="none" stroke="#eceef2" stroke-width="2.6"/>
+    <path d="M20.7 20.7l6.4 6.4" stroke="#f2b33d" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

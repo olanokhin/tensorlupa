@@ -1050,3 +1050,5 @@ body[data-mode="guide"] .status { display: none !important; }
 /* название в навбаре — ссылка на главную */
 a.brand { text-decoration: none; color: inherit; }
 a.brand:hover .brand-name { color: #fff; }
+.brand-mark { width: 20px; height: 20px; flex: none; align-self: center; margin-right: 8px; }
+a.brand { display: inline-flex; align-items: center; }
