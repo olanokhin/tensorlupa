@@ -12,11 +12,15 @@ build, and they become links by themselves once the page exists.
 
 | Section | Slugs |
 | --- | --- |
-| Basics (in this order) | `language-model`, `token`, `prompt`, `completion`, `instruct`, `transformer`, `residual-stream`, `attention`, `mlp`, `logits`, `sampling` |
+| Basics (in this order) | `language-model`, `token`, `prompt`, `special-tokens`, `completion`, `instruct`, `transformer`, `residual-stream`, `attention`, `mlp`, `logits`, `sampling` |
 | Settings and inspector | `temperature`, `top-k`, `seed`, `max-new-tokens`, `repetition-penalty`, `logit-bias`, `fsm`, `entropy`, `logit-lens`, `attention-head` |
 
 A new page also goes into the sidebar in `astro.config.mjs`, and into `DOCS` in `web/editor.js` so the studio
 tooltip for that term gets a "Read more in Docs" link.
+
+## Sources
+
+Cite only from `REFERENCES.md` (every link there was checked); each page ends with a `## References` list.
 
 ## Page outline
 

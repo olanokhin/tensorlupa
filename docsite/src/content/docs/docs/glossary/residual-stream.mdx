@@ -76,12 +76,18 @@ Click the stream plates one by one, from left to right, and watch the guesses go
 
 ## A bit of history
 
-Turning words into lists of numbers that capture their meaning became popular with word2vec in 2013. Adding a
-layer's output to its input instead of replacing it comes from residual networks (ResNet, He et al., 2015), which
+Turning words into lists of numbers that capture their meaning became popular with [word2vec](https://arxiv.org/abs/1301.3781) in 2013. Adding a
+layer's output to its input instead of replacing it comes from [residual networks](https://arxiv.org/abs/1512.03385) (ResNet, He et al., 2015), which
 made very deep networks trainable. The name "residual stream" and the idea of reading the transformer as layers
-writing into one shared stream come from Anthropic's 2021 paper "A Mathematical Framework for Transformer
-Circuits".
+writing into one shared stream come from Anthropic's 2021 paper ["A Mathematical Framework for Transformer
+Circuits"](https://transformer-circuits.pub/2021/framework/index.html).
 
 ## Next
 
 [Attention](../attention/): how a token looks back at earlier tokens and takes what it needs.
+
+## References
+
+- Tomas Mikolov et al. (2013). [Efficient Estimation of Word Representations in Vector Space](https://arxiv.org/abs/1301.3781). arXiv.
+- Kaiming He et al. (2015). [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385). arXiv.
+- Nelson Elhage et al., Anthropic (2021). [A Mathematical Framework for Transformer Circuits](https://transformer-circuits.pub/2021/framework/index.html). Transformer Circuits Thread.

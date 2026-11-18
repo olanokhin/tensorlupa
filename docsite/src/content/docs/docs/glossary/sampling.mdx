@@ -70,10 +70,10 @@ matter, and 0.6 gives the best balance of fewer repeats and stories that end on 
 
 ## A bit of history
 
-Generating text by drawing the next word at random from observed statistics goes back to Claude Shannon's 1948
-paper on information theory, where he built sentences from letter and word frequencies. For neural language
-models, top-k sampling was popularised by Fan, Lewis and Dauphin in 2018, and nucleus (top-p) sampling was
-introduced by Holtzman and colleagues in 2019 to fix the dull, repetitive text that greedy decoding produces.
+Generating text by drawing the next word at random from observed statistics goes back to [Claude Shannon's 1948
+paper on information theory](https://ieeexplore.ieee.org/document/6773024), where he built sentences from letter and word frequencies. For neural language
+models, top-k sampling was popularised by [Fan, Lewis and Dauphin in 2018](https://arxiv.org/abs/1805.04833), and nucleus (top-p) sampling was
+introduced by [Holtzman and colleagues in 2019](https://arxiv.org/abs/1904.09751) to fix the dull, repetitive text that greedy decoding produces.
 
 ## Settings that shape the draw
 
@@ -82,3 +82,9 @@ introduced by Holtzman and colleagues in 2019 to fix the dull, repetitive text t
 - [Seed](../seed/): which random numbers are drawn.
 - [Repetition penalty](../repetition-penalty/): lowers the chances of tokens that would repeat a phrase.
 - [Logit bias](../logit-bias/): raises the chances of your requested words.
+
+## References
+
+- Claude E. Shannon (1948). [A Mathematical Theory of Communication](https://ieeexplore.ieee.org/document/6773024). Bell System Technical Journal.
+- Angela Fan, Mike Lewis, Yann Dauphin (2018). [Hierarchical Neural Story Generation](https://arxiv.org/abs/1805.04833). arXiv.
+- Ari Holtzman et al. (2019). [The Curious Case of Neural Text Degeneration](https://arxiv.org/abs/1904.09751). arXiv.

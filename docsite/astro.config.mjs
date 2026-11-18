@@ -28,6 +28,7 @@ export default defineConfig({
             { slug: 'docs/glossary/language-model' },
             { slug: 'docs/glossary/token' },
             { slug: 'docs/glossary/prompt' },
+            { slug: 'docs/glossary/special-tokens' },
             { slug: 'docs/glossary/completion' },
             { slug: 'docs/glossary/instruct' },
             { slug: 'docs/glossary/transformer' },
@@ -42,6 +43,20 @@ export default defineConfig({
           label: 'Settings', translations: { ru: 'Настройки' },
           items: [
             { slug: 'docs/glossary/temperature' },
+            { slug: 'docs/glossary/top-k' },
+            { slug: 'docs/glossary/seed' },
+            { slug: 'docs/glossary/max-new-tokens' },
+            { slug: 'docs/glossary/repetition-penalty' },
+            { slug: 'docs/glossary/logit-bias' },
+            { slug: 'docs/glossary/fsm' },
+          ],
+        },
+        {
+          label: 'Going deeper', translations: { ru: 'Глубже' },
+          items: [
+            { slug: 'docs/glossary/attention-head' },
+            { slug: 'docs/glossary/logit-lens' },
+            { slug: 'docs/glossary/entropy' },
           ],
         },
       ],

@@ -23,8 +23,8 @@ On Hugging Face most model families come in two versions, and the names tell the
 
 | Name | What it is | What it does |
 | --- | --- | --- |
-| `Qwen/Qwen3-0.6B-Base` | base model | continues text |
-| `Qwen/Qwen3-0.6B` | instruction-tuned model | answers requests in a chat |
+| [`Qwen/Qwen3-0.6B-Base`](https://huggingface.co/Qwen/Qwen3-0.6B-Base) | base model | continues text |
+| [`Qwen/Qwen3-0.6B`](https://huggingface.co/Qwen/Qwen3-0.6B) | instruction-tuned model | answers requests in a chat |
 
 The base model is the raw result of pre-training. The [instruct](../instruct/) model is the same network trained
 a little more to follow requests. People download base models to fine-tune them for their own task, and instruct
@@ -32,7 +32,7 @@ models to talk to them.
 
 ## How micro-qwen3 was trained to continue text
 
-micro-qwen3 was trained from scratch on **TinyStories**, a dataset of short stories written in simple English for
+micro-qwen3 was trained from scratch on **[TinyStories](https://huggingface.co/datasets/roneneldan/TinyStories)**, a dataset of short stories written in simple English for
 young children. It was made by Ronen Eldan and Yuanzhi Li to study how small a language model can be and still
 write coherent English ([the paper](https://arxiv.org/abs/2305.07759)). We used version 2 of the stories, written
 by GPT-4, from [roneneldan/TinyStories](https://huggingface.co/datasets/roneneldan/TinyStories) (license
@@ -58,8 +58,16 @@ Then change the beginning: start in the middle of a sentence, or with a question
 
 ## A bit of history
 
-For years every language model was a base model: it continued text and nothing else. In 2020 GPT-3 showed that a large enough base model can still do tasks if the prompt starts with a few solved examples, which is called few-shot prompting. Instruction tuning came later to make that unnecessary.
+For years every language model was a base model: it continued text and nothing else. In 2020 [GPT-3](https://arxiv.org/abs/2005.14165) showed that a large enough base model can still do tasks if the prompt starts with a few solved examples, which is called few-shot prompting. Instruction tuning came later to make that unnecessary.
 
 ## Next
 
 [Instruct](../instruct/): how a model learns to follow a request instead of just continuing text.
+
+## References
+
+- Ronen Eldan, Yuanzhi Li (2023). [TinyStories: How Small Can Language Models Be and Still Speak Coherent English?](https://arxiv.org/abs/2305.07759). arXiv.
+- [TinyStories dataset](https://huggingface.co/datasets/roneneldan/TinyStories) (CDLA-Sharing-1.0). Hugging Face.
+- [Qwen3-0.6B-Base](https://huggingface.co/Qwen/Qwen3-0.6B-Base). Hugging Face.
+- [Qwen3-0.6B](https://huggingface.co/Qwen/Qwen3-0.6B). Hugging Face.
+- Tom B. Brown et al. (2020). [Language Models are Few-Shot Learners](https://arxiv.org/abs/2005.14165). arXiv.

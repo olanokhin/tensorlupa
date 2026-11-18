@@ -1,0 +1,90 @@
+---
+title: Logit lens
+description: Reading what a language model would say in the middle of its layers, shown on real steps of micro-qwen3.
+---
+
+**In one sentence:** the logit lens decodes the stream in the middle of the model as if it were the end, to see
+what the model would say at that point.
+
+## How it works
+
+Every [token](../token/) travels through the model as a list of 112 numbers, the
+[residual stream](../residual-stream/). Each layer adds its contribution to it. Only after the last layer does the
+model turn the stream into a score for every possible next token, the [logits](../logits/): it normalises the
+stream and multiplies it by the output table.
+
+The logit lens applies that same last step early. Take the stream after layer 1 or layer 2, normalise it, multiply
+it by the output table, and read the result as if it were the final answer. Nothing is trained for this; it simply
+reuses the model's own output layer. It works because every layer writes into the same stream that the output
+layer reads at the end.
+
+After the last layer the lens and the model agree exactly: the lens after layer 3 is the model's raw output.
+
+## A real step: the answer appears in the last layer
+
+The demo story has just written *"…she went to school and saw a big dragon in her classroom. The"*. Here is what
+the stream would say at each point:
+
+| Point in the stream | Top guesses |
+| --- | --- |
+| right after the embedding | The 99.9% |
+| after layer 1 | end 26.6%, The 18.1%, other 12.5% |
+| after layer 2 | end 43.9%, sun 27.6%, other 4.5% |
+| after layer 3 | **dragon 96.6%**, princess 0.6%, knight 0.4% |
+
+For two layers the stream holds the most common continuations of "The" in children's stories: "The end", "The
+sun". Only the third layer brings in the context, a dragon was just mentioned, and the answer jumps to "dragon"
+at 96.6%. The model wrote "dragon".
+
+## A second step: what the lens cannot see
+
+A few tokens earlier the story reached *"…she went to school and saw a big"*. The lens after layer 3 gives bear
+10.1%, a comma 9.5%, tree 8.3%, and "dragon" only 7.8%. Yet the model wrote "dragon" with 97.6%.
+
+The difference is [logit bias](../logit-bias/). "dragon" was a requested word not used yet, so the studio added
+4.16 to its score after the model's own output. The lens shows the model alone, before any bias, before
+[temperature](../temperature/) and [top-k](../top-k/), at temperature 1. Comparing the lens after the last layer
+with the final candidates shows exactly how much of a choice came from the model and how much from the rules
+around it.
+
+## Where it is in the studio
+
+![A residual stream plate selected in the 3D model view, with the logit lens in the plate inspector](../../../../assets/logit-lens-studio.png)
+
+In **Lab**, click a glass plate of the residual stream in the 3D **Model** view. The plate inspector shows
+"logit lens: what the model would say if it stopped here" with the top guesses at that point. Click the plates
+one after another to watch the guess form layer by layer, and compare them with the **Logits** panel.
+
+## Try it
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=69&mode=lab" target="_blank" rel="noopener">Open the "The dragon" step in the Lab</a>
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=62&mode=lab" target="_blank" rel="noopener">Open the "a big dragon" step</a>
+
+In each, click the plates after layer 1, 2 and 3 and compare the lens with the final candidates.
+
+## In micro-qwen3
+
+- 3 layers, so the lens has four points to read: after the embedding and after each layer.
+- Right after the embedding the lens mostly reads the current token back ("The" 99.9%), because the stream has
+  not yet seen anything else.
+- In a small model the middle layers often guess common phrases first, and the last layer fixes them with the
+  context. Large models show the same pattern over dozens of layers.
+
+## A bit of history
+
+The name comes from a 2020 blog post by the researcher known as nostalgebraist, who decoded the middle layers of
+GPT-2 this way and saw its guesses sharpen layer by layer. The idea relies on the
+[residual stream](../residual-stream/) view of a transformer, described in Anthropic's
+[A Mathematical Framework for Transformer Circuits](https://transformer-circuits.pub/2021/framework/index.html)
+(2021), where every layer reads from and writes to one shared stream.
+
+## Related
+
+- [Embedding and residual stream](../residual-stream/): the stream the lens reads.
+- [Transformer](../transformer/): what the layers do between the lens points.
+- [Logits](../logits/): the final scores the lens imitates.
+
+## References
+
+- Nelson Elhage et al., Anthropic (2021). [A Mathematical Framework for Transformer Circuits](https://transformer-circuits.pub/2021/framework/index.html).

@@ -294,6 +294,7 @@
   'gl.mlp': 'The MLP is the second half of each layer: 336 neurons per layer that react to patterns and push certain next words up or down.',
   'gl.logitLens': 'Logit lens: decode the stream in the middle of the model as if it were the end, to see what it would say at this point.',
   'gl.sampling': 'Sampling is how one token is chosen from the probabilities: a weighted random draw, shaped by temperature and top-k.',
+  'gl.specialTokens': 'A special token is a reserved marker, not text: <|im_start|> and <|im_end|> open and close a turn of the chat, <|endoftext|> ends a text. The model ends a story by writing <|im_end|> itself.',
   'gl.more': 'Read more in Docs',
   'studio.h1': 'TensorLupa studio: watch a language model write a story, token by token',
   'meta.land.title': 'TensorLupa: a magnifying glass for neural networks',

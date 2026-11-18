@@ -1,0 +1,103 @@
+---
+title: Special tokens
+description: What <|im_start|>, <|im_end|> and <|endoftext|> are, why they exist, and how micro-qwen3 uses one of them to end its own story.
+---
+
+**In one sentence:** special tokens are reserved [tokens](../token/) that mark structure instead of text: where a
+chat turn starts and ends, and where a text is over.
+
+## Three tokens that are not words
+
+micro-qwen3 has 4,096 tokens. The first three are different from all the others:
+
+| Id | Token | What it means |
+| --- | --- | --- |
+| 0 | `<\|endoftext\|>` | this text is over |
+| 1 | `<\|im_start\|>` | a chat turn starts; the next word names who speaks (`user` or `assistant`) |
+| 2 | `<\|im_end\|>` | this turn is over |
+
+They look like text in the studio, but each one is a single token with its own id. Ordinary byte pair encoding
+never produces them: there is no way to spell `<|im_end|>` out of the usual pieces. The tokenizer recognises the
+exact string and swaps in the reserved id, the same way the Hugging Face tokenizers do. That also means that if
+you type `<|im_end|>` into the studio's completion mode, the model really receives the special token.
+
+## Why they exist
+
+A [language model](../language-model/) sees one long row of tokens and nothing else. It has no other way to know
+where your request ends, whose turn it is, or that the story is finished. Special tokens put that structure into
+the row itself:
+
+```
+<|im_start|>user
+Write a short story. Use the words: dragon, cookie, school.<|im_end|>
+<|im_start|>assistant
+```
+
+In this [prompt](../prompt/) of 29 tokens, the special tokens sit at positions 0, 22 and 24. Everything after
+the last line is the answer.
+
+## How the model learned them
+
+- **Pre-training.** During training the stories are glued into one long stream, with `<|endoftext|>` between
+  them. The model learns that after a story comes this token, and that after it a new, unrelated story starts.
+- **Instruction tuning.** Every training example is wrapped in the chat markers. The model learns that after
+  `<|im_start|>assistant` comes an answer that follows the request, and that an answer ends with `<|im_end|>`.
+  See [Instruct](../instruct/).
+
+## The model decides when the story ends
+
+Nobody tells micro-qwen3 how long the story should be. It writes `<|im_end|>` itself, as one more choice among
+the candidates. This is the last step of the demo story, right after *"They played together all day and had lots
+of fun."*:
+
+| Candidate | Chance |
+| --- | --- |
+| `<\|im_end\|>` | **84.9%** |
+| The | 8.6% |
+| And | 4.7% |
+| From | 0.9% |
+
+The draw picked `<|im_end|>`, and the engine stopped: as soon as any special token is drawn, the answer is over.
+Earlier in this story `<|im_end|>` never had more than 5%, so the model really waited for a natural ending.
+
+It does not always get there. At the default [temperature](../temperature/) of 0.6, 87% of stories end on their
+own. The rest are cut by [max new tokens](../max-new-tokens/), a safety limit on the length of the answer.
+
+## Where it is in the studio
+
+![Special tokens in the Prompt & completion panel, and the model choosing the end of the story](../../../../assets/special-tokens-studio.png)
+
+In **Prompt & completion** the special tokens are shown as small grey markers: around your request at the top,
+and at the very end of the answer. The **Logits** panel shows `<|im_end|>` like any other candidate when the
+model considers stopping.
+
+## Try it
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=148" target="_blank" rel="noopener">Open the last step of the story</a>
+
+Then step back a few tokens and watch the chance of `<|im_end|>` rise as the story comes to its last sentence.
+
+## In micro-qwen3
+
+- Ids 0, 1 and 2 are the special tokens; the other 4,093 are ordinary pieces of text.
+- The same markers are used by Qwen models, so the prompt format of micro-qwen3 matches Qwen3's chat format.
+- The C engine stops the answer when it draws any of the three special tokens, both in the browser and on the
+  ESP32-S3.
+
+## A bit of history
+
+Separators between documents go back to the first large pre-trained models: GPT-2 used an `<|endoftext|>` token
+to mark where one text ends and the next begins. Chat models needed more structure, and in 2023 OpenAI described
+[ChatML](https://github.com/openai/openai-python/blob/release-v0.28.0/chatml.md), the format with
+`<|im_start|>` and `<|im_end|>` around each turn. Qwen adopted the same style of markers.
+
+## Next
+
+[Completion](../completion/): what a model does when there are no chat markers at all.
+
+## References
+
+- OpenAI (2023). [ChatML, the chat markup format](https://github.com/openai/openai-python/blob/release-v0.28.0/chatml.md).
+- Alec Radford et al. (2019). [Language Models are Unsupervised Multitask Learners](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf). OpenAI.
+- An Yang et al. (2025). [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388).
+- Ronen Eldan, Yuanzhi Li (2023). [TinyStories: How Small Can Language Models Be and Still Speak Coherent English?](https://arxiv.org/abs/2305.07759)

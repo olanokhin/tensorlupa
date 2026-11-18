@@ -1,0 +1,92 @@
+---
+title: Repetition penalty
+description: Why a tiny language model gets stuck in loops, how the studio's repetition penalty works, and why it is off by default.
+---
+
+**In one sentence:** the repetition penalty lowers the scores of tokens that would repeat a recent phrase, to stop
+the text from looping.
+
+## Loops in a tiny model
+
+Mentioning the hero many times is normal for a children's story ("the dragon ... the dragon"). A loop is
+different: the model repeats itself because the repeat is its most likely next step, again and again. In
+micro-qwen3 loops look like "tall and tall", "very tall and very tall", or "luxury luxury luxury". They are the
+model's own habit. The keyword push of [logit bias](../logit-bias/) does not cause them: immediate repeats are
+0.35% of words with it and 0.39% without it.
+
+## How the studio's penalty works
+
+When the penalty is on, the studio subtracts points from the [logits](../logits/) of tokens that would make a
+repeat, before the [sampling](../sampling/) draw. It does two things:
+
+- **Immediate repeats.** A word that would repeat the word just written ("tall tall"), the word before "and" or
+  "or" ("tall and tall"), or the word two steps back across "and" ("tall and very tall") loses 3 points.
+- **Repeated phrases.** If the last few tokens already appeared together in the last 32 tokens, the token that
+  followed them last time loses points: 1 point for a repeat of 2 tokens, growing by 1.75 times for each extra
+  token, up to 8. A punctuation mark breaks the match, so "named Tim. Tim loved" is not a loop.
+
+Two exceptions: tokens that the logit bias is pushing at that moment (the words you asked for) are never
+penalized, and the penalty only works in Instruct mode, where there are requested words.
+
+## A real loop, off and on
+
+Words tall, tree, climb, seed 6. Without the penalty, the story gets stuck:
+
+> Once upon a time, there was a tall tree. In the tree, there was a tall tree. The climb was tall and tall. The
+> tree liked to climb trees and trees. One day, the tree was very tall and tall. The tree was tall, tall, tall
+> tree. The tree was tall and tall. ...
+
+With the penalty on, same seed:
+
+> Once upon a time, there was a tall tree. In the tree, there was a little girl named Lily. Lily was climbing
+> trees and climb tall trees. One day, she saw a tall tree. She was so excited and wanted to climb it. As she
+> climbed the tree, she saw a little bird flying high in the sky. ...
+
+Immediate repeats in the story dropped from 7 to 1. The penalty did not make the story perfect ("the
+bird was very tall" comes later), but it broke the loop and let the story move on.
+
+## Why it is off by default
+
+Measured on 200 three-word orders at [temperature](../temperature/) 0.6:
+
+| Penalty | Immediate repeats | Repeats within 20 words | All three words used | Story ends on its own |
+| --- | --- | --- | --- | --- |
+| off | 0.52% | 4.4% | 100% | 87.0% |
+| on (the studio's setting) | 0.09% | 2.4% | 98.5% | 86.0% |
+
+On paper it helps. In practice, on hard words, the model sometimes routes around the penalty with a broken word
+instead of a repeat: "warnerer", "tighterer", "luxuxuury". Forbidding the usual next piece pushes it into a word
+fragment, and those invented words are worse than a repeat. The penalty cannot fix loops of meaning either ("The
+wind made the wind strong"). So the studio, like the firmware on the ESP32-S3, keeps it off by default and lets you
+switch it on to see the difference.
+
+## Where it is in the studio
+
+![The repetition penalty switch in the Sampling card](../../../../assets/repetition-penalty-studio.png)
+
+The **repetition penalty** switch is the last line of the **Sampling** card. Switching it reruns the story with the
+same [seed](../seed/), so every difference you see comes from the penalty.
+
+## Try it
+
+<a class="try-link" href="/studio?w=tall,tree,climb&seed=6&s=70" target="_blank" rel="noopener">Open the looping story</a>
+
+<a class="try-link" href="/studio?w=tall,tree,climb&seed=6&rp=1&s=70" target="_blank" rel="noopener">Open the same story with the penalty on</a>
+
+## A bit of history
+
+Penalizing repeated tokens at sampling time was proposed with the [CTRL](https://arxiv.org/abs/1909.05858) model by Keskar and colleagues at
+Salesforce in 2019. The same year, Holtzman and colleagues showed why models loop at all: always taking the most
+likely token makes text fall into repetition, and sampling from the distribution avoids much of it. The phrase
+part of the studio's penalty works like the later DRY sampler from the open-source community.
+
+## Related
+
+- [Sampling](../sampling/): the draw that the penalty changes.
+- [Max new tokens](../max-new-tokens/): what stops a story that never leaves its loop.
+- [Logit bias](../logit-bias/): the opposite push, toward the words you asked for.
+
+## References
+
+- Nitish Shirish Keskar et al. (2019). [CTRL: A Conditional Transformer Language Model for Controllable Generation](https://arxiv.org/abs/1909.05858).
+- Ari Holtzman et al. (2019). [The Curious Case of Neural Text Degeneration](https://arxiv.org/abs/1904.09751).

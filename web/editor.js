@@ -272,6 +272,7 @@ function buildStory() {
     const sp = document.createElement('span');
     const special = tok <= 2;
     sp.className = 'tok ' + cls + (special ? ' special' : '');
+    if (special) sp.dataset.term = 'specialTokens';   // служебные метки чата: подсказка «что это»
     sp.textContent = special ? tt[tok] : tt[tok];
     if (step >= 0) { sp.dataset.step = step; sp.addEventListener('click', () => { stop(); setCur(step); }); }
     box.appendChild(sp);
@@ -615,7 +616,7 @@ function offerTour() {
 // термин подсказки → страница Docs (/docs/glossary/<slug>/). Какие страницы уже написаны, студия узнаёт из
 // /docs/pages.json (его пишет сборка Docs); у остальных терминов — только подсказка, без ссылки.
 const DOC_SLUG = {
-  languageModel: 'language-model', token: 'token', prompt: 'prompt', mode: 'instruct', model: 'transformer',
+  languageModel: 'language-model', token: 'token', prompt: 'prompt', specialTokens: 'special-tokens', mode: 'instruct', model: 'transformer',
   embedding: 'residual-stream', residualStream: 'residual-stream', attention: 'attention', head: 'attention-head',
   weights: 'attention-head', valueWeighted: 'attention-head', mlp: 'mlp', logits: 'logits', logitLens: 'logit-lens',
   sampling: 'sampling', sampleDraw: 'sampling', pOut: 'sampling', temperature: 'temperature', topK: 'top-k', seed: 'seed',

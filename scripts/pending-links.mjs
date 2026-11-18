@@ -10,11 +10,14 @@ const pages = [];
 const walk = (d) => { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) walk(p); else if (f === 'index.html') pages.push(p); } };
 walk(root);
 
+// внешние адреса, которые ещё не опубликованы (наша модель): упоминания пока текстом
+const unpublished = JSON.parse(readFileSync(new URL('../docsite/pending-external.json', import.meta.url), 'utf8')).unpublished;
 let fixed = 0;
 const missing = new Set();
 for (const file of pages) {
   const html = readFileSync(file, 'utf8');
   const out = html.replace(/<a href="([^"]*)"([^>]*)>([\s\S]*?)<\/a>/g, (m, href, rest, inner) => {
+    if (unpublished.some((u) => href === u || href.startsWith(u + '/') || href.startsWith(u + '#'))) { fixed++; missing.add(href); return `<span class="tl-pending">${inner}</span>`; }
     if (/^(https?:|mailto:|#)/.test(href) || /class="[^"]*(try-link|tl-)/.test(rest)) return m;
     const target = href.startsWith('/') ? join(root, href.split('#')[0]) : resolve(dirname(file), href.split('#')[0]);
     if (!target.includes(`${root}/docs/glossary/`) && !target.includes(`${root}/ru/docs/glossary/`)) return m;

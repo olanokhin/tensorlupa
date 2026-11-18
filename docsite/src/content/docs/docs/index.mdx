@@ -16,17 +16,26 @@ Start here if you are new to language models. The pages follow the order in whic
 1. [Language model](glossary/language-model/): what the model actually does, one token at a time.
 2. [Token](glossary/token/): the pieces of text the model reads and writes.
 3. [Prompt](glossary/prompt/): what the model reads before it answers.
-4. [Completion](glossary/completion/): continuing text, the mode every model starts with.
-5. [Instruct](glossary/instruct/): how a model learns to follow a request.
-6. [Transformer](glossary/transformer/): what happens inside at every step.
-7. [Embedding and residual stream](glossary/residual-stream/): the numbers a token turns into.
-8. [Attention](glossary/attention/): how a token looks back at earlier ones.
-9. [MLP](glossary/mlp/): the neurons in every layer.
-10. [Logits](glossary/logits/): scores for every possible next token.
-11. [Sampling](glossary/sampling/): how one token is chosen.
+4. [Special tokens](glossary/special-tokens/): the hidden chat markers, and how the model decides to stop.
+5. [Completion](glossary/completion/): continuing text, the mode every model starts with.
+6. [Instruct](glossary/instruct/): how a model learns to follow a request.
+7. [Transformer](glossary/transformer/): what happens inside at every step.
+8. [Embedding and residual stream](glossary/residual-stream/): the numbers a token turns into.
+9. [Attention](glossary/attention/): how a token looks back at earlier ones.
+10. [MLP and neurons](glossary/mlp/): the neurons in every layer.
+11. [Logits](glossary/logits/): scores for every possible next token.
+12. [Sampling](glossary/sampling/): how one token is chosen.
 
 ## Settings
 
-- [Temperature](glossary/temperature/): how bold the choice of the next token is.
+The controls in the studio, and what each one changes:
+[temperature](glossary/temperature/), [top-k](glossary/top-k/), [seed](glossary/seed/),
+[max new tokens](glossary/max-new-tokens/), [repetition penalty](glossary/repetition-penalty/),
+[logit bias](glossary/logit-bias/) and [constrained decoding](glossary/fsm/).
+
+## Going deeper
+
+What the Lab shows when you look closer: [attention heads](glossary/attention-head/),
+the [logit lens](glossary/logit-lens/) and [entropy](glossary/entropy/).
 
 <a class="try-link" href="/studio" target="_blank" rel="noopener">Open the studio</a>

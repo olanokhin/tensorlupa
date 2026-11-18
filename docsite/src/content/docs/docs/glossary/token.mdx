@@ -52,12 +52,19 @@ Step through the story and watch how short words, spaces and punctuation each ta
   spaces as Qwen3.
 - A few tokens are special and never appear as text: `<|im_start|>` and `<|im_end|>` mark the parts of a chat,
   and `<|endoftext|>` ends a text. You can see them in the [prompt](../prompt/).
-- Large models use the same idea with much bigger vocabularies; the smallest Qwen3 has about 150,000 tokens.
+- Large models use the same idea with much bigger vocabularies; the smallest Qwen3 ([Qwen3-0.6B-Base](https://huggingface.co/Qwen/Qwen3-0.6B-Base)) has about 150,000 tokens.
 
 ## A bit of history
 
-Byte pair encoding started as a data compression algorithm, described by Philip Gage in 1994. In 2016 Rico Sennrich and colleagues adapted it to split rare words into pieces for neural translation. GPT-2 then made it work on raw bytes, so that any text can be encoded, and most language models still use a variant of it.
+[Byte pair encoding](https://en.wikipedia.org/wiki/Byte_pair_encoding) started as a data compression algorithm, described by Philip Gage in 1994. In 2016 [Rico Sennrich and colleagues](https://arxiv.org/abs/1508.07909) adapted it to split rare words into pieces for neural translation. [GPT-2](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) then made it work on raw bytes, so that any text can be encoded, and most language models still use a variant of it.
 
 ## Next
 
 [Prompt](../prompt/): what the model reads before it starts to answer.
+
+## References
+
+- [Byte pair encoding](https://en.wikipedia.org/wiki/Byte_pair_encoding) (Philip Gage, 1994). Wikipedia.
+- Rico Sennrich, Barry Haddow, Alexandra Birch (2015). [Neural Machine Translation of Rare Words with Subword Units](https://arxiv.org/abs/1508.07909). ACL 2016.
+- Alec Radford et al. (2019). [Language Models are Unsupervised Multitask Learners](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf). OpenAI.
+- [Qwen3-0.6B-Base](https://huggingface.co/Qwen/Qwen3-0.6B-Base). Hugging Face.

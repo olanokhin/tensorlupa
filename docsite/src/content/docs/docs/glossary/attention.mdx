@@ -84,20 +84,28 @@ watch the highlight move.
 ## In micro-qwen3
 
 - 3 layers with 4 attention heads each, every head working with 64 numbers.
-- Grouped-query attention: the 4 heads share 2 sets of keys and values, which halves the memory needed for them.
-- RoPE: positions are encoded by rotating the queries and keys, so attention knows how far back a token is.
+- [Grouped-query attention](https://arxiv.org/abs/2305.13245): the 4 heads share 2 sets of keys and values, which halves the memory needed for them.
+- [RoPE](https://arxiv.org/abs/2104.09864): positions are encoded by rotating the queries and keys, so attention knows how far back a token is.
 - QK-norm: queries and keys are normalized before they are compared, which keeps training stable.
 - The model reads at most 256 tokens; the prompt and the story together have to fit.
 
-All of this is the same design as in Qwen3, at a much smaller size.
+All of this is the same design as in [Qwen3](https://arxiv.org/abs/2505.09388), at a much smaller size.
 
 ## A bit of history
 
-Attention was introduced in 2014 by Dzmitry Bahdanau, Kyunghyun Cho and Yoshua Bengio for machine translation:
+Attention was introduced in 2014 by [Dzmitry Bahdanau, Kyunghyun Cho and Yoshua Bengio](https://arxiv.org/abs/1409.0473) for machine translation:
 a model translating a sentence learned to look back at the right words of the original. In 2017 the paper
-"Attention Is All You Need" built a whole model from attention alone, the transformer, and almost every large
+["Attention Is All You Need"](https://arxiv.org/abs/1706.03762) built a whole model from attention alone, the transformer, and almost every large
 language model since then is built on it.
 
 ## Next
 
 [MLP](../mlp/): the second half of every layer, where the neurons are.
+
+## References
+
+- Dzmitry Bahdanau, Kyunghyun Cho, Yoshua Bengio (2014). [Neural Machine Translation by Jointly Learning to Align and Translate](https://arxiv.org/abs/1409.0473). arXiv.
+- Ashish Vaswani et al. (2017). [Attention Is All You Need](https://arxiv.org/abs/1706.03762). arXiv.
+- Joshua Ainslie et al. (2023). [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/abs/2305.13245). arXiv.
+- Jianlin Su et al. (2021). [RoFormer: Enhanced Transformer with Rotary Position Embedding](https://arxiv.org/abs/2104.09864). arXiv.
+- An Yang et al. (2025). [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388). arXiv.

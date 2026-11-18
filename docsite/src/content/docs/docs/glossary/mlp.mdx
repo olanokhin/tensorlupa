@@ -12,7 +12,7 @@ Every [transformer](../transformer/) layer has two halves. First [attention](../
 [token](../token/) look back at earlier tokens. Then the MLP works on the token alone: it reads the token's
 [residual stream](../residual-stream/), thinks about it, and adds its answer back on top.
 
-The MLP in micro-qwen3 is built the same way as in Qwen3, a design called SwiGLU. In plain words:
+The MLP in micro-qwen3 is built the same way as in Qwen3, a design called [SwiGLU](https://arxiv.org/abs/2002.05202). In plain words:
 
 1. The 112 numbers of the stream are mixed into 336 neurons, twice: once as a **signal** and once as a **gate**.
 2. The gate decides how strongly each neuron fires. Most neurons stay almost silent at any given step; a few light
@@ -66,11 +66,17 @@ Click the MLP plate of layer 3, then step one token forward or back and watch di
 
 ## A bit of history
 
-The neuron as a learning unit goes back to the perceptron, built by Frank Rosenblatt in 1958. Stacks of such
-neurons, multilayer perceptrons, became trainable with backpropagation in the 1980s, and the 2017 transformer
-paper put one inside every layer as its feed-forward block. The gated SwiGLU version used here was proposed by
-Noam Shazeer in 2020.
+The neuron as a learning unit goes back to the [perceptron](https://doi.org/10.1037/h0042519), built by Frank Rosenblatt in 1958. Stacks of such
+neurons, multilayer perceptrons, became trainable with backpropagation in the 1980s, and the 2017 [transformer
+paper](https://arxiv.org/abs/1706.03762) put one inside every layer as its feed-forward block. The gated SwiGLU version used here was proposed by
+[Noam Shazeer in 2020](https://arxiv.org/abs/2002.05202).
 
 ## Next
 
 [Logits](../logits/): how the last layer turns into a score for every possible next token.
+
+## References
+
+- Frank Rosenblatt (1958). [The perceptron: A probabilistic model for information storage and organization in the brain](https://doi.org/10.1037/h0042519). Psychological Review.
+- Ashish Vaswani et al. (2017). [Attention Is All You Need](https://arxiv.org/abs/1706.03762). arXiv.
+- Noam Shazeer (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). arXiv.

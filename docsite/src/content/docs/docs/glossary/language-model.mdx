@@ -50,7 +50,7 @@ Then press the arrow keys or the player buttons and watch the candidates change 
 
 ## In micro-qwen3
 
-micro-qwen3 has 1,056,656 parameters, about 560 times fewer than the smallest Qwen3. In your browser it writes
+micro-qwen3 has 1,056,656 parameters, about 560 times fewer than the smallest [Qwen3](https://arxiv.org/abs/2505.09388). In your browser it writes
 well over a thousand tokens per second, so a whole story is ready in a fraction of a second; the studio then plays
 it back slowly so you can follow. The same C code runs on an ESP32-S3 microcontroller at about 60 tokens per
 second.
@@ -60,8 +60,15 @@ far longer texts and were trained on far more data, but each step is still "scor
 
 ## A bit of history
 
-In 1948 Claude Shannon showed that English can be imitated with simple statistics: pick each next letter or word by how often it follows the previous ones. In 2003 Yoshua Bengio and colleagues replaced the counting with a neural network that predicts the next word. GPT in 2018 took the same next-token idea and scaled it up with a transformer.
+In 1948 [Claude Shannon](https://ieeexplore.ieee.org/document/6773024) showed that English can be imitated with simple statistics: pick each next letter or word by how often it follows the previous ones. In 2003 [Yoshua Bengio and colleagues](https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf) replaced the counting with a neural network that predicts the next word. [GPT](https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf) in 2018 took the same next-token idea and scaled it up with a transformer.
 
 ## Next
 
 [Token](../token/): what the pieces of text are, and why "dragon" is one token while a rare word takes several.
+
+## References
+
+- Claude E. Shannon (1948). [A Mathematical Theory of Communication](https://ieeexplore.ieee.org/document/6773024). Bell System Technical Journal.
+- Yoshua Bengio, Réjean Ducharme, Pascal Vincent, Christian Jauvin (2003). [A Neural Probabilistic Language Model](https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf). JMLR.
+- Alec Radford et al. (2018). [Improving Language Understanding by Generative Pre-Training](https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf). OpenAI.
+- An Yang et al. (2025). [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388). arXiv.

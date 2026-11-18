@@ -62,24 +62,33 @@ from "time" to "there".
 
 ## In micro-qwen3
 
-micro-qwen3 is a small copy of the Qwen3 design:
+micro-qwen3 is a small copy of the [Qwen3](https://arxiv.org/abs/2505.09388) design:
 
 - 3 layers, a stream of 112 numbers per token, a vocabulary of 4,096 tokens, 1,056,656 parameters in total.
-- Attention with 4 query heads that share 2 key-value heads (grouped-query attention), each head working with 64
+- Attention with 4 query heads that share 2 key-value heads ([grouped-query attention](https://arxiv.org/abs/2305.13245)), each head working with 64
   numbers.
-- MLP with 336 neurons per layer, using the SwiGLU activation.
-- RMSNorm before each part, QK-norm inside attention, and rotary position embeddings (RoPE) so the model knows
+- MLP with 336 neurons per layer, using the [SwiGLU](https://arxiv.org/abs/2002.05202) activation.
+- [RMSNorm](https://arxiv.org/abs/1910.07467) before each part, QK-norm inside attention, and [rotary position embeddings (RoPE)](https://arxiv.org/abs/2104.09864) so the model knows
   the order of the tokens. It reads at most 256 tokens at once.
 
 Large models use the same parts in the same order. They just have many more layers and much longer streams.
 
 ## A bit of history
 
-The transformer was introduced in 2017 by Vaswani and colleagues at Google in the paper "Attention Is All You
-Need", for translating text. It dropped the step-by-step recurrent networks used before and relied on attention
+The transformer was introduced in 2017 by Vaswani and colleagues at Google in the paper ["Attention Is All You
+Need"](https://arxiv.org/abs/1706.03762), for translating text. It dropped the step-by-step recurrent networks used before and relied on attention
 alone. Almost every large language model since then, including Qwen3, is a transformer.
 
 ## Next
 
 [Embedding and residual stream](../residual-stream/): the list of numbers a token turns into, and how each layer
 adds to it.
+
+## References
+
+- Ashish Vaswani et al. (2017). [Attention Is All You Need](https://arxiv.org/abs/1706.03762). arXiv.
+- An Yang et al. (2025). [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388). arXiv.
+- Joshua Ainslie et al. (2023). [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](https://arxiv.org/abs/2305.13245). arXiv.
+- Noam Shazeer (2020). [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202). arXiv.
+- Biao Zhang, Rico Sennrich (2019). [Root Mean Square Layer Normalization](https://arxiv.org/abs/1910.07467). arXiv.
+- Jianlin Su et al. (2021). [RoFormer: Enhanced Transformer with Rotary Position Embedding](https://arxiv.org/abs/2104.09864). arXiv.
