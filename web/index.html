@@ -63,8 +63,12 @@
 <header class="bar">
   <a class="logo" href="./" data-local><img class="logo-mark" src="media/logo.svg" alt="" width="26" height="26">TensorLupa</a>
   <nav class="bar-links">
+    <a href="docs/" data-local>Docs</a>
     <a href="https://github.com/olanokhin/tensorlupa" rel="noopener">GitHub</a>
-    <button id="lang" class="lang-btn" type="button"></button>
+    <div class="lang-wrap">
+      <button id="lang" class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" data-i18n-title="lang.title"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.8 10h14.4M10 2.8c2 2 3 4.4 3 7.2s-1 5.2-3 7.2c-2-2-3-4.4-3-7.2s1-5.2 3-7.2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span id="lang-code"></span></button>
+      <div class="lang-menu" id="lang-menu" role="menu" hidden></div>
+    </div>
   </nav>
 </header>
 
@@ -191,6 +195,7 @@
   document.documentElement.lang = window.MQ_LANG;
   document.title = g('land.title');
   document.querySelectorAll('[data-i18n]').forEach(function (e) { e.textContent = g(e.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-title]').forEach(function (e) { e.title = g(e.dataset.i18nTitle); });
 })();
 </script>
 <script type="module" src="landing.js"></script>

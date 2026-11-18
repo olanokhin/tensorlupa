@@ -65,10 +65,18 @@ if (navigator.share) {
   $('share').addEventListener('click', () => navigator.share({ title: 'TensorLupa', text: t('land.h1'), url }).catch(() => {}));
 }
 
-// ---------------------------------------------------------------- язык
-const other = L === 'ru' ? 'en' : 'ru';
-$('lang').textContent = other === 'ru' ? 'Русский' : 'English';
-$('lang').addEventListener('click', () => { const path = location.pathname.replace(/^\/ru(?=\/|$)/, '') || '/'; location.assign((other === 'en' ? path : '/' + other + path) + location.search); });
+// ---------------------------------------------------------------- язык: глобус и список языков (тот же перечень, что в студии)
+// Выбор ведёт на эту же страницу в другом языке: / ↔ /ru/. Новый язык — словарь в i18n/ и строка в LANGS (i18n.js).
+import { LANGS, langUrl } from './i18n.js';
+{
+  const btn = $('lang'), menu = $('lang-menu');
+  $('lang-code').textContent = L.toUpperCase();
+  menu.innerHTML = LANGS.map((x) => `<a role="menuitem" href="${langUrl(x.code)}" lang="${x.code}"${x.code === L ? ' aria-current="true"' : ''}>${x.name}</a>`).join('');
+  const open = (on) => { menu.hidden = !on; btn.setAttribute('aria-expanded', String(on)); };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); open(menu.hidden); });
+  document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !menu.contains(e.target) && !btn.contains(e.target)) open(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') open(false); });
+}
 
 // ---------------------------------------------------------------- счётчики: кольца с набегающими числами
 // Числа набегают от нуля, когда полоса впервые видна; потом страница раз в 30 секунд спрашивает свежие значения

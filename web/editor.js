@@ -555,6 +555,7 @@ $('story-text').innerHTML = `<div class="empty-hint">${t('empty.story')}</div>`;
 modelMenu();
 aboutMenu();
 langMenu();
+shareMenu();
 bindPair('mode-pair', (m) => setMode(m));
 glossary();
 
@@ -665,12 +666,6 @@ $('gen').addEventListener('pointerleave', genSpeed);
 $('gen').addEventListener('click', () => generate());
 $('reroll').addEventListener('click', () => generate({ newSeed: true }));
 $('tour-btn').addEventListener('click', () => runTour());
-$('copy-link').addEventListener('click', async () => {
-  writeLink();
-  try { await navigator.clipboard.writeText(location.href); } catch { /* без доступа к буферу — адрес всё равно в строке браузера */ }
-  const b = $('copy-link'); b.classList.add('done'); b.title = t('link.copied');
-  setTimeout(() => { b.classList.remove('done'); b.title = t('link.copy'); }, 1600);
-});
 $('words').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
 $('words').addEventListener('input', () => wordsHint(null));
 $('prompt').addEventListener('input', () => wordsHint(null));
@@ -734,3 +729,32 @@ function aboutMenu() {
 }
 
 boot();
+
+// «Поделиться»: ссылка на этот момент эксперимента (слова, seed, настройки, шаг). Главное — «Копировать ссылку»;
+// ниже «Отправить через» X / LinkedIn / Telegram. Системное окно отправки вернём вместе с мобильной студией. Сторонние сайты открываются
+// только по щелчку человека, сами по себе ничего никуда не отправляем.
+function shareMenu() {
+  const btn = $('share-btn'), pop = document.createElement('div');
+  pop.className = 'lang-pop share-pop';
+  const esc = (x) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const fill = () => {
+    writeLink();
+    const url = location.href, gen = S.run ? S.cur - Math.max(0, S.run.nPrompt - 1) + 1 : 0;
+    const what = !S.run ? t('share.empty') : gen > 0 ? t('share.desc', { n: gen }) : t('share.descStart');
+    const text = t('share.text'), u = encodeURIComponent(url), tx = encodeURIComponent(text);
+    pop.innerHTML = `<div class="cc-mod info-card"><div class="ic-title">${t('share.title')}</div><p>${what}</p>` +
+      `<div class="sh-row"><input class="sh-url" readonly value="${esc(url)}" aria-label="link"><button class="sh-copy">${t('share.copy')}</button></div>` +
+      `<div class="sh-via">${t('share.via')}</div>` +
+      `<div class="sh-apps"><a target="_blank" rel="noopener" href="https://x.com/intent/post?text=${tx}&url=${u}">X</a>` +
+      `<a target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url=${u}">LinkedIn</a>` +
+      `<a target="_blank" rel="noopener" href="https://t.me/share/url?url=${u}&text=${tx}">Telegram</a></div></div>`;
+    const input = pop.querySelector('.sh-url'), copy = pop.querySelector('.sh-copy');
+    input.addEventListener('focus', () => input.select());
+    copy.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(url); } catch { input.select(); }   // без буфера — выделяем, Cmd+C
+      copy.textContent = t('share.copied'); copy.classList.add('done');
+      setTimeout(() => { copy.textContent = t('share.copy'); copy.classList.remove('done'); }, 1600);
+    });
+  };
+  popover(btn, pop, { onOpen: fill });
+}

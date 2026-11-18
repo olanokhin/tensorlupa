@@ -34,7 +34,7 @@ for (const [file, page] of Object.entries(PAGES)) {
     }
     const pre = l === 'en' ? '' : l + '/';
     html = html.replace(/<html lang="[^"]*">/, `<html lang="${l}">`)
-      .replace(/(<a\b[^>]*\shref=")(\.\/|studio)("[^>]*\sdata-local)/g, (m, a, href, b) => a + pre + (href === './' ? '' : href) + b)
+      .replace(/(<a\b[^>]*\shref=")(\.\/|studio|docs\/)("[^>]*\sdata-local)/g, (m, a, href, b) => a + pre + (href === './' ? '' : href) + b)
       .replace(/<title>[^<]*<\/title>/, `<title>${esc(g(page.title))}</title>`)
       .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${attr(g(page.desc))}">`)
       .replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${attr(g(page.title))}">`)
