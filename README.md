@@ -15,17 +15,17 @@ scratch in MLX on a MacBook → weights quantized to 4 bits → an inference eng
 an ESP32-S3 microcontroller (about 60 tokens per second) → and compiled to WebAssembly with tracing turned on.
 What you see in TensorLupa is that very C code, recording every number of every step.
 
-**Set your expectations honestly.** micro-qwen3 has 1,056,656 parameters — about 560 times fewer than the
+**Set your expectations honestly.** micro-qwen3 has 1,056,656 parameters, about 560 times fewer than the
 smallest Qwen3 (0.6B). It writes short
 children's stories in English, not essays. But the mechanics are the same as in the big models, and here they
 are small enough to see all at once.
 
-- **A modern architecture, not a toy one:** the Qwen3 design — rotary position embeddings (RoPE), grouped-query
+- **A modern architecture, not a toy one:** the Qwen3 design with rotary position embeddings (RoPE), grouped-query
   attention (4 query heads share 2 key-value heads), QK-norm, SwiGLU feed-forward layers. 3 layers × 112
   dimensions, a 4096-token vocabulary.
 - **It follows instructions, not just continues text:** instruction-tuned in a chat format, it writes a story
   with the words you ask for. Of the requested words, 5.7% made it into the story before tuning and 64% after; a decoding
-  rule that gives unused words a growing push brings it to 100% — all three words in every one of 200 test orders.
+  rule that gives unused words a growing push brings it to 100%: all three words in every one of 200 test orders.
 - **Checked against the reference:** the training code's layer-by-layer model matches Qwen3 from mlx-lm
   numerically (a parity test in micro-qwen3, which is not public yet). In this repository `sh build.sh check`
   replays browser runs in a native build of the same C code: logits agree to about 10⁻⁶ and every token matches.
@@ -35,20 +35,20 @@ are small enough to see all at once.
 
 ## What you can do
 
-- **Guide** — the story, a 3D view of the model, the five candidates the model chose between, and a
+- **Guide:** the story, a 3D view of the model, the five candidates the model chose between, and a
   plain-language card "what just happened" for every step. A six-step tour walks you through it.
-- **Lab** — every number: the full logits strip, attention heads in 3D and 2D, residual stream plates, logit
+- **Lab:** every number: the full logits strip, attention heads in 3D and 2D, residual stream plates, logit
   lens, neurons, how the requested words are nudged in (logit bias, constrained decoding).
-- **Change and compare** — temperature, top-k and seed rewrite the story instantly with the same random seed,
+- **Change and compare:** temperature, top-k and seed rewrite the story instantly with the same random seed,
   so you see exactly what each setting does. Ask for a story with up to three words of your own, or continue
   your own beginning.
-- **Share an experiment** — the address bar always holds the words, settings and the step you are on; send the
+- **Share an experiment:** the address bar always holds the words, settings and the step you are on; send the
   link and the other person lands on exactly the same token.
 
 ## Run locally
 
 ```bash
-python3 serve.py     # http://127.0.0.1:8765 (landing), /studio (the studio) — ready to serve as is
+python3 serve.py     # http://127.0.0.1:8765 (landing), /studio (the studio), ready to serve as is
 ```
 
 To publish: `sh scripts/deploy.sh` (Cloudflare, see `wrangler.jsonc`).
@@ -66,7 +66,7 @@ model in [MODEL.md](MODEL.md).
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Three.js (MIT) is included in `web/vendor/three`.
+Apache 2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE). Three.js (MIT) is included in `web/vendor/three`.
 
-TensorLupa by Alex Anokhin — [LinkedIn](https://www.linkedin.com/in/olanokhin/) ·
+TensorLupa by Alex Anokhin: [LinkedIn](https://www.linkedin.com/in/olanokhin/) ·
 [Hugging Face](https://huggingface.co/olanokhin) · [olanokhin.com](https://olanokhin.com)
