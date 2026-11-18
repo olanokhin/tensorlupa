@@ -34,3 +34,5 @@
 :root[data-theme='light'] .try-link { color: #fff !important; background: #1b1c20; }
 :root[data-theme='light'] .try-link:hover { background: #000; }
 :root[data-theme='light'] .sl-markdown-content img { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 14px 40px rgba(0, 0, 0, 0.18); }
+/* упоминание термина, чья страница ещё пишется: обычный текст */
+.tl-pending { color: inherit; }

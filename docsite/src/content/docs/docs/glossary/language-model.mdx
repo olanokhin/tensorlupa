@@ -1,0 +1,63 @@
+---
+title: Language model
+description: What a language model actually does, shown step by step on micro-qwen3 writing a story in your browser.
+---
+
+**In one sentence:** a language model predicts the next piece of text. It reads what is written so far, scores
+every possible next token, picks one, adds it and repeats.
+
+## One token at a time
+
+A language model never writes a whole sentence at once. Every step is the same small loop:
+
+1. Read everything written so far.
+2. Give a score to each of the 4,096 [tokens](../token/) it knows.
+3. Turn the scores into chances and draw one token.
+4. Add that token to the text and go back to step 1.
+
+A story of 150 tokens is 150 turns of this loop. Nothing else is happening: no plan for the whole story, no
+memory between stories, just "what comes next?" asked again and again.
+
+## A real start of a story
+
+These are the first steps micro-qwen3 took when it wrote the demo story, with the three favourites at each step:
+
+| Written so far | Top three candidates | Drawn |
+| --- | --- | --- |
+| *(start of the answer)* | Once 98.6%, One 1.0%, Lily 0.2% | Once |
+| Once | upon 97.4%, there 2.6% | upon |
+| Once upon a time | **,** 82.9%, **there** 17.1% | **there** |
+| Once upon a time there was a | little 60.5%, boy 19.0%, school 7.4% | little |
+
+Two things are worth noticing. Most steps are nearly certain: after "Once upon a" the model gives "time" 100%.
+And at the third row the model did not take its favourite: a comma had 83%, but the draw landed on "there", and
+the story went on from there. That is how the same model can write many different stories.
+
+## Where it is in the studio
+
+![The story, the candidates for the current step and the player in the studio](../../../../assets/language-model-studio.png)
+
+- **Prompt & completion** shows the text. The highlighted token is the current step.
+- **Logits** shows what the model chose between at this step.
+- **The player** at the bottom moves one token back or forward. Every step is recorded, so you can go back to any
+  moment of the story.
+
+## Try it
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=32" target="_blank" rel="noopener">Open this step in the studio</a>
+
+Then press the arrow keys or the player buttons and watch the candidates change from token to token.
+
+## In micro-qwen3
+
+micro-qwen3 has 1,056,656 parameters, about 560 times fewer than the smallest Qwen3. In your browser it writes
+well over a thousand tokens per second, so a whole story is ready in a fraction of a second; the studio then plays
+it back slowly so you can follow. The same C code runs on an ESP32-S3 microcontroller at about 60 tokens per
+second.
+
+Large models like the ones behind chat assistants do exactly the same loop. They have far more parameters, read
+far longer texts and were trained on far more data, but each step is still "score every token, draw one, add it".
+
+## Next
+
+[Token](../token/): what the pieces of text are, and why "dragon" is one token while a rare word takes several.

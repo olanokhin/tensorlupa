@@ -612,8 +612,18 @@ function offerTour() {
 }
 
 // глоссарий: у терминов пунктирное подчёркивание, при наведении — стеклянная подсказка в одно предложение
-// термины, у которых уже есть страница в Docs (tensorlupa.com/docs/glossary/<term>/); остальные — только подсказка
-const DOCS = new Set(['temperature']);
+// термин подсказки → страница Docs (/docs/glossary/<slug>/). Какие страницы уже написаны, студия узнаёт из
+// /docs/pages.json (его пишет сборка Docs); у остальных терминов — только подсказка, без ссылки.
+const DOC_SLUG = {
+  languageModel: 'language-model', token: 'token', prompt: 'prompt', mode: 'instruct', model: 'transformer',
+  embedding: 'residual-stream', residualStream: 'residual-stream', attention: 'attention', head: 'attention-head',
+  weights: 'attention-head', valueWeighted: 'attention-head', mlp: 'mlp', logits: 'logits', logitLens: 'logit-lens',
+  sampling: 'sampling', sampleDraw: 'sampling', pOut: 'sampling', temperature: 'temperature', topK: 'top-k', seed: 'seed',
+  maxNew: 'max-new-tokens', loopPenalty: 'repetition-penalty', wbBase: 'logit-bias', wbTau: 'logit-bias',
+  wbStart: 'logit-bias', logitBias: 'logit-bias', keywords: 'logit-bias', fsm: 'fsm', entropy: 'entropy',
+};
+let DOCS = new Set();
+fetch('/docs/pages.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.glossary) DOCS = new Set(j.glossary); }).catch(() => {});
 function glossary() {
   const tip = document.createElement('div'); tip.className = 'gloss-tip'; tip.hidden = true; document.body.appendChild(tip);
   let timer = 0, cur = null;
@@ -631,10 +641,11 @@ function glossary() {
     cur = el;
     timer = setTimeout(() => {
       tip.textContent = text;
-      if (DOCS.has(el.dataset.term)) {
+      const slug = DOC_SLUG[el.dataset.term];
+      if (slug && DOCS.has(slug)) {
         const a = document.createElement('a');
         a.className = 'gloss-more'; a.target = '_blank'; a.rel = 'noopener';
-        a.href = `/${lang === 'en' ? '' : lang + '/'}docs/glossary/${el.dataset.term.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}/`;
+        a.href = `/${lang === 'en' ? '' : lang + '/'}docs/glossary/${slug}/`;
         a.textContent = t('gl.more');
         tip.appendChild(a);
       }
@@ -713,6 +724,7 @@ function aboutMenu() {
   pop.className = 'lang-pop about-pop';
   // ссылки: только рабочие адреса — пунктов «скоро» нет (новый адрес — одна строка здесь)
   const LINKS = [
+    { name: 'Docs', url: `/${lang === 'en' ? '' : lang + '/'}docs/` },
     { name: 'GitHub', url: 'https://github.com/olanokhin/tensorlupa' }, { name: 'Hugging Face', url: 'https://huggingface.co/olanokhin' },
     { name: 'LinkedIn', url: 'https://www.linkedin.com/in/olanokhin/' }, { name: t('about.site'), url: 'https://olanokhin.com' },
   ];

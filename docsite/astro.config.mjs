@@ -20,7 +20,24 @@ export default defineConfig({
       disable404Route: true,   // страница 404 — общая для сайта (web/404.html)
       sidebar: [
         { label: 'Start here', translations: { ru: 'С чего начать' }, items: [{ slug: 'docs', label: 'About the docs', translations: { ru: 'О документации' } }] },
-        { label: 'Glossary', translations: { ru: 'Глоссарий' }, items: [{ autogenerate: { directory: 'docs/glossary' } }] },
+        // адреса страниц плоские и стабильные (/docs/glossary/<термин>/ — на них ссылаются подсказки студии),
+        // а меню делится на «Основы» (порядок обучения) и «Настройки»
+        {
+          label: 'Basics', translations: { ru: 'Основы' },
+          items: [
+            { slug: 'docs/glossary/language-model' },
+            { slug: 'docs/glossary/token' },
+            { slug: 'docs/glossary/prompt' },
+            { slug: 'docs/glossary/completion' },
+            { slug: 'docs/glossary/instruct' },
+          ],
+        },
+        {
+          label: 'Settings', translations: { ru: 'Настройки' },
+          items: [
+            { slug: 'docs/glossary/temperature' },
+          ],
+        },
       ],
       head: [{ tag: 'meta', attrs: { property: 'og:image', content: 'https://tensorlupa.com/media/og.png' } }],
     }),
