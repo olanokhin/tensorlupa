@@ -142,15 +142,11 @@
 </footer>
 
 <script>
-// язык — так же, как в студии: сохранённый выбор → язык браузера → английский; тексты до первой отрисовки
+// язык — так же, как в студии: сохранённый выбор (переключатель) → иначе английский; тексты до первой отрисовки
 (function () {
   var D = window.MQ_DICTS || {}, saved = null, L = null;
   try { saved = localStorage.getItem('mq.lang'); } catch (e) { /* нет хранилища */ }
   if (saved && D[saved]) L = saved;
-  if (!L) {
-    var prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
-    for (var i = 0; i < prefs.length && !L; i++) { var c = String(prefs[i]).slice(0, 2).toLowerCase(); if (D[c]) L = c; }
-  }
   window.MQ_LANG = L || 'en';
   var d = D[window.MQ_LANG] || {}, en = D.en || {};
   function g(k) { var v = d[k] !== undefined ? d[k] : en[k]; return typeof v === 'string' ? v : k; }

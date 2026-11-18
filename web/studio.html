@@ -97,15 +97,11 @@ if (matchMedia('(max-width: 699px)').matches) location.replace('./?from=studio')
 <script>
 // Выбор языка и тексты разметки — обычным скриптом в конце <body>, синхронно, до первой отрисовки:
 // страница сразу появляется на нужном языке, ничего не мигает и не меняет ширину.
-// Язык: сохранённый выбор → язык браузера (если есть словарь) → английский.
+// Язык: сохранённый выбор (переключатель) → иначе английский. Язык браузера не угадываем — по умолчанию английский.
 (function () {
   var D = window.MQ_DICTS || {}, saved = null, L = null;
   try { saved = localStorage.getItem('mq.lang'); } catch (e) { /* нет хранилища */ }
   if (saved && D[saved]) L = saved;
-  if (!L) {
-    var prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
-    for (var i = 0; i < prefs.length && !L; i++) { var c = String(prefs[i]).slice(0, 2).toLowerCase(); if (D[c]) L = c; }
-  }
   window.MQ_LANG = L || 'en';
   var d = D[window.MQ_LANG] || {}, en = D.en || {};
   function g(k) { var v = d[k] !== undefined ? d[k] : en[k]; return typeof v === 'string' ? v : k; }
