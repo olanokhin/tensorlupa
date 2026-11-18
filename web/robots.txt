@@ -1,0 +1,5 @@
+# TensorLupa: everything is open to read and index.
+User-agent: *
+Allow: /
+
+Sitemap: https://tensorlupa.com/sitemap.xml

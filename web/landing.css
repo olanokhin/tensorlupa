@@ -46,7 +46,7 @@ h1 { font-size: clamp(40px, 5.2vw, 64px); line-height: 1.04; letter-spacing: -0.
   font: 600 16px var(--ui); color: #1b1c20; background: var(--ink-1); text-decoration: none; cursor: pointer;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), inset 0 -1px 0 rgba(0, 0, 0, 0.15); transition: background 0.15s; }
 .btn-open:hover { background: #fff; }
-.btn-ghost { display: inline-flex; align-items: center; height: 46px; padding: 0 18px; border-radius: 12px; font: 600 15px var(--ui); color: var(--ink-1);
+.btn-ghost { text-decoration: none; display: inline-flex; align-items: center; height: 46px; padding: 0 18px; border-radius: 12px; font: 600 15px var(--ui); color: var(--ink-1);
   background: var(--glass); border: 0; box-shadow: inset 0 0 0 1px var(--rim); cursor: pointer; }
 .btn-small { height: 40px; font-size: 14px; padding: 0 16px; }
 .phone { display: none; }
@@ -189,3 +189,7 @@ h3 { font-size: 18px; margin-bottom: 8px; }
   .ctr-label { font-size: 13.5px; }
 }
 @media (prefers-reduced-motion: reduce) { .ctr-sweep, .ctr-ticks { animation: none; } }
+
+/* страница 404 */
+.nf { grid-template-columns: 1fr; min-height: 60vh; }
+.nf-code { font: 600 22px var(--mono); color: var(--amber); margin-bottom: 18px; }

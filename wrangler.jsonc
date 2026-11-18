@@ -5,7 +5,7 @@
   "name": "tensorlupa",
   "compatibility_date": "2026-11-01",
   "main": "worker/index.js",
-  "assets": { "directory": "./dist", "binding": "ASSETS", "html_handling": "auto-trailing-slash", "not_found_handling": "none" },
+  "assets": { "directory": "./dist", "binding": "ASSETS", "html_handling": "auto-trailing-slash", "not_found_handling": "404-page" },
   "durable_objects": { "bindings": [{ "name": "COUNTER", "class_name": "Counter" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Counter"] }],
   "workers_dev": true,

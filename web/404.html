@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- TensorLupa · Copyright 2026 Alex Anokhin · Apache License 2.0 (LICENSE, NOTICE) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found · TensorLupa</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/landing.css">
+<script src="/i18n/en.js"></script>
+<script src="/i18n/ru.js"></script>
+</head>
+<body>
+<header class="bar"><a class="logo" href="/"><img class="logo-mark" src="/media/logo.svg" alt="" width="26" height="26">TensorLupa</a></header>
+<main>
+  <section class="hero nf">
+    <div class="hero-text">
+      <p class="nf-code">404</p>
+      <h1 data-i18n="nf.h1"></h1>
+      <p class="lede" data-i18n="nf.lede"></p>
+      <div class="cta">
+        <a class="btn-open" href="/studio" data-i18n="land.open"></a>
+        <a class="btn-ghost" href="/" data-i18n="nf.home"></a>
+      </div>
+    </div>
+  </section>
+</main>
+<script>
+(function () {
+  var D = window.MQ_DICTS || {}, L = null;
+  try { L = localStorage.getItem('mq.lang'); } catch (e) { /* нет хранилища */ }
+  var d = D[L] || D.en || {}, en = D.en || {};
+  document.documentElement.lang = D[L] ? L : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(function (e) { var k = e.dataset.i18n; e.textContent = d[k] || en[k] || k; });
+})();
+</script>
+</body>
+</html>

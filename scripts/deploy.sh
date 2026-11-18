@@ -6,4 +6,5 @@ set -e
 cd "$(dirname "$0")/.."
 rm -rf dist && mkdir dist
 rsync -a --exclude '.*' --exclude '*.md' --exclude 'engine/test_*.mjs' web/ dist/
+node scripts/prerender.mjs dist/*.html   # английский текст прямо в HTML — для поисковиков и превью
 ${WRANGLER:-wrangler} deploy
