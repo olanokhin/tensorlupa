@@ -1,10 +1,13 @@
 // TensorLupa на Cloudflare: статический сайт (Worker со статическими файлами). Файлы собирает scripts/deploy.sh в dist/.
 // /studio отдаёт studio.html (html_handling), запросы к статике бесплатны и без лимита трафика.
-// Серверный код (обратная связь, регистрация, репетитор) позже — "main": "worker/index.js" в этом же проекте.
+// Серверный код — worker/index.js: счётчик прогонов (/api/run, /api/stats); позже обратная связь, регистрация, репетитор.
 {
   "name": "tensorlupa",
   "compatibility_date": "2026-11-01",
-  "assets": { "directory": "./dist", "html_handling": "auto-trailing-slash", "not_found_handling": "none" },
+  "main": "worker/index.js",
+  "assets": { "directory": "./dist", "binding": "ASSETS", "html_handling": "auto-trailing-slash", "not_found_handling": "none" },
+  "durable_objects": { "bindings": [{ "name": "COUNTER", "class_name": "Counter" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Counter"] }],
   "workers_dev": true,
   "routes": [
     { "pattern": "tensorlupa.com", "custom_domain": true },

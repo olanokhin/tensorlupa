@@ -159,3 +159,8 @@ h3 { font-size: 18px; margin-bottom: 8px; }
   .inst-steps li > span:last-child { grid-column: 2; }
   .is-n { font-size: 16px; }
 }
+
+/* счётчики под кнопкой: числа — моноширинным, как данные в студии */
+.stats { margin-top: 22px; font-size: 14px; color: var(--ink-3); }
+.stats b { font: 600 15px var(--mono); color: var(--ink-1); }
+@media (max-width: 699px) { .stats { margin-top: 18px; } }

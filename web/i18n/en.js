@@ -281,6 +281,8 @@
   'land.see.1.h': 'The story, token by token', 'land.see.1': 'Text appears one piece at a time. Step back to any piece and look at that moment.',
   'land.see.2.h': 'The choice', 'land.see.2': 'At every step the model scores all 4,096 tokens it knows. You see the favourites and their chances, and which one was drawn.',
   'land.see.3.h': 'The attention', 'land.see.3': 'Which earlier words the model looked at before it chose, layer by layer, head by head.',
+  'land.stats.users': (n) => (n === 1 ? 'person has run the model' : 'people have run the model'),
+  'land.stats.runs': (n) => (n === 1 ? 'story written in visitors’ browsers' : 'stories written in visitors’ browsers'),
   'land.inst.h': 'It follows instructions, not just continues text',
   'land.inst': 'Models of this size usually only continue a text you start. micro‑qwen3 was instruction-tuned in a chat format: ask it to write a short story with the words dragon, cookie and school, and it writes one. On top of that, a decoding rule I designed gives the words not used yet a push that grows while they wait — the studio shows that push at every step.',
   'land.inst.cap': 'How many of the requested words make it into the story (test orders of three words):',

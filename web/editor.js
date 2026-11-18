@@ -211,6 +211,17 @@ function picksMenu() {
   addEventListener('resize', () => { if (!box.hidden) place(); });
 }
 
+// Счётчик прогонов на главной: после каждой готовой истории — анонимный «+1» на наш же сервер (tensorlupa.com/api/run).
+// Отправляется только случайный номер браузера (localStorage), без текста и слов. Пересчёты от ползунков не считаются —
+// иначе одно движение дало бы сотню «прогонов». На локальном сервере разработки не отправляется.
+function countRun() {
+  if (/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname)) return;
+  let id = null;
+  try { id = localStorage.getItem('mq.uid'); if (!id) { id = crypto.randomUUID().replace(/-/g, ''); localStorage.setItem('mq.uid', id); } }
+  catch { id = (countRun.tmp ||= crypto.randomUUID().replace(/-/g, '')); }   // без хранилища — номер только на эту загрузку
+  fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }), keepalive: true }).catch(() => {});
+}
+
 // newSeed — «другая история»; live — пересчёт после изменения настройки (без анимации, на том же шаге)
 function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
   if (!S.engine) { S.pendingGen = true; return; }   // модель ещё грузится — запустим сразу после загрузки
@@ -243,6 +254,7 @@ function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
   ri.innerHTML = t('run.info', rv); ri.title = t('run.title', rv);
   if (S.booted && !isLive) { ri.classList.remove('fresh'); void ri.offsetWidth; ri.classList.add('fresh'); }   // не при загрузке и не на живом пересчёте
   buildStory();
+  if (!isLive) countRun();
   const firstGen = Math.max(0, S.run.nPrompt - 1);
   $('t-range').max = S.run.steps.length - 1;
   if (atStep >= 0) setCur(Math.min(atStep, S.run.steps.length - 1));

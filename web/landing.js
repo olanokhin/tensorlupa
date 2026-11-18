@@ -69,3 +69,12 @@ if (navigator.share) {
 const other = L === 'ru' ? 'en' : 'ru';
 $('lang').textContent = other === 'ru' ? 'Русский' : 'English';
 $('lang').addEventListener('click', () => { try { localStorage.setItem('mq.lang', other); } catch { /* только на эту загрузку */ } location.reload(); });
+
+// ---------------------------------------------------------------- счётчики: сколько людей попробовали и сколько историй написано
+fetch('/api/stats').then((r) => (r.ok ? r.json() : null)).then((st) => {
+  if (!st || typeof st.runs !== 'number') return;
+  const nf = new Intl.NumberFormat(L);
+  const el = $('stats');
+  el.innerHTML = `<b>${nf.format(st.users)}</b> ${t('land.stats.users')(st.users)} · <b>${nf.format(st.runs)}</b> ${t('land.stats.runs')(st.runs)}`;
+  el.hidden = false;
+}).catch(() => {});

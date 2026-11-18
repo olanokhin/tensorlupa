@@ -30,7 +30,8 @@ are small enough to see all at once.
   numerically (a parity test in micro-qwen3, which is not public yet). In this repository `sh build.sh check`
   replays browser runs in a native build of the same C code: logits agree to about 10⁻⁶ and every token matches.
 - **Everything stays in your browser:** the model (0.68 MB) and the engine (64 KB) are downloaded once; the page
-  makes no requests to third-party servers.
+  makes no requests to third-party servers. After each finished story the studio sends one anonymous "+1" to
+  tensorlupa.com itself (a random browser id, no text or words) for the counters on the landing page.
 
 ## What you can do
 
