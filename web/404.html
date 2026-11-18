@@ -28,10 +28,11 @@
 </main>
 <script>
 (function () {
-  var D = window.MQ_DICTS || {}, L = null;
-  try { L = localStorage.getItem('mq.lang'); } catch (e) { /* нет хранилища */ }
-  var d = D[L] || D.en || {}, en = D.en || {};
-  document.documentElement.lang = D[L] ? L : 'en';
+  var D = window.MQ_DICTS || {};
+  var L = /^\/ru(\/|$)/.test(location.pathname) && D.ru ? 'ru' : 'en';
+  var d = D[L] || {}, en = D.en || {};
+  document.documentElement.lang = L;
+  if (L !== 'en') document.querySelectorAll('a[href^="/"]').forEach(function (a) { a.setAttribute('href', '/' + L + a.getAttribute('href')); });
   document.querySelectorAll('[data-i18n]').forEach(function (e) { var k = e.dataset.i18n; e.textContent = d[k] || en[k] || k; });
 })();
 </script>

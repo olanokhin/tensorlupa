@@ -11,9 +11,22 @@ from pathlib import Path
 
 class NoCache(http.server.SimpleHTTPRequestHandler):
     def translate_path(self, path):
-        # адреса без расширения (/studio) — как на Vercel с cleanUrls: отдаём studio.html
-        p = super().translate_path(path)
-        return p + ".html" if not Path(p).exists() and Path(p + ".html").exists() else p
+        # как на сайте: /ru/… — та же страница (язык она берёт из адреса); чего нет в web/ — из собранных Docs
+        clean = path.split("?", 1)[0].split("#", 1)[0]
+        if clean == "/ru" or clean.startswith("/ru/"):
+            rest = clean[3:] or "/"
+            if not rest.startswith("/docs"):
+                path = rest
+        p = Path(super().translate_path(path))
+        if not p.exists() and Path(str(p) + ".html").exists():
+            return str(p) + ".html"                       # /studio → studio.html, как на Cloudflare
+        if not p.exists():
+            d = Path(__file__).resolve().parent / "docsite" / "dist" / clean.lstrip("/")
+            if d.is_dir() and (d / "index.html").exists():
+                return str(d / "index.html")
+            if d.exists():
+                return str(d)
+        return str(p)
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, must-revalidate")

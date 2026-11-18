@@ -4,6 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="/">
 <title>TensorLupa studio: watch a language model think</title>
 <meta name="author" content="Alex Anokhin">
 <link rel="canonical" href="https://tensorlupa.com/studio">
@@ -22,7 +23,7 @@
 <link rel="apple-touch-icon" href="media/apple-touch-icon.png">
 <script>
 // студия — для большого экрана; с телефона ведём на главную, там объяснение и ссылка для компьютера
-if (matchMedia('(max-width: 699px)').matches) location.replace('./?from=studio');
+if (matchMedia('(max-width: 699px)').matches) location.replace((/^\/ru(\/|$)/.test(location.pathname) ? '/ru/' : '/') + '?from=studio');
 </script>
 <link rel="stylesheet" href="editor.css">
 <script src="i18n/en.js"></script>
@@ -36,8 +37,9 @@ if (matchMedia('(max-width: 699px)').matches) location.replace('./?from=studio')
 </head>
 <body>
 <div id="app">
+  <h1 class="sr-only" data-i18n="studio.h1"></h1>
   <header id="top">
-    <a class="brand" href="./" data-i18n-title="land.home"><img class="brand-mark" src="media/logo.svg" alt="" width="20" height="20"><span class="brand-name">TensorLupa</span><span class="brand-by">by Alex Anokhin</span></a>
+    <a class="brand" href="./" data-local data-i18n-title="land.home"><img class="brand-mark" src="media/logo.svg" alt="" width="20" height="20"><span class="brand-name">TensorLupa</span><span class="brand-by">by Alex Anokhin</span></a>
     <button id="model-pill" class="model-pill" data-i18n-title="model.pill.title"><span class="mp-name">micro-qwen3</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <div class="order">
       <select id="mode" data-term="mode">
@@ -108,12 +110,12 @@ if (matchMedia('(max-width: 699px)').matches) location.replace('./?from=studio')
 <script>
 // Выбор языка и тексты разметки — обычным скриптом в конце <body>, синхронно, до первой отрисовки:
 // страница сразу появляется на нужном языке, ничего не мигает и не меняет ширину.
-// Язык: сохранённый выбор (переключатель) → иначе английский. Язык браузера не угадываем — по умолчанию английский.
+// Язык задаёт адрес: /ru/studio — русский, /studio — английский. Переключатель ведёт на тот же адрес в другом языке.
 (function () {
-  var D = window.MQ_DICTS || {}, saved = null, L = null;
-  try { saved = localStorage.getItem('mq.lang'); } catch (e) { /* нет хранилища */ }
-  if (saved && D[saved]) L = saved;
-  window.MQ_LANG = L || 'en';
+  var D = window.MQ_DICTS || {};
+  var L = /^\/ru(\/|$)/.test(location.pathname) && D.ru ? 'ru' : 'en';
+  window.MQ_LANG = L; window.MQ_PREFIX = L === 'en' ? '' : L + '/';
+  document.querySelectorAll('a[data-local]').forEach(function (a) { if (window.MQ_PREFIX && a.getAttribute('href').indexOf(window.MQ_PREFIX) !== 0) a.setAttribute('href', window.MQ_PREFIX + a.getAttribute('href').replace(/^\.\//, '')); });
   var d = D[window.MQ_LANG] || {}, en = D.en || {};
   function g(k) { var v = d[k] !== undefined ? d[k] : en[k]; return typeof v === 'string' ? v : k; }
   document.documentElement.lang = window.MQ_LANG;

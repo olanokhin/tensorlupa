@@ -1052,3 +1052,9 @@ a.brand { text-decoration: none; color: inherit; }
 a.brand:hover .brand-name { color: #fff; }
 .brand-mark { width: 20px; height: 20px; flex: none; align-self: center; margin-right: 8px; }
 a.brand { display: inline-flex; align-items: center; }
+/* подсказка со ссылкой «Подробнее в Docs»: принимает мышь, чтобы по ссылке можно было щёлкнуть */
+.gloss-tip { pointer-events: auto; }
+.gloss-more { display: block; margin-top: 8px; font-weight: 600; color: #f2b33d; text-decoration: none; }
+.gloss-more:hover { text-decoration: underline; }
+/* заголовок страницы для поисковиков и экранных читалок, на экране не виден */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

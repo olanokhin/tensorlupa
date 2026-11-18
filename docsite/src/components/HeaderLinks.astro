@@ -1,0 +1,22 @@
+---
+// Шапка Docs: ссылки на главный сайт и в студию — перед стандартными иконками (GitHub).
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+const ru = Astro.url.pathname.startsWith('/ru/');
+---
+<nav class="tl-links" aria-label={ru ? 'TensorLupa' : 'TensorLupa'}>
+  <a class="tl-home" href={ru ? '/ru/' : '/'}>{ru ? 'Главная' : 'Home'}</a>
+  <a class="tl-studio" href={ru ? '/ru/studio' : '/studio'}>{ru ? 'Открыть студию' : 'Open the studio'}</a>
+</nav>
+<Default />
+
+<style>
+  .tl-links { display: flex; align-items: center; gap: 0.9rem; margin-inline-end: 0.4rem; }
+  .tl-home { color: var(--sl-color-gray-2); text-decoration: none; font-size: var(--sl-text-sm); }
+  .tl-home:hover { color: var(--sl-color-white); }
+  .tl-studio { display: inline-flex; align-items: center; height: 2rem; padding: 0 0.85rem; border-radius: 0.6rem; text-decoration: none;
+    font-size: var(--sl-text-sm); font-weight: 600; color: #1b1c20; background: #eceef2; white-space: nowrap; }
+  .tl-studio:hover { background: #fff; }
+  :global(:root[data-theme='light']) .tl-studio { color: #fff; background: #1b1c20; }
+  :global(:root[data-theme='light']) .tl-studio:hover { background: #000; }
+  @media (max-width: 50rem) { .tl-home { display: none; } }
+</style>

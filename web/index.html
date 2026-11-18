@@ -4,6 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="/">
 <title>TensorLupa: a magnifying glass for neural networks</title>
 <meta name="author" content="Alex Anokhin">
 <link rel="canonical" href="https://tensorlupa.com/">
@@ -50,7 +51,8 @@
 // старые ссылки на эксперименты вели на главную (/?w=…&seed=…) — отправляем их в студию с теми же параметрами
 (function () {
   var q = new URLSearchParams(location.search);
-  if (['w', 'p', 'seed', 's', 't', 'k', 'mode'].some(function (k) { return q.has(k); })) location.replace('studio' + location.search);
+  var pre = /^\/ru(\/|$)/.test(location.pathname) ? '/ru' : '';
+  if (['w', 'p', 'seed', 's', 't', 'k', 'mode'].some(function (k) { return q.has(k); })) location.replace(pre + '/studio' + location.search);
 })();
 </script>
 <link rel="stylesheet" href="landing.css">
@@ -59,7 +61,7 @@
 </head>
 <body>
 <header class="bar">
-  <a class="logo" href="./"><img class="logo-mark" src="media/logo.svg" alt="" width="26" height="26">TensorLupa</a>
+  <a class="logo" href="./" data-local><img class="logo-mark" src="media/logo.svg" alt="" width="26" height="26">TensorLupa</a>
   <nav class="bar-links">
     <a href="https://github.com/olanokhin/tensorlupa" rel="noopener">GitHub</a>
     <button id="lang" class="lang-btn" type="button"></button>
@@ -72,7 +74,7 @@
       <h1 data-i18n="land.h1"></h1>
       <p class="lede" data-i18n="land.lede"></p>
       <div class="cta">
-        <a class="btn-open" href="studio" data-i18n="land.open"></a>
+        <a class="btn-open" href="studio" data-local data-i18n="land.open"></a>
         <p class="cta-note" data-i18n="land.free"></p>
       </div>
       <div class="phone">
@@ -162,7 +164,7 @@
     <h2 data-i18n="land.expect.h"></h2>
     <p data-i18n="land.expect"></p>
     <div class="cta cta-end">
-      <a class="btn-open" href="studio" data-i18n="land.open"></a>
+      <a class="btn-open" href="studio" data-local data-i18n="land.open"></a>
     </div>
   </section>
 </main>
@@ -178,12 +180,12 @@
 </footer>
 
 <script>
-// язык — так же, как в студии: сохранённый выбор (переключатель) → иначе английский; тексты до первой отрисовки
+// язык задаёт адрес: /ru/… — русский, иначе английский (как в студии и Docs); тексты до первой отрисовки
 (function () {
-  var D = window.MQ_DICTS || {}, saved = null, L = null;
-  try { saved = localStorage.getItem('mq.lang'); } catch (e) { /* нет хранилища */ }
-  if (saved && D[saved]) L = saved;
-  window.MQ_LANG = L || 'en';
+  var D = window.MQ_DICTS || {};
+  var L = /^\/ru(\/|$)/.test(location.pathname) && D.ru ? 'ru' : 'en';
+  window.MQ_LANG = L; window.MQ_PREFIX = L === 'en' ? '' : L + '/';
+  document.querySelectorAll('a[data-local]').forEach(function (a) { if (window.MQ_PREFIX && a.getAttribute('href').indexOf(window.MQ_PREFIX) !== 0) a.setAttribute('href', window.MQ_PREFIX + a.getAttribute('href').replace(/^\.\//, '')); });
   var d = D[window.MQ_LANG] || {}, en = D.en || {};
   function g(k) { var v = d[k] !== undefined ? d[k] : en[k]; return typeof v === 'string' ? v : k; }
   document.documentElement.lang = window.MQ_LANG;

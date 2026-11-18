@@ -4,3 +4,6 @@ engine/cli
 .env*
 dist
 .wrangler
+docsite/node_modules
+docsite/dist
+docsite/.astro

@@ -1,5 +1,5 @@
-// Локализация. Словари — обычные скрипты i18n/<код>.js (кладут себя в window.MQ_DICTS), язык выбирает
-// i18n/boot.js до первой отрисовки (window.MQ_LANG). Новый язык = ещё один файл в i18n/, тег <script> в index.html
+// Локализация. Словари — обычные скрипты i18n/<код>.js (кладут себя в window.MQ_DICTS), язык задаёт адрес
+// страницы (/ru/… — русский), его определяет скрипт в конце страницы до первой отрисовки (window.MQ_LANG). Новый язык = ещё один файл в i18n/, тег <script> в index.html
 // и строка в LANGS; код не меняется.
 // Значение в словаре — строка с подстановками {name} или функция (v, h) => строка (множественное число и т. п.).
 
@@ -24,7 +24,9 @@ export function t(key, v = {}) {
   return s.replace(/\{(\w+)\}/g, (m, k) => (v[k] !== undefined ? v[k] : m));
 }
 
-export function setLang(code) {
-  try { localStorage.setItem('mq.lang', code); } catch { /* без памяти — только на эту загрузку */ }
-  location.reload();
+// адрес страницы в другом языке: /studio ↔ /ru/studio, / ↔ /ru/ (английский — без префикса)
+export function langUrl(code) {
+  const path = location.pathname.replace(/^\/ru(?=\/|$)/, '') || '/';
+  return (code === 'en' ? path : '/' + code + path) + location.search + location.hash;
 }
+export function setLang(code) { location.assign(langUrl(code)); }

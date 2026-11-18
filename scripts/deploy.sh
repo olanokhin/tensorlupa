@@ -6,5 +6,6 @@ set -e
 cd "$(dirname "$0")/.."
 rm -rf dist && mkdir dist
 rsync -a --exclude '.*' --exclude '*.md' --exclude 'engine/test_*.mjs' web/ dist/
-node scripts/prerender.mjs dist/*.html   # английский текст прямо в HTML — для поисковиков и превью
+(cd docsite && ./node_modules/.bin/astro build --silent) && cp -R docsite/dist/. dist/   # Docs: /docs/… и /ru/docs/…
+node scripts/localize.mjs dist   # страницы на каждом языке (/, /studio, /ru/, /ru/studio) с текстами в HTML
 ${WRANGLER:-wrangler} deploy

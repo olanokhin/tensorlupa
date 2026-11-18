@@ -1,0 +1,36 @@
+/* Docs в цветах студии: тёмный фон, янтарь — выбранное, лиловый — вторичное. Шрифты системные, без внешних загрузок. */
+:root {
+  --sl-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --sl-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+/* тёмная тема — цвета студии; светлая остаётся стандартной Starlight, только с янтарным акцентом */
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #3a2d10;
+  --sl-color-accent: #f2b33d;
+  --sl-color-accent-high: #ffd98a;
+  --sl-color-white: #eceef2;
+  --sl-color-gray-1: #d9dbe0;
+  --sl-color-gray-2: #b4b7be;
+  --sl-color-gray-3: #8a8e97;
+  --sl-color-gray-4: #5a5e67;
+  --sl-color-gray-5: #34373e;
+  --sl-color-gray-6: #22252b;
+  --sl-color-black: #16181c;
+}
+:root[data-theme='light'] {
+  --sl-color-accent-low: #fbe9c4;
+  --sl-color-accent: #a86f00;
+  --sl-color-accent-high: #5a3b00;
+}
+/* скриншоты студии: скругление и тонкая кромка, как у панелей */
+.sl-markdown-content img { border-radius: 12px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 18px 50px rgba(0, 0, 0, 0.35); }
+/* таблица распределений: числа моноширинным */
+.sl-markdown-content td { font-variant-numeric: tabular-nums; }
+.try-link { margin: 4px 0 8px; display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; text-decoration: none !important;
+  font-weight: 600; color: #1b1c20 !important; background: #eceef2; }
+.try-link:hover { background: #fff; }
+
+/* в светлой теме кнопка «Открыть в студии» тёмная, чтобы не сливаться с фоном */
+:root[data-theme='light'] .try-link { color: #fff !important; background: #1b1c20; }
+:root[data-theme='light'] .try-link:hover { background: #000; }
+:root[data-theme='light'] .sl-markdown-content img { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 14px 40px rgba(0, 0, 0, 0.18); }

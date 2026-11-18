@@ -3,3 +3,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://tensorlupa.com/sitemap.xml
+Sitemap: https://tensorlupa.com/sitemap-index.xml

@@ -50,7 +50,7 @@ function writeLink() {
   for (const [key, short] of Object.entries(QK)) if (P[key] !== DEF[key]) q.set(short, typeof DEF[key] === 'boolean' ? (P[key] ? 1 : 0) : P[key]);
   q.set('s', S.cur);
   if (S.mode === 'lab') q.set('mode', 'lab');
-  history.replaceState(null, '', '?' + q.toString().replace(/%2C/g, ','));
+  history.replaceState(null, '', location.pathname + '?' + q.toString().replace(/%2C/g, ','));   // путь явно: на странице есть <base href="/">
 }
 try { S.mode = localStorage.getItem('mq.mode') || 'guide'; } catch { S.mode = 'guide'; }
 const LINK = readLink();
@@ -610,26 +610,40 @@ function offerTour() {
 }
 
 // глоссарий: у терминов пунктирное подчёркивание, при наведении — стеклянная подсказка в одно предложение
+// термины, у которых уже есть страница в Docs (tensorlupa.com/docs/glossary/<term>/); остальные — только подсказка
+const DOCS = new Set(['temperature']);
 function glossary() {
   const tip = document.createElement('div'); tip.className = 'gloss-tip'; tip.hidden = true; document.body.appendChild(tip);
   let timer = 0, cur = null;
-  const hide = () => { clearTimeout(timer); tip.hidden = true; cur = null; };
+  let grace = 0;
+  const hide = () => { clearTimeout(timer); clearTimeout(grace); tip.hidden = true; cur = null; };
   document.addEventListener('pointerover', (e) => {
+    if (tip.contains(e.target)) { clearTimeout(grace); return; }    // мышь перешла в подсказку — держим её открытой
     const el = e.target.closest('[data-term]');
-    if (el === cur) return;
-    hide(); if (!el) return;
+    if (el === cur) { clearTimeout(grace); return; }
+    // ушли с термина на пустое место: даём 300 мс, чтобы мышь успела дойти до ссылки в подсказке
+    if (!el) { if (!tip.hidden) { clearTimeout(grace); grace = setTimeout(hide, 300); } else hide(); return; }
+    hide();
     const key = 'gl.' + el.dataset.term, text = t(key);
     if (text === key) return;                       // термина нет в словаре — без подсказки
     cur = el;
     timer = setTimeout(() => {
-      tip.textContent = text; tip.hidden = false;
+      tip.textContent = text;
+      if (DOCS.has(el.dataset.term)) {
+        const a = document.createElement('a');
+        a.className = 'gloss-more'; a.target = '_blank'; a.rel = 'noopener';
+        a.href = `/${lang === 'en' ? '' : lang + '/'}docs/glossary/${el.dataset.term.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}/`;
+        a.textContent = t('gl.more');
+        tip.appendChild(a);
+      }
+      tip.hidden = false;
       const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
       const x = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2));
       const y = r.bottom + 8 + h < innerHeight ? r.bottom + 8 : r.top - h - 8;
       tip.style.left = x + 'px'; tip.style.top = y + 'px';
     }, 250);
   });
-  document.addEventListener('pointerdown', hide); addEventListener('scroll', hide, true);
+  document.addEventListener('pointerdown', (e) => { if (!tip.contains(e.target)) hide(); }); addEventListener('scroll', hide, true);
 }
 setMode(S.mode, !S.modeFromLink);   // режим из ссылки не перезаписывает сохранённый выбор получателя
 // огоньки «Generate»: скорость меняется плавно, без перезапуска анимации (иначе угол прыгает)

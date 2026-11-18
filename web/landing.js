@@ -68,7 +68,7 @@ if (navigator.share) {
 // ---------------------------------------------------------------- язык
 const other = L === 'ru' ? 'en' : 'ru';
 $('lang').textContent = other === 'ru' ? 'Русский' : 'English';
-$('lang').addEventListener('click', () => { try { localStorage.setItem('mq.lang', other); } catch { /* только на эту загрузку */ } location.reload(); });
+$('lang').addEventListener('click', () => { const path = location.pathname.replace(/^\/ru(?=\/|$)/, '') || '/'; location.assign((other === 'en' ? path : '/' + other + path) + location.search); });
 
 // ---------------------------------------------------------------- счётчики: кольца с набегающими числами
 // Числа набегают от нуля, когда полоса впервые видна; потом страница раз в 30 секунд спрашивает свежие значения

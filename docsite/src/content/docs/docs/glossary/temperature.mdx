@@ -1,0 +1,71 @@
+---
+title: Temperature
+description: How temperature changes the model's choice of the next token, shown on a real step of micro-qwen3.
+---
+
+**In one sentence:** temperature sets how bold the choice is. Low temperature almost always takes the most
+likely token; high temperature gives more surprising words and more mistakes.
+
+## What happens inside
+
+At every step the model gives each of the 4,096 tokens it knows a score, called a logit. To turn the scores into
+chances, the studio divides every score by the temperature and then applies softmax.
+
+- **Small temperature (0.2):** the gaps between scores grow, and the favourite takes even more.
+- **Large temperature (1.2):** the gaps shrink, the chances even out, and rare tokens get a real chance.
+
+Then one token is drawn at random, weighted by these chances. Temperature does not change what the model knows.
+It only changes how the draw is weighted.
+
+## A real step
+
+The story so far: *"Once upon a time there was a little girl named Lily. She loved to play with her toys and"*.
+These are the same model scores at three temperatures, with top-k 40:
+
+| Temperature | her | run | read | sing |
+| --- | --- | --- | --- | --- |
+| 0.2 | 43% | 31% | 25% | 0.7% |
+| **0.6** (default) | 29% | 26% | **24%** | 7% |
+| 1.2 | 15% | 14% | 14% | 8% |
+
+At 0.6 the model actually drew **read**, the third option, and the story continued with "read books". At 0.2
+"sing" practically disappears. At 1.2 the top three are almost equal, and tokens outside the top five together
+take 43% of the chances, so odd words start to slip in.
+
+## Where it is in the studio
+
+![The temperature slider in the Sampling card, and the candidates it reshapes in the Logits panel](../../../../assets/temperature-studio.png)
+
+The temperature slider is the first one in the **Sampling** card, in both Guide and Lab. It goes from 0.05 to
+1.5, and the default is 0.6. The candidates it reshapes are in the **Logits** panel, under "The model chose
+between".
+
+Moving the slider reruns the story instantly with the same seed, so every change you see comes from temperature
+alone. Keep in mind that once one earlier token changes, everything after it is a different story.
+
+## Try it
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=48" target="_blank" rel="noopener">Open this step in the studio</a>
+
+Then drag the temperature slider and watch the bars under "The model chose between" sharpen and flatten.
+
+## In micro-qwen3
+
+We picked 0.6 by measuring 200 story orders of three words each:
+
+| Temperature | All three words used | Repeated 4-word phrases | Story ends on its own |
+| --- | --- | --- | --- |
+| 0.5 | 99.5% | 7.2% | 87.5% |
+| **0.6** | **100%** | **4.5%** | **87.0%** |
+| 0.7 | 98.0% | 4.0% | 82.0% |
+| 0.8 | 99.5% | 2.0% | 82.5% |
+| 1.0 | 99.0% | 0.7% | 81.5% |
+
+From 0.5 to 0.6 repetition drops by more than a third, while stories still end cleanly as often. Above 0.7 the
+model starts to make up words and finishes on its own less often.
+
+## Related
+
+- **Top-k** decides how many candidates get a chance at all; temperature then shapes their chances.
+- **Seed** fixes the random draw, so the same seed and settings give the same story.
+- **Logits** are the raw scores that temperature divides.
