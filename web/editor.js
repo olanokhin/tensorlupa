@@ -3,6 +3,7 @@
 import { Deck } from './cards.js';
 import { Stage } from './stage.js';
 import { Split } from './split.js';
+import { DocPane } from './docs.js';
 import { navPad } from './navpad.js';
 import { popover } from './popover.js';
 import { startTour } from './tour.js';
@@ -561,7 +562,15 @@ S.stage = new Stage($('stage'), {
 S.split = new Split($('views'), [
   { el: $('view-model'), label: t('model.title'), term: 'model' },
   { el: $('view-attn'), label: t('attn.title'), term: 'attention' },
-], { title: t('split.title'), splitLabel: t('split.back'), onChange: () => glassRanges.forEach(placeKnob) });
+  { el: $('view-docs'), label: t('docs.tab'), closable: true },
+], { title: t('split.title'), closeLabel: t('docs.close'), onChange: () => glassRanges.forEach(placeKnob) });
+// Docs внутри студии: статьи берутся с тех же страниц, что на сайте; открытая вкладка восстанавливается после перезагрузки
+const DOCS_HOME = `/${lang === 'en' ? '' : lang + '/'}docs/`;
+S.docs = new DocPane($('view-docs'), { t, home: DOCS_HOME });
+if (S.split.isOpen(2)) S.docs.load(S.docs.last() || DOCS_HOME, { push: false });
+function openDoc(href) { S.split.open(2); S.docs.load(href); }
+// кнопка Docs в верхней панели: вкладка Docs на последней прочитанной статье (в первый раз — главная Docs)
+$('docs-btn').addEventListener('click', () => { const was = S.split.isOpen(2); S.split.open(2); if (!was || !S.docs.url) S.docs.load(S.docs.last() || DOCS_HOME, { push: false }); });
 addEventListener('scroll', () => glassRanges.forEach(placeKnob), true);
 new MutationObserver(() => glassRanges.forEach(placeKnob)).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['hidden'] });
 
@@ -706,6 +715,8 @@ function glossary() {
       if (slug && DOCS.has(slug)) {
         const a = document.createElement('a');
         a.className = 'gloss-more'; a.target = '_blank'; a.rel = 'noopener';
+        // обычный щелчок — статья во вкладке Docs рядом, с Ctrl/⌘ — как обычная ссылка в новой вкладке браузера
+        a.addEventListener('click', (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return; ev.preventDefault(); hide(); openDoc(a.href); });
         a.href = `/${lang === 'en' ? '' : lang + '/'}docs/glossary/${slug}/`;
         a.textContent = t('gl.more');
         tip.appendChild(a);

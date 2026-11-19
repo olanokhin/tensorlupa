@@ -4,7 +4,7 @@
 // Две группы рядом: тянуть границу — соотношение; дотянуть до края — группы сливаются в одну.
 // Язычок можно тащить: вдоль своей полосы — переставить; на полосу или в окно другой группы — перенести туда
 // (если группа опустела, она исчезает: так из двух окон получается одно); в левую или правую половину единственного
-// окна — разделить экран на две группы (если ширины хватает на две по MIN). Кнопка «рядом» в одной группе — разделить.
+// окна — разделить экран на две группы (если ширины хватает на две по MIN).
 // Двойной щелчок по границе — исходное соотношение, стрелки на границе — шаг 5%.
 // Состояние запоминается в браузере. 3D-виды сами подстраиваются под размер (у них ResizeObserver).
 // Это же основа будущего режима вкладок для узких экранов и телефона.
@@ -15,12 +15,11 @@ const MIN = 180;               // уже этого окно бесполезн�
 const GUT = 8;                 // ширина границы между группами
 const DRAG = 6;                // столько пикселей нужно сдвинуть язычок, чтобы это был не щелчок, а перетаскивание
 const TR = 12, F = 10, BR = 16; // скругление верха язычка, вогнутых переходов у основания, углов окна
-const SPLIT_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 3v10" stroke="currentColor" stroke-width="1.4"/></svg>';
 const NS = 'http://www.w3.org/2000/svg';
 
 export class Split {
-  // panes: [{ el, label }]
-  constructor(box, panes, { title, splitLabel, onChange } = {}) {
+  // panes: [{ el, label, closable }] — закрываемые вкладки (Docs) могут не входить ни в одну группу
+  constructor(box, panes, { title, closeLabel, onChange } = {}) {
     this.box = box; this.panes = panes; this.onChange = onChange;
     this.load();
 
@@ -34,14 +33,19 @@ export class Split {
     this.strips = [0, 1].map(() => { const s = document.createElement('div'); s.className = 'split-strip'; s.setAttribute('role', 'tablist'); box.appendChild(s); return s; });
     this.tabs = panes.map((p, i) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'split-tab'; b.dataset.i = i;
-      b.setAttribute('role', 'tab'); b.append(document.createTextNode(p.label));
+      b.setAttribute('role', 'tab');
+      // текст язычка — термин глоссария: наведение показывает подсказку со ссылкой в Docs
+      const l = document.createElement('span'); l.className = 'split-l'; l.textContent = p.label; if (p.term) l.dataset.term = p.term; b.append(l);
+      if (p.closable) {
+        const x = document.createElement('span'); x.className = 'split-x'; x.setAttribute('role', 'button'); x.title = closeLabel || '';
+        x.innerHTML = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+        x.addEventListener('click', (e) => { e.stopPropagation(); this.close(i); });
+        b.classList.add('closable'); b.append(x);
+      }
       b.addEventListener('pointerdown', (e) => this.dragTab(e, i));
       b.addEventListener('click', () => { if (this.dragged) { this.dragged = false; return; } const g = this.groupOf(i); this.active[g] = i; this.apply(true); });
       return b;
     });
-    this.back = document.createElement('button'); this.back.type = 'button'; this.back.className = 'split-back';
-    this.back.title = splitLabel || ''; this.back.setAttribute('aria-label', splitLabel || ''); this.back.innerHTML = SPLIT_ICON;
-    this.back.addEventListener('click', () => this.splitTo(this.active[0], 'right'));
     this.mark = document.createElement('span'); this.mark.className = 'split-mark'; this.mark.hidden = true;   // куда встанет язычок
     this.drop = document.createElement('div'); this.drop.className = 'split-drop'; this.drop.hidden = true;
     box.appendChild(this.drop);
@@ -62,9 +66,10 @@ export class Split {
   load() {
     let st = {};
     try { st = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch { /* без памяти — по умолчанию */ }
-    const flat = Array.isArray(st.groups) ? st.groups.flat() : [];
-    const ok = Array.isArray(st.groups) && st.groups.length >= 1 && st.groups.length <= 2 && flat.length === 2 &&
-      flat.includes(0) && flat.includes(1) && st.groups.every((g) => g.length);
+    const flat = Array.isArray(st.groups) ? st.groups.flat() : [], n = this.panes.length;
+    const ok = Array.isArray(st.groups) && st.groups.length >= 1 && st.groups.length <= 2 && st.groups.every((g) => Array.isArray(g) && g.length) &&
+      flat.every((k) => Number.isInteger(k) && k >= 0 && k < n) && new Set(flat).size === flat.length &&
+      this.panes.every((p, k) => p.closable || flat.includes(k));   // незакрываемые вкладки есть всегда
     this.groups = ok ? st.groups : [[0], [1]];
     this.active = ok && Array.isArray(st.active) && st.active.length === this.groups.length && st.active.every((a, g) => this.groups[g].includes(a))
       ? st.active : this.groups.map((g) => g[0]);
@@ -75,7 +80,22 @@ export class Split {
   roomForTwo() { return this.box.getBoundingClientRect().width >= 2 * MIN + GUT; }
 
   // показать вкладку i (сделать активной в её группе) — например, для тура
-  show(i) { const g = this.groupOf(i); if (this.active[g] !== i) { this.active[g] = i; this.apply(true); } }
+  show(i) { const g = this.groupOf(i); if (g >= 0 && this.active[g] !== i) { this.active[g] = i; this.apply(true); } }
+  isOpen(i) { return this.groupOf(i) >= 0; }
+  // открыть закрытую вкладку: справа отдельным окном, а если окна уже два (или места нет) — вкладкой в правом
+  open(i) {
+    if (this.groupOf(i) >= 0) { this.show(i); return; }
+    if (this.groups.length === 1 && this.roomForTwo()) { this.groups.push([i]); this.active.push(i); }
+    else { const g = this.groups.length - 1; this.groups[g].push(i); this.active[g] = i; }
+    this.apply(true);
+  }
+  close(i) {
+    const g = this.groupOf(i); if (g < 0 || !this.panes[i].closable) return;
+    this.groups[g] = this.groups[g].filter((k) => k !== i);
+    if (!this.groups[g].length) { this.groups.splice(g, 1); this.active.splice(g, 1); }
+    else if (this.active[g] === i) this.active[g] = this.groups[g][Math.max(0, this.groups[g].length - 1)];
+    this.apply(true);
+  }
 
   // перенести вкладку i в группу tg на место slot; опустевшая группа исчезает
   moveTab(i, tg, slot) {
@@ -126,7 +146,7 @@ export class Split {
 
   // ---------------------------------------------------------------- перетаскивание язычка
   dragTab(e, i) {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || e.target.closest('.split-x')) return;
     const x0 = e.clientX, y0 = e.clientY, sg = this.groupOf(i);
     let ghost = null, act = null;   // act: { kind: 'move', g, slot } | { kind: 'split', side }
     const inRect = (r, x, y, pad = 0) => x >= r.left && x <= r.right && y >= r.top - pad && y <= r.bottom + pad;
@@ -199,11 +219,9 @@ export class Split {
       // первый язычок полосы продолжает левый край окна: слева у него нет вогнутого перехода и отступа под него
       this.groups[g].forEach((k, n) => { s.appendChild(this.tabs[k]); this.tabs[k].style.order = n; this.tabs[k].classList.toggle('first', n === 0); });
     });
-    this.strips[0].appendChild(this.back);
-    this.back.hidden = G !== 1 || this.groups[0].length < 2;
-    this.back.style.order = 99;
     this.panes.forEach((p, i) => {
-      const g = this.groupOf(i), on = this.active[g] === i;
+      const g = this.groupOf(i), on = g >= 0 && this.active[g] === i;
+      if (g < 0) { p.el.hidden = true; this.tabs[i].remove(); this.tabs[i].classList.remove('on'); return; }   // закрыта
       p.el.hidden = !on;
       p.el.classList.add('tab-body');
       Object.assign(p.el.style, { gridColumn: String(col(g)), gridRow: '1 / 3' });

@@ -1122,12 +1122,6 @@ body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
 .split-strip { z-index: 6; grid-row: 1; }
 .split-mark { position: absolute; bottom: 4px; width: 2px; height: 24px; border-radius: 1px; background: rgba(242, 179, 61, 0.95); pointer-events: none; }
 .split-mark[hidden] { display: none; }
-.split-back { all: unset; margin-left: auto; margin-bottom: 4px; display: inline-grid; place-items: center; width: 28px; height: 24px; border-radius: 8px; color: var(--ink-2); cursor: pointer;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)), rgba(24, 26, 31, 0.4);
-  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14); }
-.split-back svg { width: 15px; height: 15px; }
-.split-back:hover { color: var(--ink-1); background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04)), rgba(24, 26, 31, 0.55); }
-.split-back:focus-visible { box-shadow: inset 0 0 0 2px rgba(242, 179, 61, 0.7); }
 /* перетаскивание язычка: в половину окна — подсветка стороны; ярлычок-стекло едет за курсором */
 #views.tab-dragging, #views.tab-dragging * { cursor: grabbing !important; }
 .split-drop { position: absolute; top: 34px; bottom: 0; width: calc(50% - 4px); z-index: 30; pointer-events: none; border-radius: var(--r-surface);
@@ -1140,9 +1134,8 @@ body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
   -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2); }
 .viewport:not(.tab-body) > .tab-rim { display: none; }
-/* полоса пропускает клики к окну, а язычки и кнопка «рядом» их принимают (all: unset наследовал бы none) */
-.split-tab, .split-back { pointer-events: auto !important; }
-
+/* полоса пропускает клики к окну, а язычки их принимают (all: unset наследовал бы none) */
+.split-tab { pointer-events: auto !important; }
 /* кромка неактивного язычка рисуется SVG по его форме (clip-path из split.js), прежняя прямоугольная не нужна */
 .split-tab::before { display: none !important; }
 .split-tab > .tab-rim { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
@@ -1162,3 +1155,70 @@ body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
 
 /* все язычки одной высоты: активный отличается только плотностью стекла и слиянием с окном, не прыгает */
 .split-tab, .split-tab.on { height: 34px; }
+
+/* ---------- вкладка Docs: статья с сайта Docs в стиле студии ---------- */
+.split-tab.closable { padding-right: 34px; }
+.split-x { position: absolute; right: 14px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 5px; display: grid; place-items: center; color: rgba(235, 238, 243, 0.45); cursor: pointer; }
+.split-x svg { width: 10px; height: 10px; }
+.split-x:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+.doc-bar { gap: 8px; }
+.doc-crumbs { flex: 1 1 auto !important; min-width: 0; display: flex; align-items: center; gap: 2px; overflow: hidden; }
+.doc-crumb { all: unset; flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 6px; border-radius: 6px; cursor: pointer;
+  font: 500 12px var(--ui); color: rgba(235, 238, 243, 0.55); }
+.doc-crumb:hover, .doc-crumb.open { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.doc-crumb:focus-visible { outline: 2px solid rgba(242, 179, 61, 0.7); }
+.doc-crumb.doc-h { flex: 0 1 auto; max-width: none; min-width: 0; color: rgba(235, 238, 243, 0.9); font-weight: 600; }
+.doc-crumb.doc-root { color: rgba(242, 179, 61, 0.85); font-weight: 600; }
+.doc-sep { flex: none; color: rgba(235, 238, 243, 0.3); font-size: 12px; }
+.doc-menu { position: fixed; z-index: 60; min-width: 200px; max-width: 320px; overflow-y: auto; padding: 6px 0; border-radius: 12px;
+  background: rgba(30, 33, 39, 0.82); backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45); scrollbar-width: thin; }
+.doc-menu-g { padding: 8px 12px 3px; font: 600 11px var(--ui); color: rgba(235, 238, 243, 0.42); }
+.doc-menu a { display: block; padding: 5px 12px; font: 13px var(--ui); color: rgba(235, 238, 243, 0.82); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: none; }
+.doc-menu a:hover, .doc-menu a:focus-visible { background: rgba(255, 255, 255, 0.09); color: #fff; }
+.doc-menu a.on { color: #f2b33d; font-weight: 600; }
+.doc-back, .doc-site { all: unset; flex: none; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; color: rgba(235, 238, 243, 0.6); cursor: pointer; }
+.doc-back svg, .doc-site svg { width: 14px; height: 14px; }
+.doc-back:hover:not(:disabled), .doc-site:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.doc-back:disabled { opacity: 0.3; cursor: default; }
+.doc-back:focus-visible, .doc-site:focus-visible { outline: 2px solid rgba(242, 179, 61, 0.7); }
+.doc-scroll { overflow-y: auto; overscroll-behavior: contain; }
+#view-docs.doc-loading .doc { opacity: 0.45; transition: opacity 200ms; }
+.doc { max-width: 720px; margin: 0 auto; padding: 6px 22px 40px; font: 14px/1.6 var(--ui); color: rgba(235, 238, 243, 0.86); }
+.doc > :first-child { margin-top: 4px; }
+.doc p, .doc ul, .doc ol, .doc blockquote, .doc table, .doc figure, .doc pre { margin: 0 0 14px; }
+.doc ul, .doc ol { padding-left: 22px; }
+.doc li { margin: 3px 0; }
+.doc h2 { font-size: 17px; line-height: 1.3; margin: 26px 0 10px; color: #fff; }
+.doc h3 { font-size: 15px; margin: 20px 0 8px; color: #fff; }
+.doc strong { color: #fff; }
+.doc a { color: #f2b33d; text-decoration: none; }
+.doc a:hover { text-decoration: underline; }
+.doc a[target=_blank]::after { content: '↗'; font-size: 0.8em; margin-left: 2px; opacity: 0.7; }
+.doc code { font: 12.5px var(--mono); background: rgba(255, 255, 255, 0.07); border-radius: 5px; padding: 1px 5px; }
+.doc pre { background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 10px 12px; overflow-x: auto; }
+.doc pre code { background: none; padding: 0; }
+.doc pre .ec-line { display: block; }
+.doc blockquote { border-left: 2px solid rgba(169, 140, 240, 0.6); padding: 2px 0 2px 12px; color: rgba(235, 238, 243, 0.72); }
+.doc table { display: block; overflow-x: auto; border-collapse: collapse; font-size: 13px; }
+.doc th, .doc td { text-align: left; padding: 5px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); vertical-align: top; }
+.doc th { color: rgba(235, 238, 243, 0.6); font-weight: 600; }
+.doc img { max-width: 100%; height: auto; border-radius: 10px; display: block; }
+.doc figcaption { font-size: 12px; color: rgba(235, 238, 243, 0.55); margin-top: 6px; }
+.doc .try-link { display: inline-block; padding: 5px 12px; border-radius: 9px; background: rgba(242, 179, 61, 0.14); border: 1px solid rgba(242, 179, 61, 0.35); font-weight: 600; }
+.doc-err { color: rgba(235, 238, 243, 0.7); }
+.doc-scroll { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+.doc-scroll::-webkit-scrollbar { width: 8px; }
+.doc-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 4px; }
+.doc-scroll::-webkit-scrollbar-track { background: transparent; }
+
+.doc-menu a { display: flex; align-items: baseline; gap: 12px; }
+.doc-menu .dm-l { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.doc-menu .dm-meta { flex: none; font-size: 11px; color: rgba(235, 238, 243, 0.4); }
+.doc-menu a.dm-group.on { color: #f2b33d; }
+.doc-menu a.dm-back { color: rgba(235, 238, 243, 0.55); font-size: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); margin-bottom: 2px; }
+.doc-menu a.dm-sub { padding-left: 26px; font-size: 12.5px; color: rgba(235, 238, 243, 0.65); }
+
+body[data-mode="lab"] .docs-btn { display: inline-flex !important; }   /* Docs нужна в обоих режимах */
+/* узкое окно: у Docs и Share остаются значки (подпись — во всплывающей подсказке), панель не вылезает за край */
+@media (max-width: 1360px) { .docs-btn > span, .share-btn > span { display: none; } .docs-btn, .share-btn { padding: 0 9px !important; } }
