@@ -13,6 +13,7 @@ const STORE = 'mq.split2';
 const DEFAULT = 1.32 / 2.32;   // левой группе (модели) чуть больше места: она вытянута вдоль потока
 const MIN = 180;               // уже этого окно бесполезно
 const GUT = 8;                 // ширина границы между группами
+const NARROW = 1100;            // область окон уже этого — Docs открывается вкладкой, а не отдельным окном
 const DRAG = 6;                // столько пикселей нужно сдвинуть язычок, чтобы это был не щелчок, а перетаскивание
 const TR = 12, F = 10, BR = 16; // скругление верха язычка, вогнутых переходов у основания, углов окна
 const NS = 'http://www.w3.org/2000/svg';
@@ -83,10 +84,12 @@ export class Split {
   show(i) { const g = this.groupOf(i); if (g >= 0 && this.active[g] !== i) { this.active[g] = i; this.apply(true); } }
   isOpen(i) { return this.groupOf(i) >= 0; }
   // открыть закрытую вкладку: справа отдельным окном, а если окна уже два (или места нет) — вкладкой в правом
+  // на узких экранах (область окон уже NARROW — ноутбуки до ~1366) — вкладкой в самом широком окне: статье нужна ширина
   open(i) {
     if (this.groupOf(i) >= 0) { this.show(i); return; }
-    if (this.groups.length === 1 && this.roomForTwo()) { this.groups.push([i]); this.active.push(i); }
-    else { const g = this.groups.length - 1; this.groups[g].push(i); this.active[g] = i; }
+    const narrow = this.box.getBoundingClientRect().width < NARROW;
+    if (this.groups.length === 1 && this.roomForTwo() && !narrow) { this.groups.push([i]); this.active.push(i); }
+    else { const g = this.groups.length === 2 && narrow && this.r >= 0.5 ? 0 : this.groups.length - 1; this.groups[g].push(i); this.active[g] = i; }
     this.apply(true);
   }
   close(i) {
