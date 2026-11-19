@@ -378,6 +378,7 @@ function renderSimpleLogits(s) {
     `<span class="tokpill">${esc(show(tt[c.tok]))}</span><span class="ls-bar"><i style="width:${(100 * c.p).toFixed(1)}%"></i></span>` +
     `<span class="ls-p">${c.p < 0.01 ? '<1' : (100 * c.p).toFixed(0)}%</span></div>`).join('') +
     `<div class="ls-note">${t('g.spaceNote')}</div>`;
+  const note = box.querySelector('.ls-note'); if (note && box.scrollHeight > box.clientHeight + 1) note.hidden = true;   // пояснение — только если есть место
 }
 
 // Гайд: что произошло на шаге — простыми словами, с отраслевым термином там, где он нужен
@@ -554,7 +555,8 @@ addEventListener('resize', () => glassRanges.forEach(placeKnob));
 // левая часть — картотека: логиты и историю можно свернуть, модель и attention забирают освободившееся место
 S.stage = new Stage($('stage'), {
   views: $('views'), player: $('player'),
-  folds: [{ key: 'logits', el: $('logits'), share: 0.2, min: 118, max: 230 },
+  // в Гайде логиты — список из пяти строк: панели нужна высота на все пять, иначе последняя обрезается
+  folds: [{ key: 'logits', el: $('logits'), share: 0.2, min: () => (S.mode === 'guide' ? 184 : 118), max: 230 },
           { key: 'story', el: $('story'), share: 0.3, min: 160, max: 380 }],
   onLayout: () => glassRanges.forEach(placeKnob),
 });

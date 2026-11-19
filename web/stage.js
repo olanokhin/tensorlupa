@@ -40,7 +40,8 @@ export class Stage {
     if (!H) return;
     const P = this.player.offsetHeight || 48;
     const fs = this.folds.map((f) => {
-      const open = !this.closed.has(f.key), full = Math.round(Math.max(f.min, Math.min(f.max, f.share * H)));
+      const mn = typeof f.min === 'function' ? f.min() : f.min;   // минимум может зависеть от режима (Гайд/Лаб)
+      const open = !this.closed.has(f.key), full = Math.round(Math.max(mn, Math.min(f.max, f.share * H)));
       return { f, open, full, span: open ? full - OVERLAP : HEAD };
     });
     const viewsH = H - P + OVERLAP - fs.reduce((s, x) => s + x.span, 0);

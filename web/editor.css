@@ -23,9 +23,9 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 body { overflow: auto; }
 .mono { font-family: var(--mono); }
 
-/* раскладка тянется за окном; меньше 1200 × 720 — прокрутка, а не сплющивание */
+/* раскладка тянется за окном; меньше 1024 × 720 — прокрутка, а не сплющивание */
 #app {
-  height: 100vh; min-width: 1200px; min-height: 720px; display: grid; gap: 6px; padding: 6px;
+  height: 100vh; min-width: 1024px; min-height: 720px; display: grid; gap: 6px; padding: 6px;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) clamp(270px, 20vw, 380px);
   grid-template-rows: 44px minmax(260px, 1fr) minmax(118px, 0.24fr) minmax(170px, 0.5fr);
   grid-template-areas:
@@ -1222,3 +1222,10 @@ body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
 body[data-mode="lab"] .docs-btn { display: inline-flex !important; }   /* Docs нужна в обоих режимах */
 /* узкое окно: у Docs и Share остаются значки (подпись — во всплывающей подсказке), панель не вылезает за край */
 @media (max-width: 1360px) { .docs-btn > span, .share-btn > span { display: none; } .docs-btn, .share-btn { padding: 0 9px !important; } }
+/* 1024–1180: верхняя панель ужимается: от названия остаётся логотип, у «Тура» — значок, поле слов уже */
+@media (max-width: 1180px) {
+  .brand-name { display: none; }
+  #tour-btn > span { display: none; } #tour-btn { padding: 0 9px !important; }
+  #words, #prompt { min-width: 150px !important; }
+  #run-info { display: none !important; }   /* квитанция прогона — и так в подписи истории; ползунку шагов нужна ширина */
+}
