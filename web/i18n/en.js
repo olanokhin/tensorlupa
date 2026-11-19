@@ -317,6 +317,8 @@
   'g.boostSmall': 'Keywords not used yet got a push (<span data-term="logitBias">logit bias</span>), but at this step it is too small to matter.',
   'no3d': '· 3D is off in this browser, showing 2D',
   'no3d.title': 'This browser has no WebGL (often switched off on Linux or with old graphics drivers), so the studio shows the 2D views. Everything else works the same.',
+  'split.title': 'Drag to resize the panels. Drag to the edge to merge them into one window with tabs. Double-click to reset.',
+  'split.back': 'Show side by side',
   'land.inst.h': 'It follows instructions, not just continues text',
   'land.inst': 'Models of this size usually only continue a text you start. micro‑qwen3 was instruction-tuned in a chat format: ask it to write a short story with the words dragon, cookie and school, and it writes one. On top of that, a decoding rule I designed gives the words not used yet a push that grows while they wait, and the studio shows that push at every step.',
   'land.inst.cap': 'How many of the requested words make it into the story (test orders of three words):',

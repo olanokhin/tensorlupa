@@ -2,6 +2,7 @@
 // шага и даёт откатиться на любой токен. Версия 1: полоса логитов, история, таймлайн, настройки, инспектор.
 import { Deck } from './cards.js';
 import { Stage } from './stage.js';
+import { Split } from './split.js';
 import { navPad } from './navpad.js';
 import { popover } from './popover.js';
 import { startTour } from './tour.js';
@@ -556,6 +557,11 @@ S.stage = new Stage($('stage'), {
           { key: 'story', el: $('story'), share: 0.3, min: 160, max: 380 }],
   onLayout: () => glassRanges.forEach(placeKnob),
 });
+// граница между моделью и attention: тянуть — соотношение, до края — панели складываются во вкладки
+S.split = new Split($('views'), [
+  { el: $('view-model'), label: t('model.title'), term: 'model' },
+  { el: $('view-attn'), label: t('attn.title'), term: 'attention' },
+], { title: t('split.title'), splitLabel: t('split.back'), onChange: () => glassRanges.forEach(placeKnob) });
 addEventListener('scroll', () => glassRanges.forEach(placeKnob), true);
 new MutationObserver(() => glassRanges.forEach(placeKnob)).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['hidden'] });
 
@@ -632,14 +638,14 @@ async function runTour() {
   };
   startTour([
     { key: 'tour.what', anchor: '#gen', before: ready },
-    { key: 'tour.hover', anchor: ['#view-model .vp-title [data-term]', '#logits-simple .ls-title [data-term]'] },
+    { key: 'tour.hover', anchor: ['#logits-simple .ls-title [data-term]', '#story .vp-title [data-term]'] },
     { key: 'tour.story', anchor: '#story', before: () => openFold('story') },
     { key: 'tour.logits', anchor: '#logits', before: () => { openFold('logits'); setCur(notFavourite()); } },
     // температура: подсвечены и ползунок, и история; стоим на первом токене ответа — контекст (промпт) не меняется,
     // и видно, как температура сплющивает и заостряет одно и то же распределение
     { key: 'tour.temp', anchor: ['#side .card', '#story', '#logits'], before: () => { openFold('story'); openFold('logits'); openFold(null, 'sampling'); setCur(firstGen()); } },
-    { key: 'tour.attn', anchor: '#view-attn' },
-    { key: 'tour.model', anchor: '#view-model' },
+    { key: 'tour.attn', anchor: '#view-attn', before: () => S.split?.show(1) },
+    { key: 'tour.model', anchor: '#view-model', before: () => S.split?.show(0) },
     { key: 'tour.end', actions: [
       { label: t('tour.act.words'), fn: () => { const w = $('words'); w.focus(); w.select(); } },
       { label: t('tour.act.dice'), fn: () => generate({ newSeed: true }) },

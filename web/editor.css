@@ -367,9 +367,9 @@ button.primary:hover { background: linear-gradient(180deg, rgba(255, 224, 160, 1
 }
 .card-h:hover { color: #fff; }
 .card-t { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.card-chev { width: 12px; height: 12px; flex: none; opacity: 0.6; transition: transform 240ms; transform: rotate(-90deg); }
+.card-chev { width: 12px; height: 12px; flex: none; opacity: 0.6; transition: transform 240ms; transform: rotate(180deg); }   /* стрелки по состоянию, как у нижних панелей: свёрнуто ▲ */
 .card-chev svg { width: 12px; height: 12px; display: block; }
-.card.open .card-chev { transform: none; }
+.card.open .card-chev { transform: none; }   /* раскрыто ▼ */
 .card.open .card-h { color: rgba(245, 247, 250, 0.9); }
 .card-b { padding: 0 12px 20px; font: 12px var(--ui); }
 .card:not(.open) .card-b { opacity: 0.55; pointer-events: none; }
@@ -400,7 +400,7 @@ button.primary:hover { background: linear-gradient(180deg, rgba(255, 224, 160, 1
 .fold-h:hover { color: #fff; }
 .fold-chev { margin-left: auto; width: 12px; height: 12px; opacity: 0.6; transition: transform 240ms; }
 .fold-chev svg { width: 12px; height: 12px; display: block; }
-.folded .fold-chev { transform: rotate(-90deg); }
+.folded .fold-chev { transform: rotate(180deg); }   /* свёрнутое окно развернётся вверх — стрелка вверх */
 .folded .vp-body { opacity: 0.55; pointer-events: none; }
 #player { display: flex; flex-direction: row; align-items: stretch; }
 #player .timeline { flex: 1; padding: 8px 12px; }
@@ -1083,3 +1083,82 @@ body[data-mode="lab"] .share-btn { display: inline-flex !important; }
 /* без WebGL: переключателей 3D нет, в заголовках панелей — пояснение */
 body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
 .no3d-note { margin-left: 8px; font: 11.5px var(--ui); color: var(--ink-3); cursor: help; }
+
+/* граница между панелями модели и attention (split.js): зазор, за который можно тянуть */
+#views { gap: 0 !important; }
+.split-gutter { position: relative; cursor: col-resize; touch-action: none; outline: none; }
+.split-gutter::after { content: ""; position: absolute; top: 20%; bottom: 20%; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px;
+  background: rgba(255, 255, 255, 0); transition: background 0.15s; }
+.split-gutter:hover::after, .split-gutter:focus-visible::after, #views.splitting .split-gutter::after { background: rgba(242, 179, 61, 0.75); }
+#views.splitting { cursor: col-resize; user-select: none; }
+#views.splitting .viewport { pointer-events: none; }
+/* режим вкладок: над окном полоса стеклянных язычков. Активный — то же плотное стекло, что окно под ним, и сливается
+   с ним; неактивные — тоже стекло, только тоньше и прозрачнее. Вторая строка внутри окна — описание и переключатели. */
+#views.to-tabs .split-gutter::after { background: rgba(242, 179, 61, 1); top: 0; bottom: 0; }
+#views .vp-title > span[data-i18n="model.title"], #views .vp-title > span[data-i18n="attn.title"] { display: none; }   /* имя окна — на его язычке */
+.split-strip { position: relative; display: flex; align-items: flex-end; gap: 0; height: 34px; padding: 0; pointer-events: none; }
+.split-strip > * { pointer-events: auto; }
+.split-strip[hidden] { display: none; }
+.split-tab { all: unset; position: relative; z-index: 1; height: 30px; padding: 0 28px; display: inline-flex; align-items: center; box-sizing: border-box;
+  border-radius: 12px 12px 0 0; cursor: pointer; touch-action: none; font: 600 12px var(--ui); letter-spacing: 0.02em; color: var(--ink-2);
+  text-decoration: none !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)), rgba(24, 26, 31, 0.34);
+  -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
+  transition: background 0.15s, color 0.15s; }
+/* световая кромка язычка: сверху и по бокам, книзу гаснет — язычок «растёт» из окна */
+.split-tab::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px 1px 0; pointer-events: none;
+  background: linear-gradient(180deg, var(--rim-hi), var(--rim-lo) 55%, rgba(255, 255, 255, 0));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); opacity: 0.6; }
+.split-tab:hover { color: var(--ink-1); background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03)), rgba(24, 26, 31, 0.48); }
+.split-tab.on { z-index: 6; height: 34px; color: var(--ink-1); background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.split-tab.on::before { display: none; }
+.split-tab.lifted { opacity: 0.4; }
+.split-tab:focus-visible { box-shadow: inset 0 0 0 2px rgba(242, 179, 61, 0.7); }
+/* активное окно в режиме вкладок тянется под полосу: язычок — часть его стекла (форма — clip-path из split.js) */
+#views > .viewport.tab-body { padding-top: 34px; border-radius: 0 !important; box-shadow: none; }
+#views > .viewport.tab-body::before { display: none; }
+.tab-rim { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; overflow: visible; }
+.split-strip { z-index: 6; grid-row: 1; }
+.split-mark { position: absolute; bottom: 4px; width: 2px; height: 24px; border-radius: 1px; background: rgba(242, 179, 61, 0.95); pointer-events: none; }
+.split-mark[hidden] { display: none; }
+.split-back { all: unset; margin-left: auto; margin-bottom: 4px; display: inline-grid; place-items: center; width: 28px; height: 24px; border-radius: 8px; color: var(--ink-2); cursor: pointer;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)), rgba(24, 26, 31, 0.4);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14); }
+.split-back svg { width: 15px; height: 15px; }
+.split-back:hover { color: var(--ink-1); background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04)), rgba(24, 26, 31, 0.55); }
+.split-back:focus-visible { box-shadow: inset 0 0 0 2px rgba(242, 179, 61, 0.7); }
+/* перетаскивание язычка: в половину окна — подсветка стороны; ярлычок-стекло едет за курсором */
+#views.tab-dragging, #views.tab-dragging * { cursor: grabbing !important; }
+.split-drop { position: absolute; top: 34px; bottom: 0; width: calc(50% - 4px); z-index: 30; pointer-events: none; border-radius: var(--r-surface);
+  background: rgba(242, 179, 61, 0.10); box-shadow: inset 0 0 0 2px rgba(242, 179, 61, 0.65); }
+.split-drop[hidden] { display: none; }
+.split-drop[data-side="left"] { left: 0; }
+.split-drop[data-side="right"] { left: calc(50% + 4px); }
+.split-ghost { position: fixed; z-index: 400; pointer-events: none; padding: 5px 14px; border-radius: 10px; font: 600 12px var(--ui); color: var(--ink-1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)), rgba(24, 26, 31, 0.7);
+  -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2); }
+.viewport:not(.tab-body) > .tab-rim { display: none; }
+/* полоса пропускает клики к окну, а язычки и кнопка «рядом» их принимают (all: unset наследовал бы none) */
+.split-tab, .split-back { pointer-events: auto !important; }
+
+/* кромка неактивного язычка рисуется SVG по его форме (clip-path из split.js), прежняя прямоугольная не нужна */
+.split-tab::before { display: none !important; }
+.split-tab > .tab-rim { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+
+/* неактивный язычок: стекло к основанию темнее (уходит за окно); соседние язычки перекрываются основаниями */
+.split-tab:not(.on) { margin-right: -8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012) 60%, rgba(0, 0, 0, 0.16)), rgba(24, 26, 31, 0.34); }
+.split-tab:not(.on):hover { background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03) 60%, rgba(0, 0, 0, 0.1)), rgba(24, 26, 31, 0.48); }
+.split-tab.on { margin-right: -8px; }
+
+/* группы окон: подсветка, куда уйдёт язычок, задаётся из split.js точными координатами */
+.split-drop { right: auto !important; bottom: auto !important; }
+.split-strip[hidden] { display: none !important; }
+
+/* первый язычок полосы: левый край прямой и вровень с краем окна, отступ под изгиб не нужен */
+.split-tab.first { padding-left: 18px; }
+
+/* все язычки одной высоты: активный отличается только плотностью стекла и слиянием с окном, не прыгает */
+.split-tab, .split-tab.on { height: 34px; }
