@@ -5,15 +5,15 @@
 // лежит на этом уровне: «Docs» — всё оглавление, раздел — его статьи. Оглавление берётся из боковой панели той же
 // страницы Docs (nav.sidebar Starlight), так что новые статьи и разделы появляются в крошках сами.
 // Ссылки внутри: на другие страницы Docs — открываются тут же (есть «назад»), якоря — прокрутка внутри вкладки,
-// студия (ссылки «попробовать») — как обычная ссылка, внешние — в новой вкладке браузера.
+// ссылки «открыть шаг в студии» — применяются в этой же студии без перезагрузки (onStudio), внешние — в новой вкладке браузера.
 
 const STORE = 'mq.docs.url';
 const DOC_PATH = /^\/(?:[a-z]{2}\/)?docs(?:\/|$)/;
 
 export class DocPane {
   // el — section.viewport с .doc-back, .doc-h, .doc-site и .doc-scroll > article.doc внутри
-  constructor(el, { t, home }) {
-    this.el = el; this.t = t; this.home = home;
+  constructor(el, { t, home, onStudio }) {
+    this.el = el; this.t = t; this.home = home; this.onStudio = onStudio;
     this.scroll = el.querySelector('.doc-scroll'); this.art = el.querySelector('.doc');
     this.crumbs = el.querySelector('.doc-crumbs'); this.toc = null; this.menu = null; this.site = el.querySelector('.doc-site'); this.backBtn = el.querySelector('.doc-back');
     this.stack = []; this.url = null; this.seq = 0;
@@ -177,6 +177,7 @@ export class DocPane {
       const u = new URL(raw, base);
       a.href = u.href;
       if (u.origin === location.origin && DOC_PATH.test(u.pathname)) a.dataset.doc = '1';
+      else if (u.origin === location.origin && /^\/(?:[a-z]{2}\/)?studio\/?$/.test(u.pathname)) { a.dataset.studio = '1'; a.removeAttribute('target'); }   // шаг в студии — здесь же
       else if (u.origin !== location.origin) { a.target = '_blank'; a.rel = 'noopener'; }
     });
     // id заголовков у Starlight уникальны в пределах страницы — оставляем, но с префиксом, чтобы не задеть студию
@@ -192,6 +193,7 @@ export class DocPane {
   onLink(e) {
     const a = e.target.closest('a'); if (!a) return;
     if (a.dataset.anchor) { e.preventDefault(); this.jump(a.dataset.anchor); return; }
+    if (a.dataset.studio && this.onStudio && !(e.metaKey || e.ctrlKey || e.shiftKey || e.button)) { e.preventDefault(); this.onStudio(a.href); return; }
     if (!a.dataset.doc || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;   // с модификатором — как обычно
     e.preventDefault(); this.load(a.href);
   }

@@ -272,7 +272,7 @@ function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
   if (!isLive) countRun();
   const firstGen = Math.max(0, S.run.nPrompt - 1);
   $('t-range').max = S.run.steps.length - 1;
-  if (atStep >= 0) setCur(Math.min(atStep, S.run.steps.length - 1));
+  if (atStep >= 0) setCur(Math.min(atStep, S.run.steps.length - 1));   // ссылка на шаг (в том числе из Docs, с live)
   else if (isLive) setCur(Math.min(Math.max(keepStep, firstGen), S.run.steps.length - 1));
   else if (P.autoplay) { setCur(firstGen); play(); } else setCur(S.run.steps.length - 1);
 }
@@ -566,9 +566,40 @@ S.split = new Split($('views'), [
 ], { title: t('split.title'), closeLabel: t('docs.close'), onChange: () => glassRanges.forEach(placeKnob) });
 // Docs внутри студии: статьи берутся с тех же страниц, что на сайте; открытая вкладка восстанавливается после перезагрузки
 const DOCS_HOME = `/${lang === 'en' ? '' : lang + '/'}docs/`;
-S.docs = new DocPane($('view-docs'), { t, home: DOCS_HOME });
+S.docs = new DocPane($('view-docs'), { t, home: DOCS_HOME, onStudio: (href) => openStudioLink(href) });
 if (S.split.isOpen(2)) S.docs.load(S.docs.last() || DOCS_HOME, { push: false });
 function openDoc(href) { S.split.open(2); S.docs.load(href); }
+// ссылка «открыть этот шаг» из статьи: без перезагрузки страницы. Ползунки плавно едут к значениям ссылки
+// (чего в ссылке нет — к значениям по умолчанию, иначе шаг был бы другим), затем пересчёт с тем же seed (десятки мс)
+// и курсор на шаг. Если настройки уже те же — сразу на шаг, без пересчёта. Вкладка Docs остаётся рядом.
+function openStudioLink(href) {
+  const q = new URL(href, location.href).searchParams;
+  if (!q.has('seed') || !S.run) { location.href = href; return; }
+  const target = {};
+  for (const [key, short] of Object.entries(QK)) target[key] = q.has(short) ? (typeof DEF[key] === 'boolean' ? q.get(short) === '1' : Number(q.get(short))) : DEF[key];
+  target.seed = Math.max(1, Math.min(99999, Number(q.get('seed')) || 1));
+  const step = q.has('s') ? Number(q.get('s')) : -1;
+  const textSame = q.has('p') ? $('mode').value === 'continue' && $('prompt').value === q.get('p')
+    : $('mode').value === 'order' && parseWords($('words').value).words.join(',') === parseWords(q.get('w') || '').words.join(',');
+  if (q.has('p')) { $('mode').value = 'continue'; $('prompt').value = q.get('p'); } else { $('mode').value = 'order'; if (q.has('w')) $('words').value = q.get('w').split(',').join(', '); }
+  $('words').hidden = q.has('p'); $('prompt').hidden = !q.has('p');
+  const same = textSame && Object.keys(target).every((k) => P[k] === target[k]);
+  stop();
+  if (same) { setCur(step >= 0 ? step : S.run.steps.length - 1); return; }
+  const from = { ...P }, t0 = performance.now(), D = 380;
+  const paint = () => { S.pane.refresh(); document.querySelectorAll('#side input[type=range]').forEach(fillRange); };
+  const tick = (now) => {
+    const k = Math.min(1, (now - t0) / D), e = 1 - (1 - k) ** 3;
+    for (const key of Object.keys(target)) {
+      if (typeof target[key] !== 'number') { P[key] = target[key]; continue; }
+      P[key] = k < 1 ? from[key] + (target[key] - from[key]) * e : target[key];
+    }
+    paint();
+    if (k < 1) requestAnimationFrame(tick);
+    else generate({ live: true, atStep: step });
+  };
+  requestAnimationFrame(tick);
+}
 // кнопка Docs в верхней панели: вкладка Docs на последней прочитанной статье (в первый раз — главная Docs)
 $('docs-btn').addEventListener('click', () => { const was = S.split.isOpen(2); S.split.open(2); if (!was || !S.docs.url) S.docs.load(S.docs.last() || DOCS_HOME, { push: false }); });
 addEventListener('scroll', () => glassRanges.forEach(placeKnob), true);
