@@ -500,7 +500,7 @@ function switchView(v) {
   S.view = v;
   setPair('view-pair', v);
   $('model-3d').hidden = v !== '3d'; $('model-canvas').hidden = v !== 'schema';
-  $('model-sub').hidden = v === '3d';
+  $('model-sub').hidden = false;   // подзаголовок и в 3D: как у панели внимания
   $('model-sub').textContent = t(v === '3d' ? 'model.sub.3d' : 'model.sub.schema');
   if (S.run) { const st = S.run.steps[S.cur]; if (v === 'schema') S.model.set(st); else if (S.v3d) { S.v3d.resize(); S.v3d.set(st, false); } }
 }

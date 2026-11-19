@@ -25,7 +25,7 @@
   'model.hint': 'Flow goes left to right. Drag to rotate, scroll to zoom, click a plate to take a layer apart',
   'view.3d': '3D',
   'view.schema': '2D',
-  'model.sub.3d': '· flow left to right · drag to rotate',
+  'model.sub.3d': '· the token goes in on the left and leaves as a prediction on the right · drag to rotate, click a plate',
   'model.sub.schema': '· the token’s path through the layers · right: logit lens',
 
   // attention view
