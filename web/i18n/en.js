@@ -282,7 +282,7 @@
   'land.see.2.h': 'The choice', 'land.see.2': 'At every step the model scores all 4,096 tokens it knows. You see the favourites and their chances, and which one was drawn.',
   'land.see.3.h': 'The attention', 'land.see.3': 'Which earlier words the model looked at before it chose, layer by layer, head by head.',
   'land.ctr.runs': (n) => (n === 1 ? 'story written by the model in visitors’ browsers' : 'stories written by the model in visitors’ browsers'),
-  'land.ctr.users': (n) => (n === 1 ? 'person has run the model' : 'people have run the model'),
+  'land.ctr.users': (n) => (n === 1 ? 'unique visitor has run the model' : 'unique visitors have run the model'),
   'nf.h1': 'This page is not in the vocabulary',
   'nf.lede': 'The model has 4,096 tokens, and this address is not one of them. The studio and the home page are right here.',
   'nf.home': 'Home page',
