@@ -96,16 +96,23 @@ async function boot() {
   S.attn.engine = S.engine; S.attn.mode = S.amode;
   if (S.a3d) { S.a3d.weightsFn = (sel) => S.attn.weights(S.amode, sel); S.a3d.mode = S.amode; }
   S.aview = '3d';
+  // 3D нужен WebGL. На некоторых машинах его нет (Linux с отключённым драйвером, школьные компьютеры, старые
+  // видеокарты): тогда обе панели сразу в 2D, переключатели 3D скрыты, Гайд не возвращает 3D (no3d).
   let View3D = null, AttnStack3D = null;
-  try { ({ View3D } = await import('./view3d.js')); ({ AttnStack3D } = await import('./attn3d.js')); }   // Three.js с CDN
-  catch (e) { console.error(e); }
-  try { S.a3d = new AttnStack3D($('attn-3d'), S.engine.info, (sel) => { S.attn.sel = { ...sel }; tintStory(); renderInspector(S.run.steps[S.cur]); }, S.engine.tokenText); }
+  if (webglOK()) {
+    try { ({ View3D } = await import('./view3d.js')); ({ AttnStack3D } = await import('./attn3d.js')); }
+    catch (e) { console.error(e); }
+  }
+  if (AttnStack3D) try { S.a3d = new AttnStack3D($('attn-3d'), S.engine.info, (sel) => { S.attn.sel = { ...sel }; tintStory(); renderInspector(S.run.steps[S.cur]); }, S.engine.tokenText); }
   catch (e) { S.a3d = null; console.error(e); }
   S.growth = new GrowthChart($('growth-canvas'), S.engine.info);
   S.model = new ModelView($('model-canvas'), S.engine);
   S.view = '3d';
-  try { S.v3d = new View3D($('model-3d'), S.engine); S.v3d.onSelect = () => renderInspector(S.run.steps[S.cur]); }
-  catch (e) { S.v3d = null; switchView('schema'); console.error(e); }
+  if (View3D) try { S.v3d = new View3D($('model-3d'), S.engine); S.v3d.onSelect = () => renderInspector(S.run.steps[S.cur]); }
+  catch (e) { S.v3d = null; console.error(e); }
+  if (!S.v3d || !S.a3d) no3d();
+  // драйвер может потерять WebGL и позже: тогда тоже переходим на 2D, а не оставляем чёрный прямоугольник
+  for (const v of [S.v3d, S.a3d]) v?.renderer?.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); no3d(); });
   // управление 3D-видами: выпадающая стеклянная панель в углу (камера, раздвинуть, линии, сброс)
   S.spreadK = 1; S.explodeK = 0.25;
   if (S.v3d) navPad($('model-3d'), {
@@ -465,7 +472,22 @@ function bindPair(id, fn) {
   opts.forEach((o) => o.addEventListener('click', () => fn(o.dataset.v)));
   el.querySelector('input').addEventListener('change', (e) => fn(opts[e.target.checked ? 1 : 0].dataset.v));
 }
+// есть ли WebGL: без него Three.js не создаст сцену
+function webglOK() {
+  try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; }
+}
+// 3D недоступен: обе панели в 2D, переключатели 3D скрыты, в заголовках пояснение
+function no3d() {
+  S.no3d = true; S.v3d = null; S.a3d = null;
+  document.body.classList.add('no3d');
+  for (const id of ['view-model', 'view-attn']) {
+    const title = document.querySelector(`#${id} .vp-title`);
+    if (title && !title.querySelector('.no3d-note')) { const n = document.createElement('span'); n.className = 'no3d-note'; n.textContent = t('no3d'); n.title = t('no3d.title'); title.appendChild(n); }
+  }
+  switchView('schema'); switchAttn('2d');
+}
 function switchAttn(v) {
+  if (v === '3d' && !S.a3d) v = '2d';
   S.aview = v;
   setPair('aview-pair', v);
   $('attn-3d').hidden = v !== '3d'; $('attn-canvas').hidden = v !== '2d';
@@ -474,6 +496,7 @@ function switchAttn(v) {
 }
 
 function switchView(v) {
+  if (v === '3d' && !S.v3d) v = 'schema';
   S.view = v;
   setPair('view-pair', v);
   $('model-3d').hidden = v !== '3d'; $('model-canvas').hidden = v !== 'schema';
