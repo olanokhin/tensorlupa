@@ -262,7 +262,7 @@ export class Split {
     if (!svg) {
       const id = 'tabRimOn' + Math.random().toString(36).slice(2, 7);
       svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'tab-rim');
-      svg.innerHTML = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,0.32)"/><stop offset="0.12" stop-color="rgba(255,255,255,0.12)"/><stop offset="1" stop-color="rgba(255,255,255,0.06)"/></linearGradient></defs><path fill="none" stroke-width="1.5" stroke="url(#${id})"/>`;
+      svg.innerHTML = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,0.52)"/><stop offset="0.12" stop-color="rgba(255,255,255,0.16)"/><stop offset="1" stop-color="rgba(255,255,255,0.06)"/></linearGradient></defs><path fill="none" stroke-width="1.5" stroke="url(#${id})"/>`;
       P.appendChild(svg);
     }
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -281,7 +281,7 @@ export class Split {
       const outline = shape(0.75);
       if (!svg) {
         svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'tab-rim');
-        svg.innerHTML = `<defs><linearGradient id="tabRimOff${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,0.24)"/><stop offset="0.55" stop-color="rgba(255,255,255,0.08)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></linearGradient></defs><path fill="none" stroke-width="1.5" stroke="url(#tabRimOff${i})"/>`;
+        svg.innerHTML = `<defs><linearGradient id="tabRimOff${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,0.38)"/><stop offset="0.55" stop-color="rgba(255,255,255,0.10)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></linearGradient></defs><path fill="none" stroke-width="1.5" stroke="url(#tabRimOff${i})"/>`;
         b.appendChild(svg);
       }
       svg.style.display = '';

@@ -5,6 +5,8 @@
   'mode.title': 'Mode',
   'mode.order': 'Instruct',
   'mode.continue': 'Completion',
+  'mode.order.d': 'The model writes a story with your words',
+  'mode.continue.d': 'The model continues your text',
   'words.ph': 'up to three words: a verb, a noun, an adjective',
   'prompt.empty': 'Type the beginning of a story, for example: Once upon a time, a little dog',
   'picks.title': 'Tried and tested. Click one to write',

@@ -4,6 +4,8 @@
   'mode.title': 'Режим',
   'mode.order': 'Instruct',
   'mode.continue': 'Completion',
+  'mode.order.d': 'Модель пишет историю с вашими словами',
+  'mode.continue.d': 'Модель продолжает ваш текст',
   'prompt.empty': 'Впишите начало истории по-английски, например: Once upon a time, a little dog',
   'picks.title': 'Проверенные. Нажмите, чтобы написать',
   'words.empty': 'Впишите от одного до трёх английских слов, например: dragon, cookie, school',

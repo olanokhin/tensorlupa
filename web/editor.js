@@ -648,6 +648,7 @@ buildPane();
 S.deck.sync(`<h4>${t('empty.title')}</h4><div class="note">${t('empty.insp')}</div>`);
 $('story-text').innerHTML = `<div class="empty-hint">${t('empty.story')}</div>`;
 modelMenu();
+modeMenu();
 aboutMenu();
 langMenu();
 shareMenu();
@@ -821,6 +822,29 @@ function modelMenu() {
   pop.append(item, card);
   const m = popover($('model-pill'), pop, { align: 'left', onOpen: fill });
   item.addEventListener('click', () => m.open(false));
+}
+
+// режим Instruct / Completion: вместо системного списка — стеклянное меню, как у модели. Значение по-прежнему
+// хранит <select id="mode"> (его читают генерация и ссылки), меню только выбирает и шлёт change
+function modeMenu() {
+  const sel = $('mode'), pop = document.createElement('div'); pop.className = 'lang-pop mode-pop';
+  const items = [...sel.options].map((o) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'cc-mod lang-item mode-item'; b.dataset.v = o.value;
+    b.innerHTML = `<span class="mi-t"><b>${t('mode.' + o.value)}</b><small>${t('mode.' + o.value + '.d')}</small></span>${CHECK}`;
+    b.addEventListener('click', () => { m.open(false); if (sel.value !== o.value) { sel.value = o.value; sel.dispatchEvent(new Event('change')); } sel.focus(); });
+    pop.append(b); return b;
+  });
+  const fill = () => items.forEach((b) => b.classList.toggle('on', b.dataset.v === sel.value));
+  const m = popover(sel, pop, { align: 'left', onOpen: fill });
+  sel.addEventListener('mousedown', (e) => e.preventDefault());   // системный список не открываем
+  sel.addEventListener('keydown', (e) => {
+    if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) { e.preventDefault(); if (!m.isOpen) { m.open(true); (pop.querySelector('.on') || items[0]).focus(); } }
+  });
+  pop.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault(); const k = items.indexOf(document.activeElement);
+    items[(k + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+  });
 }
 
 // «О проекте»: что это, что внутри, ссылки, автор
