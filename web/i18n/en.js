@@ -122,6 +122,8 @@
   'insp.fsm': 'the FSM assembles a word: only {tok} is allowed',
   'insp.ended': (v, h) => `a word just ended: ${v.n} letter ${h.plural(v.n, { one: 'continuation', other: 'continuations' })} banned` + (v.except ? `, except ${v.except}` : ''),
   'insp.loop': 'repetition penalty: {list}',
+  'g.loop': 'Repetition penalty: {tok} would repeat the phrase {gram}, already written in this story and rare in children’s stories, so its score dropped by {val}.',
+  'insp.loop.why': 'the phrase {gram} already appeared in this story ({n}×) and is rare in children’s stories',
   'word.state': ['pending', 'started', 'in progress', 'completed', 'satisfied'],
 
   // 3D model
@@ -234,7 +236,7 @@
   'gl.wbTau': 'How fast the bonus grows while a keyword is still missing. A smaller τ makes it grow faster.',
   'gl.wbStart': 'How big the bonus is at the very start, before any keyword has been used.',
   'gl.fsm': 'Constrained decoding: once a keyword is started, a small finite-state machine (FSM) makes the model finish spelling it.',
-  'gl.loopPenalty': 'Repetition penalty: lowers the scores of tokens that would repeat a recent phrase, to stop the text from looping.',
+  'gl.loopPenalty': 'Repetition penalty: lowers the score of a token that would repeat a four-token phrase already written in this story, unless the phrase is common in children’s stories (“Once upon a time”). Uses statistics of the training corpus.',
   'gl.maxNew': 'The longest answer the model may write, in tokens.',
   'gl.speed': 'Only how fast the finished story is shown on screen. The model has already written the whole story; this does not change it.',
   'gl.autoplay': 'After generating, type the story out token by token instead of showing it at once.',

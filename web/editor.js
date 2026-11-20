@@ -9,7 +9,7 @@ import { popover } from './popover.js';
 import { startTour } from './tour.js';
 import { Controls } from './controls.js';
 import { t, lang, LANGS, setLang } from './i18n.js';
-import { loadEngine, Engine } from './engine/engine.js';
+import { loadEngine, Engine, Corpus } from './engine/engine.js';
 import { LogitStrip, show } from './logits.js';
 import { AttentionView } from './attention.js';
 import { ModelView } from './modelview.js';
@@ -267,8 +267,15 @@ function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
   else wordsHint(null);
   const prompt = mode === 'order' ? Engine.orderPrompt(words) : $('prompt').value;
   if (newSeed) { P.seed = 1 + Math.floor(Math.random() * 99999); S.pane.refresh(); }
+  // штраф за повторы опирается на статистику корпуса (corpus-4grams.bin, ~2,3 МБ): грузим при первом включении
+  if (P.loopPenalty && !S.engine.corpus) {
+    S.corpusLoading ||= fetch('corpus-4grams.bin').then((r) => r.arrayBuffer()).then((b) => { S.engine.corpus = new Corpus(new Uint8Array(b)); })
+      .catch((e) => { console.error(e); S.corpusLoading = null; });
+    S.corpusLoading.then(() => { if (S.engine.corpus) generate({ live: isLive, atStep }); });
+    return;
+  }
   S.engine.settings({ temperature: P.temperature, topK: P.topK, seed: P.seed, wbBase: P.wbBase, wbTau: P.wbTau,
-    wbStart: P.wbStart, fsm: P.fsm, loopImm: P.loopPenalty ? 3 : 0, loopMult: P.loopPenalty ? 1 : 0, maxNew: P.maxNew });
+    wbStart: P.wbStart, fsm: P.fsm, corpusPenalty: P.loopPenalty, maxNew: P.maxNew });
   const t0 = performance.now();
   S.run = S.engine.run(prompt, words);
   const ms = performance.now() - t0;
@@ -427,6 +434,8 @@ function guideCard(s) {
     const felt = pushes.filter((x) => pFin[x.tok] >= 0.01);   // доплата, которая на этом шаге заметно меняет шанс
     h += `<div class="note">${felt.length ? t('g.boost', { list: felt.map((x) => `${pill(x.tok)} ${pc(pRaw[x.tok])} → ${pc(pFin[x.tok])}`).join(', ') }) : t('g.boostSmall')}</div>`;
   }
+  // штраф за повторы с учётом корпуса: какой токен и почему (фраза из четырёх токенов уже была в истории)
+  for (const x of s.loop) if (x.gram) h += `<div class="note">${t('g.loop', { tok: pill(x.tok), gram: x.gram.map(pill).join(''), val: Math.abs(x.val).toFixed(0) })}</div>`;
   const level = s.entropy < 1 ? 0 : s.entropy < 3 ? 1 : 2;
   h += `<div class="note">${t('g.conf', { level, bits: s.entropy.toFixed(1) })}</div>`;
   if (s.words.length) {
@@ -482,6 +491,8 @@ function renderInspector(s) {
       h += `<div class="note">${t('insp.ended', { n: banned, except: s.allowed.length ? s.allowed.map(pill).join(' ') : '' })}</div>`;
     }
     if (s.loop.length) h += `<div class="note">${t('insp.loop', { list: s.loop.map((x) => pill(x.tok) + ' ' + x.val.toFixed(2)).join(' ') })}</div>`;
+    // штраф с учётом корпуса: какая фраза из четырёх токенов уже была в этой истории
+    for (const x of s.loop) if (x.gram) h += `<div class="note">${t('insp.loop.why', { gram: x.gram.map(pill).join(''), n: x.times })}</div>`;
   }
   S.deck.sync(h);
 }

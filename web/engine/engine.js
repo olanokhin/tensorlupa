@@ -11,6 +11,26 @@ export async function loadEngine(modelBytes, wasmOptions = {}) {
 }
 
 
+// Статистика корпуса: 4-граммы токенов TinyStories V2, встреченные ≥ 50 раз (web/corpus-4grams.bin, ~2,3 МБ).
+// Один файл на две задачи: штраф за повторы с учётом корпуса и (позже) черновик спекулятивного декодирования.
+// Формат: uint32 N, N ключей по 6 байт (4 токена по 12 бит, big-endian, по возрастанию), N байт q ≈ 10·log2(счётчик);
+// q ≥ 100 ровно тогда, когда 4-грамма встречалась ≥ 1000 раз.
+export class Corpus {
+  constructor(buf) {
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength), n = dv.getUint32(0, true);
+    this.keys = new Float64Array(n); this.q = buf.subarray(4 + 6 * n, 4 + 7 * n);
+    for (let i = 0, o = 4; i < n; i++, o += 6) this.keys[i] = dv.getUint16(o) * 2 ** 32 + dv.getUint32(o + 2);
+    this.n = n;
+  }
+  static key(a, b, c, d) { return ((a * 4096 + b) * 4096 + c) * 4096 + d; }
+  // q или -1, если 4-граммы нет в таблице (встречалась < 50 раз)
+  q4(a, b, c, d) {
+    const k = Corpus.key(a, b, c, d), K = this.keys; let lo = 0, hi = this.n - 1;
+    while (lo <= hi) { const m = (lo + hi) >> 1; if (K[m] === k) return this.q[m]; if (K[m] < k) lo = m + 1; else hi = m - 1; }
+    return -1;
+  }
+}
+
 export class Engine {
   constructor(M) {
     this.M = M;
@@ -62,7 +82,7 @@ export class Engine {
 
   settings(s = {}) {
     const d = { temperature: 0.6, topK: 40, seed: 1, wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, fsmLock: 2,
-      fsmBonus: 4, loopImm: 0, loopMult: 0, maxNew: 240, ...s };
+      fsmBonus: 4, loopImm: 0, loopMult: 0, maxNew: 240, corpusPenalty: false, ...s };
     this.cfg = d;
     this.f.settings(d.temperature, d.topK, d.seed >>> 0, d.wbBase, d.wbTau, d.wbStart, d.fsm ? 1 : 0, d.fsmLock,
       d.fsmBonus, d.loopImm, d.loopMult, d.maxNew);
@@ -71,6 +91,7 @@ export class Engine {
   // prompt — текст для модели; words — заказанные слова ('' — без заказа). Возвращает число токенов промпта.
   begin(prompt, words = '') {
     if (!this.cfg) this.settings();
+    this.gen = [];
     return this.f.begin(prompt, words);
   }
 
@@ -91,7 +112,32 @@ export class Engine {
   i32(ptrFn, n) { const p = ptrFn() >> 2; return Array.from(this.M.HEAP32.subarray(p, p + n)); }
 
   // Один шаг. Возвращает запись трассы или null, если прогон закончен.
+  // Штраф за повторы с учётом корпуса (измерен в micro-qwen3, experiments/ngram): если следующий токен повторил бы
+  // 4-грамму, уже написанную в этой истории, он получает −β за каждый такой повтор — кроме естественных повторов,
+  // частых в детских историях (≥ 1000 раз в корпусе: «Once upon a time»). Куски внутри слова не штрафуются.
+  // Возвращает список штрафов [{tok, val, gram}] и кладёт их в добавку к логитам движка.
+  corpusPenaltyStep(beta = 4) {
+    const g = this.gen, n = g.length, out = [];
+    if (!this.corpus || n < 3) return out;
+    const a = g[n - 3], b = g[n - 2], c = g[n - 1], seen = new Map();
+    for (let i = 0; i + 3 < n; i++) if (g[i] === a && g[i + 1] === b && g[i + 2] === c) seen.set(g[i + 3], (seen.get(g[i + 3]) || 0) + 1);
+    const T = this.tokenText, letter = (ch) => /[A-Za-z]/.test(ch || '');
+    for (const [t, k] of seen) {
+      if (letter(T[t][0]) && letter(T[c].slice(-1))) continue;         // продолжение слова — не трогаем
+      if (this.corpus.q4(a, b, c, t) >= 100) continue;                 // естественный повтор
+      out.push({ tok: t, val: -beta * k, gram: [a, b, c, t], times: k });
+    }
+    return out;
+  }
+
   step() {
+    let cp = null;
+    if (this.cfg.corpusPenalty && this.corpus) {
+      cp = this.corpusPenaltyStep();
+      const ex = new Float32Array(this.M.HEAPF32.buffer, this.f.extra(), this.info.vocab);
+      ex.fill(0); for (const x of cp) ex[x.tok] += x.val;
+      this.f.extraOn(cp.length ? 1 : 0);
+    } else this.f.extraOn(0);
     const k = this.f.step();
     if (k <= 0) return null;
     const { vocab: V, dim: d, inter: I, layers: L, heads: H, maxPos: P } = this.info;
@@ -116,7 +162,9 @@ export class Engine {
       headOut: this.f32(this.f.tr_head_out, L * H * this.info.headDim),
       vOut: this.f32(this.f.tr_v_out, L * this.info.kvHeads * this.info.headDim),
       logitsRaw: this.f32(this.f.logits_raw, V), logitsFinal: this.f32(this.f.logits_final, V),
-      bias: bt.map((t, i) => ({ tok: t, val: bv[i] })), loop: lt.map((t, i) => ({ tok: t, val: lv[i] })),
+      bias: bt.map((t, i) => ({ tok: t, val: bv[i] })),
+      // штраф за повторы: в студии — с учётом корпуса (cp); старое правило движка (lt/lv) — как на плате
+      loop: k === 2 && cp && si(4) < 0 ? cp : lt.map((t, i) => ({ tok: t, val: lv[i] })),
       allowed: this.i32(this.f.allowed, na), topk: kt.map((t, i) => ({ tok: t, p: kp[i] })),
       sampleR: this.f.sf(0), entropy: this.f.sf(1),
       words, wordsUsed: si(12),
@@ -127,7 +175,7 @@ export class Engine {
   // Весь прогон сразу: массив записей.
   run(prompt, words = '', onStep = null) {
     const nPrompt = this.begin(prompt, words), steps = [];
-    for (let r; (r = this.step());) { steps.push(r); if (onStep) onStep(r); }
+    for (let r; (r = this.step());) { steps.push(r); if (r.kind === 'gen' && r.output > 2) this.gen.push(r.output); if (onStep) onStep(r); }
     return { prompt, words, nPrompt, settings: { ...this.cfg }, steps };
   }
 

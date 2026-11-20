@@ -201,17 +201,22 @@ off halfway, or glue on more letters: "examineineine".
 
 How it works: [Constrained decoding (FSM)](../../glossary/fsm/).
 
-## Markov chain: the next fork
+## Corpus statistics
 
-A table of word sequences counted in the training stories, used next to the model. Measured, not in the model
-yet.
+A table of four-token phrases counted in the training stories, used next to the model. One file serves two
+jobs, so its size was chosen for both: phrases seen at least 50 times, 2.3 MB.
 
 <ul class="tr-branches">
-<li class="tr-open"><span class="tr-name">repetition penalty that knows the corpus</span><span class="tr-note">looping stories 21% → 3%, no broken words</span></li>
-<li class="tr-open"><span class="tr-name">draft tokens for speculative decoding</span><span class="tr-note">1.45 to 2.1 tokens per model check</span></li>
+<li><span class="tr-name">no repetition penalty</span><span class="tr-note">looping stories 17%</span></li>
+<li><span class="tr-name">a simple penalty for any recent repeat (the board keeps it)</span><span class="tr-note">looping 4%, pushes hard words into invented ones</span></li>
+<li><span class="tr-name">a penalty graded by how common the phrase is</span><span class="tr-note">looping 1%</span></li>
+<li class="tr-win"><span class="tr-name">common phrases (1,000+ times in the corpus) are free, other repeats lose 4 points</span><span class="tr-note">looping 0%</span></li>
+<li class="tr-open"><span class="tr-name">draft tokens for speculative decoding, from the same file</span><span class="tr-note">1.84 tokens per model check: the next fork</span></li>
 </ul>
 
-The penalty punishes a repeated phrase only when it is rare in real stories, so "once upon a time" stays free.
-The draft guesses the next few tokens from the table, and the model checks them all in one pass.
+The penalty lets "once upon a time" repeat and stops "the tree was very tall" from coming back. How it works:
+[Repetition penalty](../../glossary/repetition-penalty/). The draft guesses the next few tokens from the table, and
+the model checks them all in one pass; a separate 14 MB draft table did only slightly better (1.87). On the board
+this could one day mean speed; in the studio it would be a way to watch guessing and checking.
 
 </div>
