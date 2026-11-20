@@ -137,7 +137,7 @@ h3 { font-size: 18px; margin-bottom: 8px; }
   section { padding: 40px 0; }
   .hero { padding-top: 12px; }
   .lede { font-size: 17px; }
-  .cta { display: none; }
+  .cta, .chain-6 .btn-small { display: none; }   /* студия только на компьютере: на телефоне ссылка «отправить на компьютер» */
   .phone { display: block; margin-top: 28px; padding: 16px; border-radius: var(--r-surface); background: var(--glass); box-shadow: inset 0 0 0 1px var(--rim); }
   .phone p { font-size: 15px; color: var(--ink-2); }
   .phone-row { margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
@@ -203,3 +203,12 @@ h3 { font-size: 18px; margin-bottom: 8px; }
 /* страница 404 */
 .nf { grid-template-columns: 1fr; min-height: 60vh; }
 .nf-code { font: 600 22px var(--mono); color: var(--amber); margin-bottom: 18px; }
+
+/* история micro-qwen3 в шесть шагов — вертикальная линия на любой ширине (в шесть колонок текст слишком узкий);
+   кнопки студии под шагами 5 и 6 */
+.chain-steps.chain-6 { grid-template-columns: 1fr; gap: 0; max-width: 40em; }
+.chain-steps.chain-6::before { left: 6px; right: auto; top: 8px; bottom: 8px; width: 1px; height: auto; background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(242, 179, 61, 0.6)); }
+.chain-6 li { padding: 0 0 26px 32px; display: flex; flex-direction: column; align-items: flex-start; }
+.chain-6 li::before { top: 4px; }
+.chain-6 .cs-n { margin-bottom: 4px; }
+.chain-6 .btn-small { margin-top: 14px; white-space: nowrap; }

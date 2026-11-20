@@ -17,9 +17,10 @@ import { GrowthChart } from './growth.js';
 
 const $ = (id) => document.getElementById(id);
 const P = {
-  // seed по умолчанию — лучшая демо-история для слов по умолчанию (dragon, cookie, school): подобран перебором 3000 seed
-  // (все слова на месте, закончилась сама, без повторов 4-грамм) и прочитан глазами; кубик даёт случайные
-  temperature: 0.6, topK: 40, seed: 2779,
+  // seed по умолчанию — лучшая демо-история для слов по умолчанию (dragon, cookie, school): подобран перебором seed
+  // (все слова на месте, закончилась сама, без повторов 4-грамм) и прочитан глазами, отдельно для каждой версии весов
+  // (DEMO_SEED); кубик даёт случайные
+  temperature: 0.6, topK: 40, seed: 1111,
   wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, loopPenalty: false,
   maxNew: 200, speed: 24, autoplay: true,
 };
@@ -32,6 +33,7 @@ const DEF = { temperature: 0.6, topK: 40, wbBase: 2, wbTau: 100, wbStart: 0.5, f
 const QK = { temperature: 't', topK: 'k', wbBase: 'wb', wbTau: 'tau', wbStart: 'cs', fsm: 'fsm', loopPenalty: 'rp', maxNew: 'n' };
 function readLink() {
   const q = new URLSearchParams(location.search);
+  if (q.has('q') && !q.has('seed')) S.bits = q.get('q') === '4' ? 4 : 8;   // «открыть 4-битную версию» с лендинга
   if (!q.has('seed')) return null;
   for (const [key, short] of Object.entries(QK)) {
     if (!q.has(short)) continue;
@@ -39,6 +41,7 @@ function readLink() {
     P[key] = typeof DEF[key] === 'boolean' ? v === '1' : Number(v);
   }
   P.seed = Math.max(1, Math.min(99999, Number(q.get('seed')) || 1));
+  S.bits = q.get('q') === '8' ? 8 : 4;   // ссылка без q — со времён, когда в студии была только 4-битная версия
   if (q.get('mode') === 'lab' || q.get('mode') === 'guide') { S.mode = q.get('mode'); S.modeFromLink = true; }   // только на эту загрузку
   if (q.has('p')) { $('mode').value = 'continue'; $('prompt').value = q.get('p'); $('words').hidden = true; $('prompt').hidden = false; }
   else if (q.has('w')) $('words').value = q.get('w');
@@ -51,11 +54,15 @@ function writeLink() {
   q.set('seed', P.seed);
   for (const [key, short] of Object.entries(QK)) if (P[key] !== DEF[key]) q.set(short, typeof DEF[key] === 'boolean' ? (P[key] ? 1 : 0) : P[key]);
   q.set('s', S.cur);
+  q.set('q', S.bits);
   if (S.mode === 'lab') q.set('mode', 'lab');
   history.replaceState(null, '', location.pathname + '?' + q.toString().replace(/%2C/g, ','));   // путь явно: на странице есть <base href="/">
 }
 try { S.mode = localStorage.getItem('mq.mode') || 'guide'; } catch { S.mode = 'guide'; }
+try { S.bits = localStorage.getItem('mq.bits') === '4' ? 4 : 8; } catch { S.bits = 8; }
 const LINK = readLink();
+const DEMO_SEED = { 8: 1111, 4: 2779 };
+if (!LINK) P.seed = DEMO_SEED[S.bits];
 
 // Гайд · Лаб: Гайд — главное простыми словами (простые логиты, одна карточка «что произошло», только сэмплинг,
 // 3D и веса attention), Лаб — весь редактор. Названия про вид, а не про человека.
@@ -75,7 +82,14 @@ function setMode(m, persist = true) {
   requestAnimationFrame(() => { if (S.a3d) S.a3d.resize(); if (S.strip) S.strip.draw(); });
 }
 // модели студии: пока одна; новые добавляются сюда и появляются в меню модели
-const MODELS = [{ id: 'micro-qwen3', file: 'model.bin', params: 1056656 }];
+// одна модель, две версии весов: 8 бит — по умолчанию, качество как у полных весов; 4 бит (W4R) — сжатая, как на плате
+// ESP32. Выбор версии хранится в браузере и попадает в ссылку на эксперимент (q=8 / q=4): получатель увидит ту же
+// историю. Старые ссылки без q сделаны на 4-битной версии — она для них и остаётся
+const MODELS = [
+  { id: 'micro-qwen3', bits: 8, file: 'model-8bit.bin', params: 1056656 },
+  { id: 'micro-qwen3', bits: 4, file: 'model.bin', params: 1056656 },
+];
+const MODEL = () => MODELS.find((m) => m.bits === S.bits) || MODELS[0];
 const ICON_PLAY = '<svg viewBox="0 0 16 16"><path d="M5 3.1v9.8a.7.7 0 0 0 1.06.6l7.7-4.9a.7.7 0 0 0 0-1.2l-7.7-4.9A.7.7 0 0 0 5 3.1z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 16 16"><rect x="4" y="3" width="2.8" height="10" rx="0.9"/><rect x="9.2" y="3" width="2.8" height="10" rx="0.9"/></svg>';
 window.__viz = S;   // для отладки из консоли
@@ -83,7 +97,7 @@ window.__viz = S;   // для отладки из консоли
 // ---------------------------------------------------------------- загрузка
 async function boot() {
   try {
-    const buf = new Uint8Array(await (await fetch(MODELS[0].file)).arrayBuffer());
+    const buf = new Uint8Array(await (await fetch(MODEL().file)).arrayBuffer());
     S.modelBytes = buf.length;
     S.engine = await loadEngine(buf);
   } catch (e) {
@@ -191,10 +205,12 @@ function wordsHint(key, field = 'words') {
 
 // Проверенные заказы: слова + seed, отобранные перебором 600 seed на комбинацию и чтением историй
 // (все слова на месте, история закончилась сама, мало повторов). Клик — вписать и сгенерировать.
-const PICKS = [
-  ['dragon, cookie, school', 2779], ['share, toy, kind', 147], ['find, treasure, brave', 319],
-  ['run, dog, fast', 231], ['fly, kite, red', 326], ['play, ball, happy', 273], ['robot, moon', 552],
+// готовые заказы: лучший seed для каждой версии весов — [слова, seed для 4 бит, seed для 8 бит]
+const PICKS_ALL = [
+  ['dragon, cookie, school', 2779, 1111], ['share, toy, kind', 147, 1238], ['find, treasure, brave', 319, 705],
+  ['run, dog, fast', 231, 538], ['fly, kite, red', 326, 6], ['play, ball, happy', 273, 711], ['robot, moon', 552, 288],
 ];
+const PICKS = PICKS_ALL.map(([ws, s4, s8]) => [ws, S.bits === 4 ? s4 : s8]);
 function picksMenu() {
   const w = $('words'), box = document.createElement('div');
   box.className = 'cc-mod words-picks'; box.hidden = true;
@@ -587,7 +603,8 @@ function openDoc(href) { S.split.open(2); S.docs.load(href); }
 // и курсор на шаг. Если настройки уже те же — сразу на шаг, без пересчёта. Вкладка Docs остаётся рядом.
 function openStudioLink(href) {
   const q = new URL(href, location.href).searchParams;
-  if (!q.has('seed') || !S.run) { location.href = href; return; }
+  // ссылка на другую версию весов (без q — 4 бита, так записаны примеры в Docs) — открываем страницу заново с ней
+  if (!q.has('seed') || !S.run || (q.get('q') === '8' ? 8 : 4) !== S.bits) { location.href = href; return; }
   const target = {};
   for (const [key, short] of Object.entries(QK)) target[key] = q.has(short) ? (typeof DEF[key] === 'boolean' ? q.get(short) === '1' : Number(q.get(short))) : DEF[key];
   target.seed = Math.max(1, Math.min(99999, Number(q.get('seed')) || 1));
@@ -820,19 +837,31 @@ function langMenu() {
 // модель: «пилюля» в навбаре; меню — текущая модель и её карточка (появятся другие — добавятся строками)
 function modelMenu() {
   const pop = document.createElement('div'); pop.className = 'lang-pop model-pop';
-  const cur = MODELS[0];
-  const item = document.createElement('button'); item.className = 'cc-mod lang-item on';
-  item.innerHTML = `<span>${cur.id}</span>${CHECK}`;
+  const cur = MODEL();
+  $('model-pill').querySelector('.mp-name').textContent = cur.bits === 4 ? `${cur.id} · ${t('model.b4.short')}` : cur.id;
+  // версии одной модели: щелчок по другой — страница открывается заново с этой версией (и с тем же экспериментом)
+  const items = MODELS.map((v) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'cc-mod lang-item mode-item' + (v === cur ? ' on' : '');
+    b.innerHTML = `<span class="mi-t"><b>${t('model.b' + v.bits)}</b><small>${t('model.b' + v.bits + '.d')}</small></span>${CHECK}`;
+    b.addEventListener('click', () => {
+      m.open(false);
+      if (v === cur) return;
+      try { localStorage.setItem('mq.bits', String(v.bits)); } catch { /* только по ссылке */ }
+      const q = new URLSearchParams(location.search);
+      if (q.has('seed')) { q.set('q', v.bits); location.search = q.toString().replace(/%2C/g, ','); }
+      else location.reload();
+    });
+    return b;
+  });
   const card = document.createElement('div'); card.className = 'cc-mod info-card';
   const fill = () => {
-    const mb = S.modelBytes ? (S.modelBytes / 1e6).toFixed(2) : '0.68';
+    const mb = S.modelBytes ? (S.modelBytes / 1e6).toFixed(2) : (cur.bits === 4 ? '0.68' : '1.14');
     card.innerHTML = `<div class="ic-title">${t('model.current')}</div><ul>` +
-      [t('model.arch'), t('model.params', { n: cur.params }), t('model.size', { mb: lang === 'ru' ? mb.replace('.', ',') : mb }),
-        t('model.vocab'), t('model.data'), t('model.esp')].map((x) => `<li>${x}</li>`).join('') + '</ul>';
+      [t('model.arch'), t('model.params', { n: cur.params }), t('model.size' + cur.bits, { mb: lang === 'ru' ? mb.replace('.', ',') : mb }),
+        t('model.vocab'), t('model.data'), t(cur.bits === 4 ? 'model.esp4' : 'model.esp8')].map((x) => `<li>${x}</li>`).join('') + '</ul>';
   };
-  pop.append(item, card);
+  pop.append(...items, card);
   const m = popover($('model-pill'), pop, { align: 'left', onOpen: fill });
-  item.addEventListener('click', () => m.open(false));
 }
 
 // режим Instruct / Completion: вместо системного списка — стеклянное меню, как у модели. Значение по-прежнему

@@ -1399,3 +1399,7 @@ html.pane-lifting, html.pane-lifting body { overflow: hidden !important; }
    у значка в рамке 20px по ~1.5px пустоты с каждой стороны, поэтому промежуток на 1px меньше --pad */
 .brand-mark { margin-right: 0 !important; }
 a.brand { gap: calc(var(--pad) - 1px) !important; }
+.model-pop { width: 340px; }   /* версии модели: пояснение переносится, галочка всегда видна */
+.model-pop .mode-item .mi-t small { white-space: normal; }
+.model-pop .mode-item .mi-t { flex: 1 1 auto; min-width: 0; }
+.model-pop .mode-item svg { flex: none; }
