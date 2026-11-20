@@ -1,0 +1,217 @@
+---
+title: How micro-qwen3 was made
+description: The trail of decisions behind micro-qwen3, from the vocabulary to the decoding rules, with every branch we tried and why the winner won.
+---
+
+**In one sentence:** every size and setting of micro-qwen3 came from a fork where several options were tried and
+one went further.
+
+This page is the trail of those forks. The bright line is what the model has today. The faint branches were tried
+and dropped, each with the number that decided it.
+
+Most numbers are **bits per byte (bpb)** on held-out text: how many bits the model needs, on average, to predict
+each byte of text it has not seen. Lower is better. Each variant was trained once, so differences under about
+0.01 count as ties. Numbers from different datasets cannot be compared with each other.
+
+<div class="trail">
+
+## Vocabulary
+
+How many [tokens](../../glossary/token/) should the model know? Grid at about 0.6M parameters on web text
+(FineWeb-Edu).
+
+<ul class="tr-branches">
+<li><span class="tr-name">2,048 tokens</span><span class="tr-val">1.747</span><span class="tr-note">pieces too small</span></li>
+<li class="tr-win"><span class="tr-name">4,096 tokens</span><span class="tr-val">1.710</span></li>
+<li><span class="tr-name">8,192 tokens</span><span class="tr-val">1.785</span><span class="tr-note">the embeddings eat the budget of the layers</span></li>
+</ul>
+
+The vocabulary is a byte-level BPE trained on our own text with Qwen3's splitting rule. Qwen3's own 151,936
+tokens would not fit: their table alone would be 16 times bigger than the whole model.
+
+## Depth against width
+
+The same budget of about 0.6M parameters, spent on more layers or on wider ones.
+
+<ul class="tr-branches">
+<li><span class="tr-name">2 layers × 96</span><span class="tr-val">1.774</span><span class="tr-note">a cliff at two</span></li>
+<li class="tr-win"><span class="tr-name">3 layers × 88</span><span class="tr-val">1.694</span></li>
+<li><span class="tr-name">4 layers × 80</span><span class="tr-val">1.701</span><span class="tr-note">a tie, but slower</span></li>
+<li><span class="tr-name">7 layers × 64</span><span class="tr-val">1.710</span></li>
+<li><span class="tr-name">15 layers × 48</span><span class="tr-val">1.744</span></li>
+<li><span class="tr-name">28 layers × 32, Qwen3's layer count</span><span class="tr-val">stopped</span><span class="tr-note">0.15 behind</span></li>
+</ul>
+
+A faithful 28-layer miniature of Qwen3 was the worst. Qwen's number of layers does not scale down a thousand
+times, but its ratio of width to depth does.
+
+## Attention heads
+
+Quality followed the product "heads × head size", while time followed the number of heads.
+
+<ul class="tr-branches">
+<li><span class="tr-name">more, smaller heads</span><span class="tr-note">the same quality, slower</span></li>
+<li class="tr-win"><span class="tr-name">4 heads × 64, 2 key-value heads</span><span class="tr-note">the best quality per second</span></li>
+</ul>
+
+## The final shape
+
+Scaled up to about 1M parameters with 4 × 64 attention.
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">3 layers × 112</span><span class="tr-val">1.612</span><span class="tr-note">261K tokens/s in training</span></li>
+<li><span class="tr-name">4 layers × 96</span><span class="tr-val">1.614</span><span class="tr-note">a tie, 9% slower</span></li>
+</ul>
+
+## Outliers in the residual stream
+
+A few channels of the [residual stream](../../glossary/residual-stream/) grow much louder than the rest: we called
+them stalactites. The hypothesis came from audio. Before every block the stream is normalised by its overall
+loudness, so a few loud channels push the quiet useful signal down, like one loud instrument in a mix. Two ways
+to test it, on the 3 × 112 shape with 146M tokens of web text each:
+
+- **A. Hold the peaks**, as in an audio chain: replace the normalisation before each block with a limiter or a
+  compressor.
+- **B. Keep the peaks from growing**: rotate the optimizer's updates, or change the optimizer.
+
+The numbers after each branch: quality in bpb, then how loud the loudest channel is against a typical one.
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">RMSNorm and AdamW, as in Qwen3</span><span class="tr-val">1.610</span><span class="tr-note">loudest channel 5.4×</span></li>
+<li><span class="tr-name">A: limiter, tanh instead of the norm (Dynamic Tanh)</span><span class="tr-val">2.107</span><span class="tr-note">far worse</span></li>
+<li><span class="tr-name">A: compressor, μ-law curve (asinh) before the norm</span><span class="tr-val">1.608</span><span class="tr-note">5.5×, peaks not held</span></li>
+<li><span class="tr-name">A: compressor with ratio and a soft knee</span><span class="tr-val">1.608</span><span class="tr-note">8.8×, peaks even louder</span></li>
+<li><span class="tr-name">B: Hadamard rotation of AdamW's updates</span><span class="tr-val">1.607</span><span class="tr-note">3.0×: tamer, the same quality</span></li>
+<li><span class="tr-name">B: the same rotation in blocks of 16 or 4</span><span class="tr-val">1.609 to 1.611</span></li>
+<li><span class="tr-name">B: Muon optimizer</span><span class="tr-val">1.909</span><span class="tr-note">2.5×, the quietest, but far behind with our settings</span></li>
+</ul>
+
+The outliers could be tamed, but quality did not move: at this size the loud channels were not stealing much from
+the quiet ones. The model kept the plain Qwen3 recipe.
+
+## Context
+
+How many tokens back the model can look.
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">256 tokens</span></li>
+<li><span class="tr-name">512 tokens</span><span class="tr-note">0.8% better, 29% slower</span></li>
+</ul>
+
+A short story fits in 256 tokens, and the model barely uses distant context anyway.
+
+## Data
+
+<ul class="tr-branches">
+<li><span class="tr-name">web text, 1.06 billion tokens</span><span class="tr-val">1.567</span><span class="tr-note">too hard for a million parameters</span></li>
+<li><span class="tr-name">TinyStories, first version</span><span class="tr-val">0.769</span><span class="tr-note">on V2 stories</span></li>
+<li class="tr-win"><span class="tr-name">TinyStories V2</span><span class="tr-val">0.669</span><span class="tr-note">stories written by GPT-4</span></li>
+</ul>
+
+A billion tokens is a thousand per parameter, fifty times the usual rule of about twenty, and the model still
+could not hold the web: it learned grammar but not what to say. Children's stories have a small world that a million
+parameters can describe.
+
+## How many bits per weight
+
+The finished 3 × 112 model on web text (1.599 bpb), each weight rounded to fewer bits with one scale per row, no
+further training. Loss against full precision:
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">8 bits</span><span class="tr-val">+0.000</span><span class="tr-note">lossless: the studio version</span></li>
+<li><span class="tr-name">6 bits</span><span class="tr-val">+0.003</span></li>
+<li><span class="tr-name">5 bits</span><span class="tr-val">+0.014</span></li>
+<li class="tr-open"><span class="tr-name">4 bits</span><span class="tr-val">+0.066</span><span class="tr-note">half the size, the first real loss: the board version, see the next two forks</span></li>
+<li><span class="tr-name">3 bits</span><span class="tr-val">+0.431</span><span class="tr-note">the text falls apart</span></li>
+<li><span class="tr-name">2 bits</span><span class="tr-val">+3.17</span></li>
+</ul>
+
+Plain rounding is free down to 6 bits and breaks below 4.
+
+## Fewer bits, bigger model?
+
+Is a bigger model with fewer bits per weight better, at the same memory on the board (about 770 KB)? The ternary
+branch followed the Bonsai recipe: weights of −1, 0 or +1 with a learned scale per row.
+
+<ul class="tr-branches">
+<li><span class="tr-name">ternary layers, trained from scratch, 3 × 192</span><span class="tr-val">0.704</span></li>
+<li><span class="tr-name">ternary layers, from full precision + QAT</span><span class="tr-val">0.697</span></li>
+<li><span class="tr-name">2-bit layers, 3 × 192</span><span class="tr-val">0.698</span></li>
+<li><span class="tr-name">3-bit</span><span class="tr-note">the same quality per byte as 4-bit, a more complex kernel</span></li>
+<li class="tr-win"><span class="tr-name">4-bit, 3 × 144</span><span class="tr-val">0.643</span></li>
+</ul>
+
+Below 4 bits quality drops in a step, and more training data does not break that floor. 4 bits is the best that
+fits the budget.
+
+## Making 4 bits work
+
+How to round the weights to 4 bits and lose as little as possible. Loss against full precision, on the base
+model, 100 MB of further training for the trained variants.
+
+<ul class="tr-branches">
+<li><span class="tr-name">plain rounding</span><span class="tr-val">+0.045</span></li>
+<li><span class="tr-name">a scale per 32 weights, as in GGUF Q4</span><span class="tr-note">slower than 8 bits on the chip</span></li>
+<li><span class="tr-name">per-row scale search, no training</span><span class="tr-val">+0.037</span></li>
+<li><span class="tr-name">standard quantization-aware training (QAT)</span><span class="tr-val">+0.029</span></li>
+<li><span class="tr-name">Hadamard rotation baked into the weights</span><span class="tr-note">needs a separate output layer, +458K parameters</span></li>
+<li><span class="tr-name">Hadamard rotation after QAT</span><span class="tr-note">worse on the final model</span></li>
+<li class="tr-win"><span class="tr-name">QAT with the per-row scale search (W4R)</span><span class="tr-val">+0.022</span></li>
+</ul>
+
+For each row of weights, the search tries 25 clipping levels and keeps the one with the smallest error. Inside
+QAT, the model learns weights that survive that rounding.
+
+## Training
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">pretraining from scratch on TinyStories V2</span><span class="tr-val">124M tokens</span><span class="tr-note">next-token prediction</span></li>
+<li class="tr-win"><span class="tr-name">instruction tuning with QAT from the first step</span><span class="tr-val">150M tokens</span><span class="tr-note">900,000 dialogues</span></li>
+</ul>
+
+The second pass teaches the model to write a story with the requested words, in the Qwen chat format. All three
+words made it into the story in 5.7% of stories before it and in 64% after it. The 4-bit version loses about
+2% of quality against 8 bits.
+
+## Logit bias
+
+The model wants the requested words but rarely wants them enough to win. A bonus to their
+[logits](../../glossary/logits/) closes the gap. Stories with all three words, out of 200 test orders:
+
+<ul class="tr-branches">
+<li><span class="tr-name">no bonus</span><span class="tr-val">36.5%</span></li>
+<li><span class="tr-name">a constant bonus</span><span class="tr-val">79.5%</span></li>
+<li><span class="tr-name">a big constant bonus, +6</span><span class="tr-note">less natural text, words still missed in 8.5%</span></li>
+<li><span class="tr-name">each used word raises the bonus for the rest</span><span class="tr-val">94%</span></li>
+<li><span class="tr-name">the bonus also grows while a word waits</span><span class="tr-val">99.5%</span></li>
+<li class="tr-win"><span class="tr-name">the same rule at temperature 0.6</span><span class="tr-val">100%</span></li>
+</ul>
+
+The full story is in [Logit bias](../../glossary/logit-bias/).
+
+## Spelling automaton
+
+The bonus decides *when* a word appears, not *how* it is spelled. A small model can start a rare word and wander
+off halfway, or glue on more letters: "examineineine".
+
+<ul class="tr-branches">
+<li><span class="tr-name">bonus only</span><span class="tr-note">broken words</span></li>
+<li class="tr-win"><span class="tr-name">a finite-state machine (FSM) that finishes a started word</span></li>
+</ul>
+
+How it works: [Constrained decoding (FSM)](../../glossary/fsm/).
+
+## Markov chain: the next fork
+
+A table of word sequences counted in the training stories, used next to the model. Measured, not in the model
+yet.
+
+<ul class="tr-branches">
+<li class="tr-open"><span class="tr-name">repetition penalty that knows the corpus</span><span class="tr-note">looping stories 21% → 3%, no broken words</span></li>
+<li class="tr-open"><span class="tr-name">draft tokens for speculative decoding</span><span class="tr-note">1.45 to 2.1 tokens per model check</span></li>
+</ul>
+
+The penalty punishes a repeated phrase only when it is rare in real stories, so "once upon a time" stays free.
+The draft guesses the next few tokens from the table, and the model checks them all in one pass.
+
+</div>
