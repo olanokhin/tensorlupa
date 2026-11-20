@@ -18,6 +18,35 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+
+/* ======================= ДИЗАЙН-СИСТЕМА: все токены в одном месте (правила — web/DESIGN.md) ======================= */
+:root {
+  /* текст: три уровня яркости */
+  --ink-1: #eceef2;                      /* основной: значения, активное */
+  --ink-2: rgba(236, 238, 242, 0.64);    /* вторичный: заголовки, подписи */
+  --ink-3: rgba(236, 238, 242, 0.40);    /* третичный: статус, пояснения, неактивное */
+  /* шрифт: шесть ступеней */
+  --fs-1: 11px;      /* мелкие подписи, пояснения под настройками */
+  --fs-2: 12px;      /* подписи, статус, крошки, язычки */
+  --fs-3: 12.5px;    /* заголовки панелей и карточек */
+  --fs-4: 13px;      /* пункты меню, текст карточек, бренд */
+  --fs-5: 14px;      /* основной текст статей, заголовок карточки тура */
+  --fs-6: 17px;      /* заголовки в статьях Docs */
+  /* отступы: шаг 4 */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;
+  --ctl-h: 32px;     /* высота элементов управления в навбаре */
+  --head: 34px;      /* высота заголовка (корешка) у панелей, карточек и полосы язычков */
+  --gap: 6px;        /* промежуток между крупными поверхностями: колонки, окна, края экрана */
+  --pad: 12px;       /* внутренний отступ: от края любой поверхности (окна, язычка, карточки, навбара) до её содержимого */
+  --bar-h: calc(var(--ctl-h) + 2 * var(--pad));   /* высота навбара: кнопки 32 и по --pad сверху и снизу */
+  /* радиусы: вложенное скругляется меньше внешнего */
+  --r-surface: 16px; /* поверхности: окна, панели, карточки, навбар, меню */
+  --r-tab: 12px;     /* язычки окон (верхние углы) */
+  --r-control: 10px; /* кнопки, поля, блоки кода, картинки в статьях */
+  --r-chip: 6px;     /* мелкие плашки: токены, крошки, числовые поля, код в строке */
+  /* кромка стекла */
+  --rim-w: 1px; --rim-top: rgba(255, 255, 255, 0.42); --rim-low: rgba(255, 255, 255, 0.08); --rim-fade: 48px;
+}
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.4 var(--sans); }
 body { overflow: auto; }
@@ -25,9 +54,9 @@ body { overflow: auto; }
 
 /* раскладка тянется за окном; меньше 1024 × 720 — прокрутка, а не сплющивание */
 #app {
-  height: 100vh; min-width: 1024px; min-height: 720px; display: grid; gap: 6px; padding: 6px;
+  height: 100vh; min-width: 1024px; min-height: 720px; display: grid; gap: var(--gap); padding: var(--gap);
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) clamp(270px, 20vw, 380px);
-  grid-template-rows: 44px minmax(260px, 1fr) minmax(118px, 0.24fr) minmax(170px, 0.5fr);
+  grid-template-rows: var(--bar-h) minmax(260px, 1fr) minmax(118px, 0.24fr) minmax(170px, 0.5fr);
   grid-template-areas:
     "top top top"
     "model attn side"
@@ -37,7 +66,7 @@ body { overflow: auto; }
 #top { grid-area: top; display: flex; align-items: center; gap: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; }
 #view-model { grid-area: model; }
 #view-attn { grid-area: attn; }
-#side { grid-area: side; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+#side { grid-area: side; display: flex; flex-direction: column; gap: var(--gap); min-height: 0; }
 #logits { grid-area: logits; }
 #story { grid-area: story; }
 
@@ -361,7 +390,7 @@ button.primary:hover { background: linear-gradient(180deg, rgba(255, 224, 160, 1
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
 .card-h {
-  height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 14px;
+  height: var(--head); display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 14px;
   cursor: pointer; user-select: none; color: rgba(235, 238, 243, 0.62); font: 600 11px var(--ui); letter-spacing: 0.06em; text-transform: uppercase;
 }
 .card-h:hover { color: #fff; }
@@ -382,7 +411,7 @@ button.primary:hover { background: linear-gradient(180deg, rgba(255, 224, 160, 1
    то, что под ними. Свёрнутые логиты/история показывают только корешок. */
 #app {
   grid-template-columns: minmax(0, 1fr) clamp(270px, 20vw, 380px) !important;
-  grid-template-rows: 44px minmax(0, 1fr) !important;
+  grid-template-rows: var(--bar-h) minmax(0, 1fr) !important;
   grid-template-areas: "top top" "stage side" !important;
 }
 #stage { grid-area: stage; position: relative; min-height: 0; min-width: 0; overflow: hidden; overflow: clip; border-radius: 16px; }
@@ -395,7 +424,7 @@ button.primary:hover { background: linear-gradient(180deg, rgba(255, 224, 160, 1
   box-shadow: 0 -8px 22px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.03) !important;
 }
 #stage.anim > .viewport, #stage.anim > #views { transition: top 340ms cubic-bezier(.2, .8, .2, 1), height 340ms cubic-bezier(.2, .8, .2, 1), clip-path 340ms cubic-bezier(.2, .8, .2, 1); }
-.fold-h { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; height: 32px; box-sizing: border-box; padding-top: 0 !important; padding-bottom: 0 !important; }
+.fold-h { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; height: var(--head); box-sizing: border-box; padding-top: 0 !important; padding-bottom: 0 !important; }
 .fold-h:hover { color: #fff; }
 .fold-chev { margin-left: auto; width: 12px; height: 12px; opacity: 0.6; transition: transform 240ms; }
 .fold-chev svg { width: 12px; height: 12px; display: block; }
@@ -565,7 +594,7 @@ button.primary:hover { background: linear-gradient(180deg, rgba(255, 224, 160, 1
 .ctl-sw:checked::after { transform: translateX(14px); background: #1c1d22; box-shadow: none; }
 .ctl-btn { width: 100%; height: 30px; margin-top: 10px; border-radius: 999px !important; font: 600 12.5px var(--ui) !important; }
 .lang-sw { display: flex; gap: 2px; padding: 2px; margin-left: 10px; border-radius: 999px; background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35); flex: none; }
-.lang-sw .tab { height: 20px; padding: 0 8px; font-size: 10.5px; }
+.lang-sw .tab { height: 20px; padding: 0 8px; font-size: var(--fs-1); }
 /* название панели (теперь в своём span ради перевода) — заглавными, как прежде */
 .vp-title > span[data-i18n$=".title"] { text-transform: uppercase !important; letter-spacing: 0.06em !important; color: rgba(235, 238, 243, 0.62) !important; font-weight: 600 !important; margin-right: 4px; }
 .status { flex: 0 0 auto; width: clamp(240px, 30vw, 560px); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -602,9 +631,8 @@ button.primary:hover { background: linear-gradient(180deg, rgba(255, 224, 160, 1
    16 — поверхности (панели, карточки, навбар, модули камеры, меню); 10 — элементы управления (кнопки, вкладки,
    дорожки вкладок, поля, формула, подсказка, квитанция); 6 — мелкие плашки (токены, состояния слов, числовые поля);
    круг — только кнопки-иконки, ручки ползунков и переключатели. Вложенное скругляется меньше внешнего. */
-:root { --r-surface: 16px; --r-control: 10px; --r-chip: 6px; }
 .viewport, .card, #stage, .cc-mod, .lang-pop, #side .tp-rotv { border-radius: var(--r-surface) !important; }
-#top { border-radius: var(--r-surface) var(--r-surface) 0 0 !important; }
+#top { border-radius: var(--r-surface) !important; }
 .cc-tile { border-radius: var(--r-surface) !important; }
 button, .tab, button.primary, .order input, .order select, .formula, .tip, .run-info, .lang-item, .empty-hint { border-radius: var(--r-control) !important; }
 .cams, .amodes, .vp-tabs .amodes { border-radius: var(--r-control) !important; }
@@ -616,22 +644,17 @@ button, .tab, button.primary, .order input, .order select, .formula, .tip, .run-
 /* ======================= единая система: яркость текста, заголовки, переключатели, ползунки, главная кнопка =======================
    Цвет — только у данных (жёлтый — attention и выбранный токен, сиреневый — вклад). Интерфейс — монохромное стекло.
    Текст — три уровня: основной, вторичный (заголовки и подписи), третичный (статус, пояснения, неактивное). */
-:root {
-  --ink-1: #eceef2;
-  --ink-2: rgba(236, 238, 242, 0.64);
-  --ink-3: rgba(236, 238, 242, 0.40);
-}
 /* заголовки панелей и карточек — одинаково: обычный регистр, полужирный, вторичный уровень */
 .vp-title > span[data-i18n$=".title"], .card-h, .card-t, .vp-title {
   text-transform: none !important; letter-spacing: 0 !important;
 }
-.vp-title > span[data-i18n$=".title"], .card-t { font: 600 12.5px var(--ui) !important; color: var(--ink-2) !important; margin-right: 6px; }
+.vp-title > span[data-i18n$=".title"], .card-t { font: 600 var(--fs-3) var(--ui) !important; color: var(--ink-2) !important; margin-right: 6px; }
 .card.open .card-h .card-t { color: var(--ink-1) !important; }
 .card-h:hover .card-t, .fold-h:hover > span[data-i18n$=".title"] { color: var(--ink-1) !important; }
-.vp-title { color: var(--ink-3) !important; font: 12px var(--ui) !important; }
+.vp-title { color: var(--ink-3) !important; font: var(--fs-2) var(--ui) !important; }
 .vp-title span:not([data-i18n$=".title"]) { color: var(--ink-3) !important; }
 /* навбар: название — основной, статус — третичный */
-.brand { color: var(--ink-1); font: 600 13.5px var(--ui) !important; }
+.brand { color: var(--ink-1); font: 600 var(--fs-4) var(--ui) !important; }
 .brand span { color: var(--ink-2); font-weight: 500; }
 .status { color: var(--ink-3) !important; }
 .order select { color: var(--ink-1); }
@@ -717,13 +740,12 @@ button.primary::before { display: none !important; }
 .cc-tile.on .cc-disc { background: rgba(236, 238, 242, 0.62); color: #1c1d22; }       /* как включённый переключатель настроек */
 .cc-text b { font: 600 12.5px var(--ui) !important; color: var(--ink-2) !important; }
 .cc-tile.on .cc-text b { color: var(--ink-1) !important; }
-.cc-text small { font: 11.5px var(--ui) !important; color: var(--ink-3) !important; }
+.cc-text small { font: var(--fs-1) var(--ui) !important; color: var(--ink-3) !important; }
 .cc-round { width: 48px !important; height: 48px !important; color: var(--ink-2) !important; }
 .cc-round:hover { color: var(--ink-1) !important; }
 .cc-round svg { width: 18px; height: 18px; }
 
 /* ======================= шкала отступов 4 / 8 / 12 / 16 и ряд навбара ======================= */
-:root { --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --ctl-h: 32px; }
 /* нахлёст стопки 8px + воздух 8px: данные кончаются в 8px над краем следующей карточки */
 #views > .viewport, #logits, #story { padding-bottom: calc(var(--s2) * 2) !important; }
 /* заголовки панелей и карточек — одинаковые поля по горизонтали (12) и высота корешка */
@@ -767,7 +789,7 @@ button.primary svg { width: 15px; height: 15px; flex: none; color: var(--ink-1);
 /* списки: таблицы и пары «подпись — значение» — одна строка, одна линия */
 #side .card-b table.cmp th, #side .card-b table.words th,
 #side .card-b table.cmp td, #side .card-b table.words td { height: 24px !important; padding: 0 4px !important; line-height: 16px !important; font-size: 12px; }
-#side .card-b table th { height: 24px !important; font-size: 11.5px !important; font-weight: 500 !important; color: var(--ink-3) !important; }
+#side .card-b table th { height: 24px !important; font-size: var(--fs-1) !important; font-weight: 500 !important; color: var(--ink-3) !important; }
 #side .card-b table td, #side .card-b table th, #side .card-b .kv > div { border-bottom: 0.5px solid rgba(255, 255, 255, 0.07) !important; }
 #side .card-b table tr:last-child td, #side .card-b .kv > div:nth-last-child(-n + 2) { border-bottom: none !important; }
 #side .card-b .kv { grid-auto-rows: 24px !important; gap: 0 !important; }
@@ -910,7 +932,7 @@ button.primary:hover .gen-star::after, button.primary.busy .gen-star::after { op
   color: var(--ink-1); background: rgba(255, 255, 255, 0.08); text-decoration: none; }
 a.ab-link:hover { background: rgba(255, 255, 255, 0.16); }
 .ab-link.soon { color: var(--ink-3); background: rgba(255, 255, 255, 0.04); }
-.ab-link small { font-size: 10.5px; color: var(--ink-3); }
+.ab-link small { font-size: var(--fs-1); color: var(--ink-3); }
 .ab-foot { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px !important; font-size: 12px; color: var(--ink-3); }
 /* тихая подпись на 3D-сцене — видна на каждом скриншоте, но не мешает */
 .sig { position: absolute; left: 12px; bottom: 6px; z-index: 5; pointer-events: none; font: 11px var(--ui); color: var(--ink-3); opacity: 0.55; letter-spacing: 0.01em; }
@@ -970,7 +992,7 @@ select[data-term], .pair-o[data-term] { cursor: pointer; }
   box-shadow: 0 0 0 9999px rgba(8, 9, 12, 0.62), 0 0 0 1.5px rgba(255, 255, 255, 0.35); transition: all 320ms cubic-bezier(.2, .8, .2, 1); }
 .tour-card { position: fixed !important; z-index: 160; width: 340px; padding: 14px 16px 12px !important; border-radius: var(--r-surface) !important; animation: cc-drop 220ms ease-out; }
 .tc-n { font: 11px var(--ui); color: var(--ink-3); margin-bottom: 4px; }
-.tc-title { font: 650 15px var(--ui); color: var(--ink-1); margin-bottom: 6px; }
+.tc-title { font: 650 var(--fs-5) var(--ui); color: var(--ink-1); margin-bottom: 6px; }
 .tour-card p { margin: 0 0 12px; font: 13px/19px var(--ui); color: var(--ink-2); }
 .tc-btns { display: flex; align-items: center; gap: 8px; }
 .tc-sp { flex: 1; }
@@ -1025,7 +1047,7 @@ body[data-mode="guide"] .status { display: none !important; }
 .tour-rings { position: fixed; inset: 0; z-index: 151; pointer-events: none; }
 .tour-rings i { position: absolute; border-radius: var(--r-surface); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.35); }
 .tc-acts { display: flex; flex-direction: column; gap: 6px; margin: 0 0 12px; }
-.tc-act { height: 34px !important; justify-content: flex-start !important; padding: 0 14px !important; font: 600 12.5px var(--ui) !important; color: var(--ink-1) !important;
+.tc-act { height: 34px !important; justify-content: flex-start !important; padding: 0 14px !important; font: 600 var(--fs-3) var(--ui) !important; color: var(--ink-1) !important;
   background: rgba(255, 255, 255, 0.08) !important; box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.14) !important; }
 .tc-act:first-child { background: rgba(236, 238, 242, 0.9) !important; color: #1c1d22 !important; }
 .tc-act::before { display: none !important; }
@@ -1040,7 +1062,7 @@ body[data-mode="guide"] .status { display: none !important; }
 /* проверенные заказы под полем слов */
 .words-picks { position: fixed; z-index: 120; padding: 6px !important; display: flex; flex-direction: column; gap: 2px; }
 .words-picks[hidden] { display: none !important; }
-.wp-title { font: 500 11.5px var(--ui); color: var(--ink-3); padding: 4px 8px 6px; }
+.wp-title { font: 500 var(--fs-1) var(--ui); color: var(--ink-3); padding: 4px 8px 6px; }
 .wp-row { all: unset; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 6px 8px; border-radius: var(--r-chip); cursor: pointer;
   font: 500 13px var(--mono, ui-monospace, monospace); color: var(--ink-1); }
 .wp-row small { font: 400 11px var(--ui); color: var(--ink-3); }
@@ -1063,12 +1085,12 @@ body[data-mode="lab"] .share-btn { display: inline-flex !important; }
 .sh-row { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .sh-url { width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: var(--r-control); font: 12px var(--mono); color: var(--ink-1);
   background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12); outline: none; }
-.sh-copy { width: 100%; justify-content: center !important; height: 34px !important; padding: 0 14px !important; border-radius: var(--r-control) !important; font: 600 12.5px var(--ui) !important;
+.sh-copy { width: 100%; justify-content: center !important; height: 34px !important; padding: 0 14px !important; border-radius: var(--r-control) !important; font: 600 var(--fs-3) var(--ui) !important;
   color: #1b1c20 !important; background: rgba(236, 238, 242, 0.92) !important; }
 .sh-copy::before { display: none !important; }
 .sh-copy:hover { background: #fff !important; }
 .sh-copy.done { color: var(--ink-1) !important; background: rgba(255, 255, 255, 0.16) !important; }
-.sh-via { margin-top: 14px; font-size: 11.5px; color: var(--ink-3); }
+.sh-via { margin-top: 14px; font-size: var(--fs-1); color: var(--ink-3); }
 .sh-apps { display: flex; gap: 6px; margin-top: 6px; }
 .sh-apps a { flex: 1; height: 30px; display: grid; place-items: center; border-radius: var(--r-control); font: 600 12px var(--ui); color: var(--ink-2);
   text-decoration: none; background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1); }
@@ -1076,12 +1098,12 @@ body[data-mode="lab"] .share-btn { display: inline-flex !important; }
 /* отзыв первого зрителя: подсказки заметнее, пояснения к логитам и к скорости показа */
 [data-term] { text-decoration-color: rgba(236, 238, 242, 0.55); }
 .ls-note { margin-top: 6px; font-size: 11px; color: var(--ink-3); }
-.run-note { margin: 2px 0 4px; font-size: 11.5px; line-height: 1.45; color: var(--ink-3); }
+.run-note { margin: 2px 0 4px; font-size: var(--fs-1); line-height: 1.45; color: var(--ink-3); }
 .hover-hint { position: fixed; left: 0; right: 0; bottom: 78px; margin: 0 auto; width: max-content; max-width: 90vw; z-index: 120;
   padding: 9px 16px !important; font: 500 12.5px var(--ui); color: var(--ink-1); pointer-events: none; animation: cc-drop 200ms ease-out; }
 /* без WebGL: переключателей 3D нет, в заголовках панелей — пояснение */
 body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
-.no3d-note { margin-left: 8px; font: 11.5px var(--ui); color: var(--ink-3); cursor: help; }
+.no3d-note { margin-left: 8px; font: var(--fs-1) var(--ui); color: var(--ink-3); cursor: help; }
 
 /* граница между панелями модели и attention (split.js): зазор, за который можно тянуть */
 #views { gap: 0 !important; }
@@ -1095,11 +1117,11 @@ body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
    с ним; неактивные — тоже стекло, только тоньше и прозрачнее. Вторая строка внутри окна — описание и переключатели. */
 #views.to-tabs .split-gutter::after { background: rgba(242, 179, 61, 1); top: 0; bottom: 0; }
 #views .vp-title > span[data-i18n="model.title"], #views .vp-title > span[data-i18n="attn.title"] { display: none; }   /* имя окна — на его язычке */
-.split-strip { position: relative; display: flex; align-items: flex-end; gap: 0; height: 34px; padding: 0; pointer-events: none; }
+.split-strip { position: relative; display: flex; align-items: flex-end; gap: 0; height: var(--head); padding: 0; pointer-events: none; }
 .split-strip > * { pointer-events: auto; }
 .split-strip[hidden] { display: none; }
-.split-tab { all: unset; position: relative; z-index: 1; height: 30px; padding: 0 28px; display: inline-flex; align-items: center; box-sizing: border-box;
-  border-radius: 12px 12px 0 0; cursor: pointer; touch-action: none; font: 600 12px var(--ui); letter-spacing: 0.02em; color: var(--ink-2);
+.split-tab { all: unset; position: relative; z-index: 1; height: 30px; padding: 0 calc(10px + var(--pad)); display: inline-flex; align-items: center; box-sizing: border-box;
+  border-radius: var(--r-tab) var(--r-tab) 0 0; cursor: pointer; touch-action: none; font: 600 var(--fs-2) var(--ui); letter-spacing: 0.02em; color: var(--ink-2);
   text-decoration: none !important;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)), rgba(24, 26, 31, 0.34);
   -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
@@ -1110,12 +1132,12 @@ body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); opacity: 0.6; }
 .split-tab:hover { color: var(--ink-1); background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03)), rgba(24, 26, 31, 0.48); }
-.split-tab.on { z-index: 6; height: 34px; color: var(--ink-1); background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.split-tab.on { z-index: 6; height: var(--head); color: var(--ink-1); background: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
 .split-tab.on::before { display: none; }
 .split-tab.lifted { opacity: 0.4; }
 .split-tab:focus-visible { box-shadow: inset 0 0 0 2px rgba(242, 179, 61, 0.7); }
 /* активное окно в режиме вкладок тянется под полосу: язычок — часть его стекла (форма — clip-path из split.js) */
-#views > .viewport.tab-body { padding-top: 34px; border-radius: 0 !important; box-shadow: none; }
+#views > .viewport.tab-body { padding-top: var(--head); border-radius: 0 !important; box-shadow: none; }
 #views > .viewport.tab-body::before { display: none; }
 .tab-rim { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; overflow: visible; }
 .split-strip { z-index: 6; grid-row: 1; }
@@ -1128,7 +1150,7 @@ body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
 .split-drop[hidden] { display: none; }
 .split-drop[data-side="left"] { left: 0; }
 .split-drop[data-side="right"] { left: calc(50% + 4px); }
-.split-ghost { position: fixed; z-index: 400; pointer-events: none; padding: 5px 14px; border-radius: 10px; font: 600 12px var(--ui); color: var(--ink-1);
+.split-ghost { position: fixed; z-index: 400; pointer-events: none; padding: 5px 14px; border-radius: var(--r-control); font: 600 var(--fs-2) var(--ui); color: var(--ink-1);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)), rgba(24, 26, 31, 0.7);
   -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2); }
@@ -1140,71 +1162,71 @@ body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
 .split-tab > .tab-rim { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 
 /* неактивный язычок: стекло к основанию темнее (уходит за окно); соседние язычки перекрываются основаниями */
-.split-tab:not(.on) { margin-right: -8px;
+.split-tab:not(.on) { margin-right: calc(var(--gap) - 20px);   /* между прямыми боками язычков --gap; изгибы по 10px заходят под соседей */
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012) 60%, rgba(0, 0, 0, 0.16)), rgba(24, 26, 31, 0.34); }
 .split-tab:not(.on):hover { background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03) 60%, rgba(0, 0, 0, 0.1)), rgba(24, 26, 31, 0.48); }
-.split-tab.on { margin-right: -8px; }
+.split-tab.on { margin-right: calc(var(--gap) - 20px); }
 
 /* группы окон: подсветка, куда уйдёт язычок, задаётся из split.js точными координатами */
 .split-drop { right: auto !important; bottom: auto !important; }
 .split-strip[hidden] { display: none !important; }
 
 /* первый язычок полосы: левый край прямой и вровень с краем окна, отступ под изгиб не нужен */
-.split-tab.first { padding-left: 18px; }
+.split-tab.first { padding-left: var(--pad); }
 
 /* все язычки одной высоты: активный отличается только плотностью стекла и слиянием с окном, не прыгает */
-.split-tab, .split-tab.on { height: 34px; }
+.split-tab, .split-tab.on { height: var(--head); }
 
 /* ---------- вкладка Docs: статья с сайта Docs в стиле студии ---------- */
-.split-tab.closable { padding-right: 34px; }
-.split-x { position: absolute; right: 14px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 5px; display: grid; place-items: center; color: rgba(235, 238, 243, 0.45); cursor: pointer; }
+.split-tab.closable { padding-right: calc(10px + var(--pad) + 20px); }   /* место под крестик */
+.split-x { position: absolute; right: calc(10px + var(--pad) - 4px); top: calc(var(--head) / 2); width: 16px; height: 16px; margin-top: -8px; border-radius: 5px; display: grid; place-items: center; color: rgba(235, 238, 243, 0.45); cursor: pointer; }
 .split-x svg { width: 10px; height: 10px; }
 .split-x:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
 .doc-bar { gap: 8px; }
 .doc-crumbs { flex: 1 1 auto !important; min-width: 0; display: flex; align-items: center; gap: 2px; overflow: hidden; }
-.doc-crumb { all: unset; flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 6px; border-radius: 6px; cursor: pointer;
+.doc-crumb { all: unset; flex: none; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 6px; border-radius: var(--r-chip); cursor: pointer;
   font: 500 12px var(--ui); color: rgba(235, 238, 243, 0.55); }
 .doc-crumb:hover, .doc-crumb.open { color: #fff; background: rgba(255, 255, 255, 0.1); }
 .doc-crumb:focus-visible { outline: 2px solid rgba(242, 179, 61, 0.7); }
 .doc-crumb.doc-h { flex: 0 1 auto; max-width: none; min-width: 0; color: rgba(235, 238, 243, 0.9); font-weight: 600; }
 .doc-crumb.doc-root { color: rgba(242, 179, 61, 0.85); font-weight: 600; }
 .doc-sep { flex: none; color: rgba(235, 238, 243, 0.3); font-size: 12px; }
-.doc-menu { position: fixed; z-index: 60; min-width: 200px; max-width: 320px; overflow-y: auto; padding: 6px 0; border-radius: 12px;
+.doc-menu { position: fixed; z-index: 60; min-width: 200px; max-width: 320px; overflow-y: auto; padding: 6px 0; border-radius: var(--r-surface);
   background: rgba(30, 33, 39, 0.82); backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45); scrollbar-width: thin; }
 .doc-menu-g { padding: 8px 12px 3px; font: 600 11px var(--ui); color: rgba(235, 238, 243, 0.42); }
 .doc-menu a { display: block; padding: 5px 12px; font: 13px var(--ui); color: rgba(235, 238, 243, 0.82); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: none; }
 .doc-menu a:hover, .doc-menu a:focus-visible { background: rgba(255, 255, 255, 0.09); color: #fff; }
 .doc-menu a.on { color: #f2b33d; font-weight: 600; }
-.doc-back, .doc-site { all: unset; flex: none; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; color: rgba(235, 238, 243, 0.6); cursor: pointer; }
+.doc-back, .doc-site { all: unset; flex: none; width: 22px; height: 22px; border-radius: var(--r-chip); display: grid; place-items: center; color: rgba(235, 238, 243, 0.6); cursor: pointer; }
 .doc-back svg, .doc-site svg { width: 14px; height: 14px; }
 .doc-back:hover:not(:disabled), .doc-site:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 .doc-back:disabled { opacity: 0.3; cursor: default; }
 .doc-back:focus-visible, .doc-site:focus-visible { outline: 2px solid rgba(242, 179, 61, 0.7); }
 .doc-scroll { overflow-y: auto; overscroll-behavior: contain; }
 #view-docs.doc-loading .doc { opacity: 0.45; transition: opacity 200ms; }
-.doc { max-width: 720px; margin: 0 auto; padding: 6px 22px 40px; font: 14px/1.6 var(--ui); color: rgba(235, 238, 243, 0.86); }
+.doc { max-width: 720px; margin: 0 auto; padding: 6px var(--pad) 40px; font: 14px/1.6 var(--ui); color: rgba(235, 238, 243, 0.86); }
 .doc > :first-child { margin-top: 4px; }
 .doc p, .doc ul, .doc ol, .doc blockquote, .doc table, .doc figure, .doc pre { margin: 0 0 14px; }
 .doc ul, .doc ol { padding-left: 22px; }
 .doc li { margin: 3px 0; }
-.doc h2 { font-size: 17px; line-height: 1.3; margin: 26px 0 10px; color: #fff; }
-.doc h3 { font-size: 15px; margin: 20px 0 8px; color: #fff; }
+.doc h2 { font-size: var(--fs-6); line-height: 1.3; margin: 26px 0 10px; color: #fff; }
+.doc h3 { font-size: var(--fs-5); margin: 20px 0 8px; color: #fff; }
 .doc strong { color: #fff; }
 .doc a { color: #f2b33d; text-decoration: none; }
 .doc a:hover { text-decoration: underline; }
 .doc a[target=_blank]::after { content: '↗'; font-size: 0.8em; margin-left: 2px; opacity: 0.7; }
-.doc code { font: 12.5px var(--mono); background: rgba(255, 255, 255, 0.07); border-radius: 5px; padding: 1px 5px; }
-.doc pre { background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 10px 12px; overflow-x: auto; }
+.doc code { font: var(--fs-3) var(--mono); background: rgba(255, 255, 255, 0.07); border-radius: var(--r-chip); padding: 1px 5px; }
+.doc pre { background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: var(--r-control); padding: 10px 12px; overflow-x: auto; }
 .doc pre code { background: none; padding: 0; }
 .doc pre .ec-line { display: block; }
 .doc blockquote { border-left: 2px solid rgba(169, 140, 240, 0.6); padding: 2px 0 2px 12px; color: rgba(235, 238, 243, 0.72); }
 .doc table { display: block; overflow-x: auto; border-collapse: collapse; font-size: 13px; }
 .doc th, .doc td { text-align: left; padding: 5px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); vertical-align: top; }
 .doc th { color: rgba(235, 238, 243, 0.6); font-weight: 600; }
-.doc img { max-width: 100%; height: auto; border-radius: 10px; display: block; }
+.doc img { max-width: 100%; height: auto; border-radius: var(--r-control); display: block; }
 .doc figcaption { font-size: 12px; color: rgba(235, 238, 243, 0.55); margin-top: 6px; }
-.doc .try-link { display: inline-block; padding: 5px 12px; border-radius: 9px; background: rgba(242, 179, 61, 0.14); border: 1px solid rgba(242, 179, 61, 0.35); font-weight: 600; }
+.doc .try-link { display: inline-block; padding: 5px 12px; border-radius: var(--r-control); background: rgba(242, 179, 61, 0.14); border: 1px solid rgba(242, 179, 61, 0.35); font-weight: 600; }
 .doc-err { color: rgba(235, 238, 243, 0.7); }
 .doc-scroll { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
 .doc-scroll::-webkit-scrollbar { width: 8px; }
@@ -1247,3 +1269,121 @@ body[data-mode="lab"] .docs-btn { display: inline-flex !important; }   /* Docs �
 .mode-item .mi-t small { font: 12px var(--ui); color: var(--ink-3); }
 .mode-item:not(.on) svg { visibility: hidden; }
 
+
+/* ---------- «Generate»: прозрачное стекло вместо молочного ----------
+   Своей заливки почти нет (стекло тёмное, а не серое); читается по чёткой кромке, узкому блику вдоль верхнего
+   края и отсвету у нижнего. Свет внутри — ярче и чуть резче. */
+button.primary {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015) 55%, rgba(255, 255, 255, 0.04)) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),          /* блик по верхнему краю */
+    inset 0 -1px 0 rgba(255, 255, 255, 0.10),         /* отсвет у нижнего */
+    inset 0 0 12px rgba(255, 255, 255, 0.04) !important;
+}
+button.primary:hover { background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.025) 55%, rgba(255, 255, 255, 0.06)) !important; }
+button.primary::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.18) 30%, rgba(255, 255, 255, 0.05) 62%, rgba(255, 255, 255, 0.5)) !important;
+}
+.gen-core::before {
+  filter: blur(5px) !important;
+  background: conic-gradient(from var(--gen-a), transparent 0deg, rgba(255, 200, 110, 0.95) 50deg, transparent 130deg,
+    transparent 180deg, rgba(196, 176, 255, 0.9) 230deg, transparent 310deg, transparent 360deg) !important;
+}
+.gen-core { opacity: 0.85 !important; } button.primary:hover .gen-core, button.primary.busy .gen-core { opacity: 1 !important; }
+/* свет заходит чуть глубже в стекло (середина под надписью по-прежнему чистая) и в покое ярче */
+.gen-core { -webkit-mask: radial-gradient(ellipse 74% 62% at 50% 50%, transparent 42%, #000 92%) !important; mask: radial-gradient(ellipse 74% 62% at 50% 50%, transparent 42%, #000 92%) !important; opacity: 1 !important; }
+
+/* ведущая карточка Гайда («что произошло»): над настройками; кромка — как у всех, а по верхней грани от центра
+   в обе стороны расходится янтарный блик (в середине светлая точка), гаснет, не доходя до скруглений */
+#side .card.lead::after {
+  content: ""; position: absolute; top: 0; left: 50%; width: 66%; height: 2px; transform: translateX(-50%); pointer-events: none; z-index: 4;
+  background: linear-gradient(90deg, transparent, rgba(242, 179, 61, 0.8) 26%, #fff1d6 50%, rgba(242, 179, 61, 0.8) 74%, transparent);
+  -webkit-mask: radial-gradient(closest-side, #000 40%, transparent); mask: radial-gradient(closest-side, #000 40%, transparent);
+  filter: drop-shadow(0 0 4px rgba(242, 179, 61, 0.9));
+}
+#side .card.lead .card-b.fresh { animation: lead-fresh 420ms ease-out; }
+@keyframes lead-fresh { from { opacity: 0.35; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #side .card.lead .card-b.fresh { animation: none; } }
+/* перетаскивание карточек: поднятая карточка над остальными и без анимации (идёт за мышью), остальные расступаются */
+.deck .card.dragging { z-index: 100 !important; transition: height 320ms cubic-bezier(.2, .8, .2, 1) !important; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.12) !important; }
+.deck.sorting .card-h { cursor: grabbing; }
+.card-h { touch-action: none; }
+.fold-dragging { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.12) !important; }
+.fold-dragging .fold-h { cursor: grabbing; }
+.fold-h { touch-action: none; }
+/* перетаскиваемая нижняя панель идёт за мышью без задержки и лежит поверх остальных */
+#stage.anim > .viewport.fold-dragging { transition: height 340ms cubic-bezier(.2, .8, .2, 1), clip-path 340ms cubic-bezier(.2, .8, .2, 1); z-index: 40 !important; }
+
+/* парящий язычок: сам кусочек стекла едет за мышью; на его месте — пустое гнездо (стекло без подписи) */
+.split-tab.lifted { opacity: 1 !important; }
+.split-tab.lifted > .split-l, .split-tab.lifted > .split-x { opacity: 0; }
+.split-float {
+  position: fixed; z-index: 400; pointer-events: none; display: grid; place-items: center; box-sizing: border-box;
+  border-radius: var(--r-tab); font: 600 var(--fs-2) var(--ui); color: var(--ink-1); white-space: nowrap;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)), rgba(30, 33, 39, 0.55);
+  -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 0 0 0.5px rgba(255, 255, 255, 0.22);
+  transform: scale(1.04); transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.split-float.over-drop { transform: scale(0.96); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 0 0 1px rgba(242, 179, 61, 0.55); }
+
+/* парящее окно: язычок + содержимое уменьшены и идут за мышью поверх нижних панелей */
+#views.pane-dragging { z-index: 50 !important; }
+.pane-float { z-index: 60 !important; pointer-events: none; transition: transform 70ms linear;
+  filter: drop-shadow(0 22px 40px rgba(0, 0, 0, 0.6)); }
+.viewport.pane-float.over-drop { opacity: 0.85; }
+.split-strip.lift-strip { z-index: 70 !important; }
+/* пока окно парит, сцена его не обрезает и лежит над правой колонкой */
+#stage.pane-lifting { overflow: visible; z-index: 5; }
+.pane-float { transition: transform 90ms ease-out; }
+html.pane-lifting, html.pane-lifting body { overflow: hidden !important; }
+.split-tab.out { position: absolute !important; bottom: 0; }   /* увели с полосы: гнезда нет, соседи сомкнулись */
+
+
+/* ======================= кромка стекла: одна система для всех стеклянных поверхностей =======================
+   Окна (и с язычками, и Logits/Prompt), карточки справа, верхняя панель: толщина --rim-w, у верхнего края
+   --rim-top, за --rim-fade (в пикселях — одинаково на высоких и низких панелях) гаснет до --rim-low и дальше ровная.
+   Окна с язычками рисуют ту же кромку в SVG (split.js берёт эти же токены). Исключения: неактивный язычок гаснет
+   книзу до нуля (он открыт к окну), у «Что произошло» сверх кромки — янтарный блик. */
+.viewport::before, .card::before {
+  padding: var(--rim-w) !important;
+  background: linear-gradient(180deg, var(--rim-top), var(--rim-low) var(--rim-fade), var(--rim-low)) !important;
+}
+/* верхняя панель — обычная стеклянная поверхность с общей кромкой */
+#top::before { padding: var(--rim-w) !important; background: linear-gradient(180deg, var(--rim-top), var(--rim-low) var(--rim-fade), var(--rim-low)) !important; }
+/* верхние углы блока окон не скругляем: их обрезка шла бы ровно по дуге первого язычка и срезала бы внешнюю половину
+   кромки (угол темнел). Скругление верхних углов дают сами окна и язычки */
+#stage { border-radius: 0 0 var(--r-surface) var(--r-surface) !important; }   /* !important: перебить общее правило скруглений поверхностей выше */
+
+/* граница между окнами узкая (--gap), но ухватить её легко: невидимая зона захвата шире на 4px с каждой стороны */
+.split-gutter::before { content: ""; position: absolute; top: 0; bottom: 0; left: -4px; right: -4px; }
+
+/* единый внутренний отступ --pad: заголовки панелей и карточек, навбар — по нему; первый переключатель в строке окна
+   без собственного поля слева, иначе «3D» стоит на 6px правее заголовков соседних панелей */
+.vp-title { padding-left: var(--pad) !important; padding-right: var(--pad) !important; }
+.card-h { padding: 0 var(--pad) !important; }
+.card-b { padding-left: var(--pad) !important; padding-right: var(--pad) !important; }
+#top { padding-left: var(--pad) !important; padding-right: var(--pad) !important; }
+#view-pair, #aview-pair { margin-left: -2px !important; }
+
+/* активный язычок — над соседями: его переход в окно ложится поверх их нижнего угла */
+.split-strip .split-tab.on { z-index: 8; }
+
+/* слои язычков: неактивные — под окном, окно с активным язычком — над ними, подпись активного — сверху.
+   Полоса язычков не создаёт своего слоя, иначе все язычки оказались бы разом над окном */
+.split-strip { z-index: auto !important; }
+#views > .viewport.tab-body { z-index: 3; }
+.split-strip .split-tab:not(.on) { z-index: 1; }
+.split-strip .split-tab.on { z-index: 6; }
+/* неактивный язычок уходит на 6px вглубь, под окно: окно перекрывает его внахлёст, а не обрезает по краю */
+.split-tab:not(.on) { height: calc(var(--head) + 6px) !important; margin-bottom: -6px; padding-bottom: 6px; }   /* подпись — на той же высоте, что у активного */
+/* у окон с язычками нет размытия фона: под ними только тёмный фон страницы, а Chrome рисует backdrop-filter по всему
+   прямоугольнику окна, не считаясь с его формой (clip-path), — закрывал неактивные язычки под окном и оставлял рамку */
+#views > .viewport.tab-body { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+
+/* навбар — самостоятельная стеклянная панель: без «хвоста» под окна (его нижний край был виден между язычками) */
+#top { margin-bottom: 0 !important; padding-bottom: 0 !important; box-sizing: border-box !important; }
+
+/* парящий язычок — над своим парящим окном (полосу целиком не поднимаем: иначе неактивные язычки легли бы поверх
+   окна, которое осталось на месте) */
+.split-strip .split-tab.pane-float { z-index: 61 !important; }

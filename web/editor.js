@@ -64,7 +64,7 @@ function setMode(m, persist = true) {
   document.body.dataset.mode = m;
   setPair('mode-pair', m);
   if (persist) try { localStorage.setItem('mq.mode', m); } catch { /* без памяти — только на эту загрузку */ }
-  if (S.deck) { S.deck.show('order', m === 'lab'); }
+  if (S.deck) { S.deck.show('order', m === 'lab'); S.deck.setLead(m === 'guide' ? t('g.title') : null); S.deck.setMode(m); }   // в Гайде «что произошло» — первой
   if (m === 'guide' && S.engine) {
     if (S.view !== '3d') switchView('3d');
     if (S.aview !== '3d') switchAttn('3d');
@@ -269,6 +269,7 @@ function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
   ri.innerHTML = t('run.info', rv); ri.title = t('run.title', rv);
   if (S.booted && !isLive) { ri.classList.remove('fresh'); void ri.offsetWidth; ri.classList.add('fresh'); }   // не при загрузке и не на живом пересчёте
   buildStory();
+  S.stage?.layout();   // высота панели истории — по новому тексту
   if (!isLive) countRun();
   const firstGen = Math.max(0, S.run.nPrompt - 1);
   $('t-range').max = S.run.steps.length - 1;
@@ -278,6 +279,14 @@ function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
 }
 
 // ---------------------------------------------------------------- история: токены, по которым можно ходить
+// нужная панели истории высота: текст (по его настоящим строкам, а не по высоте коробки) + заголовок и поля
+function storyFit() {
+  const t = $('story-text'); if (!t || !t.firstChild) return 0;
+  const r = document.createRange(); r.selectNodeContents(t);
+  const h = r.getBoundingClientRect().height; if (!h) return 0;
+  const cs = getComputedStyle(t), pane = $('story');
+  return h + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + t.parentElement.offsetTop + parseFloat(getComputedStyle(pane).paddingBottom) + 6;
+}
 function buildStory() {
   const box = $('story-text'); box.textContent = '';
   const steps = S.run.steps, tt = S.engine.tokenText;
@@ -557,7 +566,9 @@ S.stage = new Stage($('stage'), {
   views: $('views'), player: $('player'),
   // в Гайде логиты — список из пяти строк: панели нужна высота на все пять, иначе последняя обрезается
   folds: [{ key: 'logits', el: $('logits'), share: 0.2, min: () => (S.mode === 'guide' ? 184 : 118), max: 230 },
-          { key: 'story', el: $('story'), share: 0.3, min: 160, max: 380 }],
+          // история — по высоте текста (вся история считается сразу, поэтому высота не прыгает при проигрывании):
+          // короткая — панель ниже, место уходит окнам 3D; длинная — до прежнего предела, дальше прокрутка
+          { key: 'story', el: $('story'), share: 0.3, min: 118, max: 380, fit: storyFit }],
   onLayout: () => glassRanges.forEach(placeKnob),
 });
 // граница между моделью и attention: тянуть — соотношение, до края — панели складываются во вкладки
