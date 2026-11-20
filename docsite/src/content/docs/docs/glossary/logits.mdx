@@ -55,11 +55,12 @@ The studio does not always use the model's logits as they are. At every step of 
    the pick.
 3. **[Constrained decoding](../fsm/)** blocks pieces that would break a requested word into junk; blocked tokens
    get a logit of minus infinity, so their chance is exactly 0.
-4. **[Repetition penalty](../repetition-penalty/)**, if switched on, lowers the score of tokens that would repeat
-   a phrase.
+4. **[Repetition penalty](../repetition-penalty/)** lowers the score of tokens that would repeat a phrase already
+   in the story.
 5. **[Top-k](../top-k/)** keeps only the k highest logits (40 by default).
 6. **[Temperature](../temperature/)** divides the logits, then softmax turns them into chances.
-7. **[Sampling](../sampling/)** draws one token.
+7. **[Min-p](../min-p/)** rules out tokens far less likely than the favourite (0.02 by default).
+8. **[Sampling](../sampling/)** draws one token.
 
 ## Where it is in the studio
 

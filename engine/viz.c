@@ -106,6 +106,15 @@ static void topk_probs(const float *lg) {        // кандидаты и вер
     }
     float T = S.temperature > 0 ? S.temperature : 1e-3f, sum = 0, top = topk_p[0];
     for (int j = 0; j < n; j++) { topk_p[j] = topk_p[j] <= -1e29f ? 0 : expf((topk_p[j] - top) / T); sum += topk_p[j]; }
+    // то же отсечение хвоста, что в mq_sample: отрезанные кандидаты остаются в списке с вероятностью 0
+    if (mq_min_p > 0 || mq_top_p < 1) {
+        float acc = 0, full = sum; int cut = 0; sum = 0;
+        for (int j = 0; j < n; j++) {
+            if (cut || (j > 0 && topk_p[j] < mq_min_p)) { cut = 1; topk_p[j] = 0; continue; }
+            acc += topk_p[j]; sum += topk_p[j];
+            if (acc >= mq_top_p * full) cut = 1;
+        }
+    }
     float ent = 0;
     for (int j = 0; j < n; j++) { topk_p[j] /= sum; if (topk_p[j] > 0) ent -= topk_p[j] * log2f(topk_p[j]); }
     si[I_NK] = n; sf[1] = ent;
@@ -209,6 +218,8 @@ int viz_step(void) {
     pos++;
     return 2;
 }
+
+void viz_sampling(float min_p, float top_p) { mq_min_p = min_p; mq_top_p = top_p; }
 
 void viz_lens(const float *x) { mq_project(&M, x, lens_out); }
 

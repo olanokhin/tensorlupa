@@ -20,7 +20,7 @@ const P = {
   // seed по умолчанию — лучшая демо-история для слов по умолчанию (dragon, cookie, school): подобран перебором seed
   // (все слова на месте, закончилась сама, без повторов 4-грамм) и прочитан глазами, отдельно для каждой версии весов
   // (DEMO_SEED); кубик даёт случайные
-  temperature: 0.6, topK: 40, seed: 1111,
+  temperature: 0.6, topK: 40, minP: 0.02, seed: 1111,
   wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, loopPenalty: false,
   maxNew: 200, speed: 24, autoplay: true,
 };
@@ -29,14 +29,19 @@ let engineReady; S.ready = new Promise((r) => { engineReady = r; });   // мод
 
 // ссылка на эксперимент: слова (или текст), seed, шаг и настройки, отличные от умолчаний, — в адресе страницы.
 // Прогон детерминирован, поэтому по ссылке у получателя ровно та же история и тот же шаг.
-const DEF = { temperature: 0.6, topK: 40, wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, loopPenalty: false, maxNew: 200 };
-const QK = { temperature: 't', topK: 'k', wbBase: 'wb', wbTau: 'tau', wbStart: 'cs', fsm: 'fsm', loopPenalty: 'rp', maxNew: 'n' };
+const DEF = { temperature: 0.6, topK: 40, minP: 0.02, wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, loopPenalty: true, maxNew: 200 };
+const QK = { temperature: 't', topK: 'k', minP: 'mp', wbBase: 'wb', wbTau: 'tau', wbStart: 'cs', fsm: 'fsm', loopPenalty: 'rp', maxNew: 'n' };
+// Ссылка без q — из времён одной 4-битной версии без штрафа и min-p (ими записаны примеры в Docs): для неё
+// умолчания тех времён, чтобы история осталась прежней. Новые ссылки всегда пишут q.
+const legacyLink = (q) => q.has('seed') && !q.has('q');
+function linkDefaults(q) { return legacyLink(q) ? { ...DEF, loopPenalty: false, minP: 0 } : DEF; }
 function readLink() {
   const q = new URLSearchParams(location.search);
   if (q.has('q') && !q.has('seed')) S.bits = q.get('q') === '4' ? 4 : 8;   // «открыть 4-битную версию» с лендинга
   if (!q.has('seed')) return null;
+  const D = linkDefaults(q);
   for (const [key, short] of Object.entries(QK)) {
-    if (!q.has(short)) continue;
+    if (!q.has(short)) { P[key] = D[key]; continue; }
     const v = q.get(short);
     P[key] = typeof DEF[key] === 'boolean' ? v === '1' : Number(v);
   }
@@ -61,7 +66,10 @@ function writeLink() {
 try { S.mode = localStorage.getItem('mq.mode') || 'guide'; } catch { S.mode = 'guide'; }
 try { S.bits = localStorage.getItem('mq.bits') === '4' ? 4 : 8; } catch { S.bits = 8; }
 const LINK = readLink();
-const DEMO_SEED = { 8: 1111, 4: 2779 };
+// штраф за повторы с учётом корпуса и min-p 0.02 включены по умолчанию у обеих версий (замер в micro-qwen3,
+// experiments/ngram: зацикленных историй 9–16% → 1–2%, историй с обломками слов не больше, у 4 бит — вдвое меньше)
+if (!LINK) P.loopPenalty = DEF.loopPenalty;
+const DEMO_SEED = { 8: 1111, 4: 3 };
 if (!LINK) P.seed = DEMO_SEED[S.bits];
 
 // Гайд · Лаб: Гайд — главное простыми словами (простые логиты, одна карточка «что произошло», только сэмплинг,
@@ -158,7 +166,7 @@ function buildPane() {
   S.deck = new Deck($('side'));
   const L = (k) => t('set.' + k);
   const fs = new Controls(S.deck.add('sampling', t('card.sampling')), P, live)
-    .slider('temperature', L('temperature'), 0.05, 1.5, 0.05).slider('topK', L('topK'), 1, 64, 1)
+    .slider('temperature', L('temperature'), 0.05, 1.5, 0.05).slider('topK', L('topK'), 1, 64, 1).slider('minP', L('minP'), 0, 0.2, 0.01)
     .slider('seed', L('seed'), 1, 99999, 1).slider('maxNew', L('maxNew'), 20, 220, 10).toggle('loopPenalty', L('loopPenalty'));
   const fo = new Controls(S.deck.add('order', t('card.order')), P, live)
     .slider('wbBase', L('wbBase'), 0, 6, 0.25).slider('wbTau', L('wbTau'), 10, 400, 10)
@@ -177,7 +185,7 @@ function buildPane() {
 // ---------------------------------------------------------------- генерация
 // живые настройки: любое изменение, влияющее на текст, пересчитывает историю с тем же seed (~90 мс), без анимации,
 // на том же шаге — видно, что меняет именно эта настройка. Не чаще раза за кадр.
-const LIVE = new Set(['temperature', 'topK', 'seed', 'wbBase', 'wbTau', 'wbStart', 'fsm', 'loopPenalty', 'maxNew']);
+const LIVE = new Set(['temperature', 'topK', 'minP', 'seed', 'wbBase', 'wbTau', 'wbStart', 'fsm', 'loopPenalty', 'maxNew']);
 function live(key) {
   if (!LIVE.has(key) || !S.run) return;
   if (live.raf) return;
@@ -206,9 +214,10 @@ function wordsHint(key, field = 'words') {
 // Проверенные заказы: слова + seed, отобранные перебором 600 seed на комбинацию и чтением историй
 // (все слова на месте, история закончилась сама, мало повторов). Клик — вписать и сгенерировать.
 // готовые заказы: лучший seed для каждой версии весов — [слова, seed для 4 бит, seed для 8 бит]
+// (подобраны под штраф с учётом корпуса и min-p 0.02: перебор 1500 seed, все слова, конец сам, без повторов и обломков)
 const PICKS_ALL = [
-  ['dragon, cookie, school', 2779, 1111], ['share, toy, kind', 147, 1238], ['find, treasure, brave', 319, 705],
-  ['run, dog, fast', 231, 538], ['fly, kite, red', 326, 6], ['play, ball, happy', 273, 711], ['robot, moon', 552, 288],
+  ['dragon, cookie, school', 3, 1111], ['share, toy, kind', 147, 1238], ['find, treasure, brave', 319, 705],
+  ['run, dog, fast', 1158, 1339], ['fly, kite, red', 670, 1409], ['play, ball, happy', 273, 711], ['robot, moon', 1002, 474],
 ];
 const PICKS = PICKS_ALL.map(([ws, s4, s8]) => [ws, S.bits === 4 ? s4 : s8]);
 function picksMenu() {
@@ -275,7 +284,7 @@ function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
     return;
   }
   S.engine.settings({ temperature: P.temperature, topK: P.topK, seed: P.seed, wbBase: P.wbBase, wbTau: P.wbTau,
-    wbStart: P.wbStart, fsm: P.fsm, corpusPenalty: P.loopPenalty, maxNew: P.maxNew });
+    wbStart: P.wbStart, fsm: P.fsm, corpusPenalty: P.loopPenalty, minP: P.minP, maxNew: P.maxNew });
   const t0 = performance.now();
   S.run = S.engine.run(prompt, words);
   const ms = performance.now() - t0;
@@ -435,7 +444,7 @@ function guideCard(s) {
     h += `<div class="note">${felt.length ? t('g.boost', { list: felt.map((x) => `${pill(x.tok)} ${pc(pRaw[x.tok])} → ${pc(pFin[x.tok])}`).join(', ') }) : t('g.boostSmall')}</div>`;
   }
   // штраф за повторы с учётом корпуса: какой токен и почему (фраза из четырёх токенов уже была в истории)
-  for (const x of s.loop) if (x.gram) h += `<div class="note">${t('g.loop', { tok: pill(x.tok), gram: x.gram.map(pill).join(''), val: Math.abs(x.val).toFixed(0) })}</div>`;
+  for (const x of s.loop) if (x.gram && !x.twin) h += `<div class="note">${t('g.loop', { tok: pill(x.tok), gram: x.gram.map(pill).join(''), val: Math.abs(x.val).toFixed(0) })}</div>`;
   const level = s.entropy < 1 ? 0 : s.entropy < 3 ? 1 : 2;
   h += `<div class="note">${t('g.conf', { level, bits: s.entropy.toFixed(1) })}</div>`;
   if (s.words.length) {
@@ -492,7 +501,7 @@ function renderInspector(s) {
     }
     if (s.loop.length) h += `<div class="note">${t('insp.loop', { list: s.loop.map((x) => pill(x.tok) + ' ' + x.val.toFixed(2)).join(' ') })}</div>`;
     // штраф с учётом корпуса: какая фраза из четырёх токенов уже была в этой истории
-    for (const x of s.loop) if (x.gram) h += `<div class="note">${t('insp.loop.why', { gram: x.gram.map(pill).join(''), n: x.times })}</div>`;
+    for (const x of s.loop) if (x.gram && !x.twin) h += `<div class="note">${t('insp.loop.why', { gram: x.gram.map(pill).join(''), n: x.times })}</div>`;
   }
   S.deck.sync(h);
 }
@@ -617,7 +626,8 @@ function openStudioLink(href) {
   // ссылка на другую версию весов (без q — 4 бита, так записаны примеры в Docs) — открываем страницу заново с ней
   if (!q.has('seed') || !S.run || (q.get('q') === '8' ? 8 : 4) !== S.bits) { location.href = href; return; }
   const target = {};
-  for (const [key, short] of Object.entries(QK)) target[key] = q.has(short) ? (typeof DEF[key] === 'boolean' ? q.get(short) === '1' : Number(q.get(short))) : DEF[key];
+  const LD = linkDefaults(q);
+  for (const [key, short] of Object.entries(QK)) target[key] = q.has(short) ? (typeof DEF[key] === 'boolean' ? q.get(short) === '1' : Number(q.get(short))) : LD[key];
   target.seed = Math.max(1, Math.min(99999, Number(q.get('seed')) || 1));
   const step = q.has('s') ? Number(q.get('s')) : -1;
   const textSame = q.has('p') ? $('mode').value === 'continue' && $('prompt').value === q.get('p')
@@ -753,7 +763,7 @@ const DOC_SLUG = {
   languageModel: 'language-model', token: 'token', prompt: 'prompt', specialTokens: 'special-tokens', mode: 'instruct', model: 'transformer',
   embedding: 'residual-stream', residualStream: 'residual-stream', attention: 'attention', head: 'attention-head',
   weights: 'attention-head', valueWeighted: 'attention-head', mlp: 'mlp', logits: 'logits', logitLens: 'logit-lens',
-  sampling: 'sampling', sampleDraw: 'sampling', pOut: 'sampling', temperature: 'temperature', topK: 'top-k', seed: 'seed',
+  sampling: 'sampling', sampleDraw: 'sampling', pOut: 'sampling', temperature: 'temperature', topK: 'top-k', minP: 'min-p', seed: 'seed',
   maxNew: 'max-new-tokens', loopPenalty: 'repetition-penalty', wbBase: 'logit-bias', wbTau: 'logit-bias',
   wbStart: 'logit-bias', logitBias: 'logit-bias', keywords: 'logit-bias', fsm: 'fsm', entropy: 'entropy',
 };

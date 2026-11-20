@@ -63,7 +63,9 @@ Drag top-k down to 1 and back up to 40, and watch the story switch between "run 
 
 We measured top-k from 10 to 64 on 200 story orders, and it barely mattered: after [instruction
 tuning](../instruct/) the real choice at a step is among 3 to 5 tokens anyway, so the tail is almost empty.
-Temperature matters much more. The studio keeps top-k 40 as a safety net against the rare odd word.
+Temperature matters much more. Top-k 40 alone is a weak safety net, though: a draw from the tail is rare at each
+step but not over a whole story, and it is how invented words such as "Byican" begin. The studio adds
+[min-p](../min-p/) 0.02 after top-k, which removes the tail relative to the favourite.
 
 ## A bit of history
 
@@ -77,6 +79,7 @@ smallest set of tokens that together hold a chosen share of the chance, instead 
 - [Sampling](../sampling/): the draw that top-k limits.
 - [Temperature](../temperature/): reshapes the chances of the candidates that are left.
 - [Seed](../seed/): fixes the random numbers of the draw.
+- [Min-p](../min-p/): cuts the tail relative to the favourite, after top-k.
 
 ## References
 

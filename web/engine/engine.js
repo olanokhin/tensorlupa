@@ -43,6 +43,7 @@ export class Engine {
       force: c('viz_force', null, ['number', 'number']),
       extra: c('viz_extra', 'number', []),             // добавка к логитам шага (эксперименты)
       extraOn: c('viz_extra_on', null, ['number']),
+      sampling: c('viz_sampling', null, ['number', 'number']),   // min-p, top-p (эксперимент)
       step: c('viz_step', 'number', []),
       lens: c('viz_lens', null, ['number']),
       info: c('viz_info', 'number', ['number']),
@@ -82,16 +83,18 @@ export class Engine {
 
   settings(s = {}) {
     const d = { temperature: 0.6, topK: 40, seed: 1, wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, fsmLock: 2,
-      fsmBonus: 4, loopImm: 0, loopMult: 0, maxNew: 240, corpusPenalty: false, ...s };
+      fsmBonus: 4, loopImm: 0, loopMult: 0, maxNew: 240, corpusPenalty: false, minP: 0.02, ...s };
     this.cfg = d;
     this.f.settings(d.temperature, d.topK, d.seed >>> 0, d.wbBase, d.wbTau, d.wbStart, d.fsm ? 1 : 0, d.fsmLock,
       d.fsmBonus, d.loopImm, d.loopMult, d.maxNew);
+    this.f.sampling(d.minP, 1);                       // min-p: отсечение хвоста после top-k
   }
 
   // prompt — текст для модели; words — заказанные слова ('' — без заказа). Возвращает число токенов промпта.
   begin(prompt, words = '') {
     if (!this.cfg) this.settings();
     this.gen = [];
+    this.reqWords = words.split(/[ ,]+/).filter(Boolean).map((w) => w.toLowerCase());
     return this.f.begin(prompt, words);
   }
 
@@ -116,16 +119,25 @@ export class Engine {
   // 4-грамму, уже написанную в этой истории, он получает −β за каждый такой повтор — кроме естественных повторов,
   // частых в детских историях (≥ 1000 раз в корпусе: «Once upon a time»). Куски внутри слова не штрафуются.
   // Возвращает список штрафов [{tok, val, gram}] и кладёт их в добавку к логитам движка.
+  // Исключения: первый кусок заказанного слова (заказанный предмет в истории и должен повторяться — иначе модель
+  // дописывает его хвост к другому началу: «playrobe»). Двойник куска без пробела («B» для « B») получает тот же
+  // штраф — иначе модель приклеивает слово к предыдущему: «HappyBree».
   corpusPenaltyStep(beta = 4) {
     const g = this.gen, n = g.length, out = [];
     if (!this.corpus || n < 3) return out;
+    if (!this.byText) { this.byText = new Map(); this.tokenText.forEach((x, i) => { if (!this.byText.has(x)) this.byText.set(x, i); }); }
+    const req = (t) => { const x = this.tokenText[t].trim().toLowerCase();
+      return /^[a-z]/.test(x) && (this.reqWords || []).some((w) => w.startsWith(x) && (x.length >= 2 || x === w)); };
     const a = g[n - 3], b = g[n - 2], c = g[n - 1], seen = new Map();
     for (let i = 0; i + 3 < n; i++) if (g[i] === a && g[i + 1] === b && g[i + 2] === c) seen.set(g[i + 3], (seen.get(g[i + 3]) || 0) + 1);
     const T = this.tokenText, letter = (ch) => /[A-Za-z]/.test(ch || '');
     for (const [t, k] of seen) {
       if (letter(T[t][0]) && letter(T[c].slice(-1))) continue;         // продолжение слова — не трогаем
       if (this.corpus.q4(a, b, c, t) >= 100) continue;                 // естественный повтор
+      if (req(t)) continue;                                            // заказанное слово
       out.push({ tok: t, val: -beta * k, gram: [a, b, c, t], times: k });
+      const tw = T[t][0] === ' ' ? this.byText.get(T[t].slice(1)) : undefined;   // двойник без пробела
+      if (tw !== undefined && !seen.has(tw)) out.push({ tok: tw, val: -beta * k, gram: [a, b, c, t], times: k, twin: true });
     }
     return out;
   }

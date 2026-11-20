@@ -45,6 +45,7 @@ export default defineConfig({
           items: [
             { slug: 'docs/glossary/temperature' },
             { slug: 'docs/glossary/top-k' },
+            { slug: 'docs/glossary/min-p' },
             { slug: 'docs/glossary/seed' },
             { slug: 'docs/glossary/max-new-tokens' },
             { slug: 'docs/glossary/repetition-penalty' },

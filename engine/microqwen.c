@@ -537,6 +537,10 @@ void mq_project(MQModel *m, const float *x, float *out) {
 // ---------------------------------------------------------------- сэмплинг
 static uint32_t xorshift(uint64_t *s) { *s ^= *s >> 12; *s ^= *s << 25; *s ^= *s >> 27; return (uint32_t)((*s * 0x2545F4914F6CDD1DULL) >> 32); }
 
+// Отсечение хвоста (см. microqwen.h). По умолчанию min-p 0.02 — как в студии; замер в micro-qwen3 (experiments/ngram):
+// вдвое меньше историй с обломками слов на 4-битной модели при почти том же разнообразии.
+float mq_min_p = 0.02f, mq_top_p = 1.0f;
+
 int mq_sample(const MQModel *m, float temperature, int top_k, uint64_t *rng) {
     const float *lg = m->logits;
     int V = m->vocab, best = 0;
@@ -556,6 +560,15 @@ int mq_sample(const MQModel *m, float temperature, int top_k, uint64_t *rng) {
     }
     float sum = 0, p[64];
     for (int j = 0; j < n; j++) { p[j] = expf((val[j] - val[0]) / temperature); sum += p[j]; }
+    if (mq_min_p > 0 || mq_top_p < 1) {            // p[0] = 1 — лучший кандидат; val отсортированы по убыванию
+        int keep = n; float acc = 0;
+        for (int j = 0; j < n; j++) {
+            if (j > 0 && p[j] < mq_min_p) { keep = j; break; }
+            acc += p[j];
+            if (acc >= mq_top_p * sum) { keep = j + 1; break; }
+        }
+        n = keep; sum = 0; for (int j = 0; j < n; j++) sum += p[j];
+    }
     float r = (xorshift(rng) / 4294967296.0f) * sum;
     for (int j = 0; j < n; j++) { r -= p[j]; if (r <= 0) return idx[j]; }
     return idx[n - 1];
@@ -794,19 +807,62 @@ static void fsm_add(MQWordFSM *f, const MQModel *m, const char *text, int word) 
     if (n > 0) f->flen[f->nf++] = n;
 }
 
+// Нормальные формы слова по правилам английского: само слово, -s/-es/-ies, -ed/-d/-ied, -ing/-ying с отбрасыванием
+// немой e. Согласная удваивается только в односложном слове вида согласная–гласная–согласная (run → running,
+// stop → stopped), но не в dragon. Раньше окончания клеились к любому слову подряд, и FSM разрешал «dareing».
+static int mq_vowel(char c) { return c && strchr("aeiou", c) != NULL; }
+static void mq_word_forms(const char *w, int wl, char forms[10][32], int *nfm) {
+    int n = 0;
+    snprintf(forms[n++], 32, "%s", w);
+    if (wl < 2) { *nfm = n; return; }
+    char z = w[wl - 1], y = w[wl - 2];
+    // окончания существительных — только множественное (invitation → invitations, не «invitationing»);
+    // окончания прилагательных — никаких форм (graceful, honest, modest: не «honesting»)
+    static const char *noun_end[] = {"tion", "sion", "ment", "ness", "ity", "ship", "hood", "ism", NULL};
+    static const char *adj_end[] = {"ful", "ous", "ive", "less", "able", "ible", "ish", NULL};
+    int nounish = 0, adjish = 0;
+    for (int k = 0; noun_end[k]; k++) { int sl = strlen(noun_end[k]); nounish |= wl > sl + 1 && !strcmp(w + wl - sl, noun_end[k]); }
+    for (int k = 0; adj_end[k]; k++) { int sl = strlen(adj_end[k]); adjish |= wl > sl + 1 && !strcmp(w + wl - sl, adj_end[k]); }
+    int groups = 0;                                   // число групп гласных ≈ число слогов
+    for (int k = 0; k < wl; k++) if (mq_vowel(w[k]) && (k == 0 || !mq_vowel(w[k - 1]))) groups++;
+    int cvc = wl >= 3 && groups == 1 && !mq_vowel(z) && !strchr("wxy", z) && mq_vowel(y) && !mq_vowel(w[wl - 3]);
+    if (wl > 4 && groups >= 2 && !strcmp(w + wl - 3, "est")) nounish = 1;   // honest, modest, forest: только -s (но не rest, nest)
+    if (adjish) { *nfm = n; return; }
+    int cons_y = z == 'y' && !mq_vowel(y);
+    int sib = strchr("sxz", z) || (z == 'h' && (y == 'c' || y == 's'));
+    // -s / -es / -ies
+    if (cons_y) snprintf(forms[n++], 32, "%.*sies", wl - 1, w);
+    else snprintf(forms[n++], 32, "%s%s", w, sib ? "es" : "s");
+    if (nounish) { *nfm = n; return; }
+    // -ed / -d / -ied; у частых неправильных глаголов прошедшее не продолжает основу (ran, swam, saw) — формы нет
+    static const char *irr[] = {"be", "begin", "bite", "blow", "break", "bring", "build", "buy", "catch", "choose",
+        "come", "dig", "do", "draw", "drink", "drive", "eat", "fall", "feel", "fight", "find", "fly", "forget", "freeze",
+        "get", "give", "go", "grow", "have", "hear", "hide", "hold", "keep", "know", "leave", "lose", "make", "meet",
+        "ride", "ring", "rise", "run", "say", "see", "sell", "send", "shake", "shine", "sing", "sink", "sit", "sleep",
+        "speak", "spin", "stand", "steal", "swim", "take", "teach", "tell", "think", "throw", "wake", "wear", "win",
+        "write", NULL};
+    int irregular = 0;
+    for (int k = 0; irr[k]; k++) irregular |= !strcmp(w, irr[k]);
+    if (irregular) ;
+    else if (z == 'e') snprintf(forms[n++], 32, "%sd", w);
+    else if (cons_y) snprintf(forms[n++], 32, "%.*sied", wl - 1, w);
+    else if (cvc) snprintf(forms[n++], 32, "%s%ced", w, z);
+    else snprintf(forms[n++], 32, "%sed", w);
+    // -ing
+    if (z == 'e' && y == 'i') snprintf(forms[n++], 32, "%.*sying", wl - 2, w);
+    else if (z == 'e' && !strchr("eoy", y)) snprintf(forms[n++], 32, "%.*sing", wl - 1, w);
+    else if (cvc) snprintf(forms[n++], 32, "%s%cing", w, z);
+    else snprintf(forms[n++], 32, "%sing", w);
+    *nfm = n;
+}
+
 int mq_fsm_init(MQWordFSM *f, const MQModel *m, const MQWordBias *wb, int lock, float start_bonus) {
     memset(f, 0, sizeof *f);
     f->lock = lock; f->start_bonus = start_bonus;
-    static const char *suf[] = {"", "s", "es", "ed", "d", "ing"};
     for (int i = 0; i < wb->n; i++) {
         const char *w = wb->word[i]; int wl = wb->wlen[i];
         char forms[10][32]; int nfm = 0;
-        for (int s = 0; s < 6; s++) snprintf(forms[nfm++], 32, "%s%s", w, suf[s]);
-        if (wl > 0 && w[wl - 1] == 'e') snprintf(forms[nfm++], 32, "%.*sing", wl - 1, w);
-        if (wl > 2 && !strchr("aeiouwy", w[wl - 1]) && strchr("aeiou", w[wl - 2])) {
-            snprintf(forms[nfm++], 32, "%s%ced", w, w[wl - 1]);
-            snprintf(forms[nfm++], 32, "%s%cing", w, w[wl - 1]);
-        }
+        mq_word_forms(w, wl, forms, &nfm);
         for (int a = 0; a < nfm; a++) {
             int dup = 0;
             for (int b = 0; b < a; b++) dup |= !strcmp(forms[a], forms[b]);

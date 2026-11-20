@@ -4,7 +4,7 @@ description: Why a tiny language model gets stuck in loops, and how the studio's
 ---
 
 **In one sentence:** the repetition penalty lowers the score of a token that would repeat a phrase already in the
-story, unless that phrase is common in children's stories, to stop the text from looping.
+story, unless that phrase is common in children's stories, to stop the text from looping. It is on by default.
 
 ## Loops in a tiny model
 
@@ -24,9 +24,13 @@ Some repeats are fine. Children's stories say "Once upon a time" and "One day, s
 knows which phrases are natural: 11,224 four-token phrases that appear at least 1,000 times in TinyStories, the
 stories the model was trained on. A repeat of one of them is never penalized. Everything else that repeats is.
 
-Two more rules:
+More rules, each one found by tracing the invented words the penalty used to cause:
 - A piece in the middle of a word is never penalized. Spelling a word to the end is the job of the
   [constrained decoding](../fsm/) automaton.
+- The words you asked for are never penalized: the dragon of the story is supposed to come back. When the penalty
+  hit the start of a requested word, the model glued its tail onto another start, as in "playrobe".
+- When a piece with a leading space is penalized (" B"), the same piece without the space ("B") gets the same
+  penalty. Otherwise the model glued the word onto the one before it: "HappyBree".
 - The penalty works in both modes, Instruct and Completion.
 
 The list comes from a table of phrase counts built from the training corpus, about 2.3 MB. The studio loads it
@@ -34,40 +38,41 @@ only when you switch the penalty on.
 
 ## A real loop, off and on
 
-Words tall, tree, climb, seed 268. Without the penalty, the story gets stuck and never ends on its own:
+Words tall, tree, climb, seed 264. Without the penalty, the story gets stuck on its first idea:
 
-> Once upon a time, there was a tall tree. The tree was very tall and tall. The tree was very tall and climbing up
-> to the top of the tree. The tree was so tall that it could reach the top. The tree was very tall and tall. ...
+> Once upon a time, there was a tall tree. The tree was very tall and tall. The tall tree was climbing a big tree.
+> It was very tall and tall. The tall tree was very tall. The tall tree was tall and tall. One day, the tall tree
+> saw a tall tree. ...
 
-At step 51 the model has just written "The tree was very" for the second time and gives " tall" 98.5%. The phrase
-"tree was very tall" is already in the story and is rare in children's stories, so " tall" loses 4 points. The
-model writes " climb" instead, and the story goes on:
+At step 63 the model has just written *"It was very tall and tall"* and wants to end the sentence: "." 76%. But
+" tall and tall." is already in the story and is rare in children's stories, so "." loses 4 points. The model
+starts a new paragraph instead, and the story goes somewhere:
 
-> Once upon a time, there was a tall tree. The tree was very tall and tall. The tree was very climbing very high.
-> One day, the tree was very high and it started to climb. As the tree was climbing, a little bird flew down from
-> the tree. ...
+> ... It was very tall and tall.
+> One day, a little boy went to the tree. He wanted to climb the tree. He tried and tried, but he couldn't do it.
+> ...
 
-With the penalty the story ends on its own after 114 tokens; without it, it runs into the 200-token limit.
+Without the penalty the story keeps circling "The tall tree was very tall" for 177 tokens; with it, it ends after
+132.
 
 ## What it does and does not catch
 
-Measured on 320 stories (32 three-word orders × 10 seeds), [temperature](../temperature/) 0.6, the default 8-bit
-weights:
+Measured on 300 stories (100 orders the model had never seen, 3 seeds each), [temperature](../temperature/) 0.6,
+[min-p](../min-p/) 0.02, the default 8-bit weights:
 
 | Penalty | Repeated phrases | Looping stories | Stories with an invented word | All words used | Ends on its own |
 | --- | --- | --- | --- | --- | --- |
-| off | 5.7% | 17% | 10.3% | 99.6% | 75% |
-| the earlier rule (below) | 2.6% | 4% | 10.3% | 99.7% | 79% |
-| **the studio's penalty** | **1.0%** | **0%** | 11.6% | 99.8% | 82% |
+| off | 4.6% | 13% | 1.3% | 99.8% | 84% |
+| **on** | **1.4%** | **1%** | 1.0% | 99.8% | 85% |
 
 "Repeated phrases" is the share of four-word phrases that already appeared earlier in the same story. A story
 counts as looping when more than 10% of its phrases are repeats.
 
-It does not catch a repeat that is not yet a repeated phrase. "Very tall and tall" in the story above is written
-once, so it passes. It cannot fix loops of meaning either ("The wind made the wind strong").
+It does not catch a repeat that is not yet a repeated phrase: "very tall and tall" is written once, so it passes.
+Repeats of the requested words are allowed on purpose. It cannot fix loops of meaning either ("The wind made the
+wind strong").
 
-The penalty is off by default for now: it has been measured on one set of orders, and it changes the story you
-see, which is not what a first look at the model should show.
+The penalty is on by default, for both the 8-bit and the 4-bit weights.
 
 ## Where it is in the studio
 
@@ -79,9 +84,9 @@ which phrase would have repeated and how many points the token lost.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=tall,tree,climb&seed=268&s=51&q=8" target="_blank" rel="noopener">Open the looping story at step 51</a>
+<a class="try-link" href="/studio?w=tall,tree,climb&seed=264&rp=0&s=63&q=8" target="_blank" rel="noopener">Open the looping story at step 63</a>
 
-<a class="try-link" href="/studio?w=tall,tree,climb&seed=268&rp=1&s=51&q=8" target="_blank" rel="noopener">Open the same step with the penalty on</a>
+<a class="try-link" href="/studio?w=tall,tree,climb&seed=264&s=63&q=8" target="_blank" rel="noopener">Open the same step with the penalty on</a>
 
 ## The earlier rule, and the board
 

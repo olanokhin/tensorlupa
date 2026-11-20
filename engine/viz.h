@@ -72,3 +72,5 @@ int viz_word_int(int i, int what);
 const char *viz_word_text(int i);
 //  доплата сейчас: base, u0, u (использовано слов), t (токенов с последнего слова), tau
 float viz_wb(int what);
+void viz_sampling(float min_p, float top_p);   // отсечение хвоста после top-k (эксперимент): min-p и top-p
+

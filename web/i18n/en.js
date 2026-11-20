@@ -68,6 +68,7 @@
   'card.run': 'Replay speed',
   'set.temperature': 'temperature',
   'set.topK': 'top-k',
+  'set.minP': 'min-p',
   'set.seed': 'seed',
   'set.wbBase': 'logit bias: strength',
   'set.wbTau': 'logit bias: ramp τ',
@@ -230,6 +231,7 @@
   'g.end': 'The model decided the story is over and wrote the end-of-text token.',
   // glossary: one plain sentence per term
   'gl.temperature': 'How bold the choice is. Low temperature almost always takes the most likely token; high gives more surprising words and more mistakes.',
+  'gl.minP': 'Min-p: the model never draws a token that is more than 1/min-p times less likely than the favourite. At 0.02 that rules out tokens 50 times less likely: rare slips that break words.',
   'gl.topK': 'The model draws only from the K most likely tokens; everything else is ruled out.',
   'gl.seed': 'The number that fixes the random draws. Same seed and same settings give exactly the same story.',
   'gl.wbBase': 'Logit bias: a bonus added to the scores of your keywords so the model is more likely to use them. Strength is the size of the bonus.',

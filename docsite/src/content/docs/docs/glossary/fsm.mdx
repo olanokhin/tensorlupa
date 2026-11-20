@@ -16,17 +16,27 @@ which pieces may come next.
 
 ## What the rules do
 
-For each requested word the studio prepares its normal forms: the word itself, with `s`, `es`, `ed`, `d` or
-`ing`, a doubled last letter where English does that ("dragonned", "dragonning"), with or without a capital, with
-or without a leading space. Then, at every step:
+For each requested word the studio prepares its normal forms by the rules of English spelling, each with or
+without a capital and a leading space:
+
+- the word itself;
+- the plural or third person: "dragons", "boxes", "tries";
+- the past: "dared", "stopped", "tried"; common irregular verbs get none, because "ran" or "swam" does not continue
+  the word;
+- the -ing form: "daring" (the silent e goes), "running" (a short word doubles its last letter), "lying".
+
+Words that look like nouns ("invitation", "happiness") get only the plural, and words that look like adjectives
+("graceful", "careless") get no forms at all.
+
+Then, at every step:
 
 1. **Two or more pieces of a word are written:** the next piece is set, no draw at all. The model sees the chance
    of that piece as 100%.
 2. **Only the first piece is written:** the second piece gets an extra bonus of +4, but the model can still go
    another way.
 3. **A normal form has just been finished:** pieces that would continue the word with letters are blocked, except
-   the ones that lead to another normal form. After "luxury" the model may still write "luxurys" or "luxuryed" in
-   theory, but not "luxuryous".
+   the ones that lead to another normal form. After "luxury" the model may still write "luxuries" or
+   "luxuried" in theory, but not "luxuryous".
 
 Everything else, punctuation, spaces and new words, stays free. The machine only watches the requested words.
 
@@ -71,6 +81,10 @@ as letters.
 - A piece is forced once two pieces of the word are written; the first piece alone gets a +4 bonus for the second.
 - The same rules run in the C engine on the ESP32-S3 and in the browser.
 - The machine only knows the requested words and their simple English forms. It does not check grammar or meaning.
+- The forms used to be built by gluing every ending onto every word. That let through "dareing", "examineing" and
+  "invitationing", and these rules were behind a large share of the invented words in the studio. Following English
+  spelling cut the share of stories with an invented word from 6.0% to 3.3% (300 stories, 8-bit weights, no
+  repetition penalty).
 
 ## A bit of history
 

@@ -165,4 +165,7 @@ extern uint64_t mq_prof_us[MQP_N];
 extern uint64_t (*mq_now_us)(void);
 
 // Выбор следующего токена: temperature <= 0 — argmax; иначе top-k сэмплинг. rng — состояние xorshift.
+// Отсечение хвоста после top-k: min-p — убрать кандидатов с вероятностью меньше mq_min_p от лучшего (по умолчанию
+// 0.02: в 50 раз менее вероятных); top-p — оставить самых вероятных до суммы mq_top_p (1 — выключено).
+extern float mq_min_p, mq_top_p;
 int mq_sample(const MQModel *m, float temperature, int top_k, uint64_t *rng);
