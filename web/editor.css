@@ -1387,3 +1387,15 @@ html.pane-lifting, html.pane-lifting body { overflow: hidden !important; }
 /* парящий язычок — над своим парящим окном (полосу целиком не поднимаем: иначе неактивные язычки легли бы поверх
    окна, которое осталось на месте) */
 .split-strip .split-tab.pane-float { z-index: 61 !important; }
+
+/* полосы прокрутки во всей студии — тонкие и стеклянные, как в Docs (а не светлые системные) */
+:root { color-scheme: dark; }
+* { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+/* логотип: от значка до названия столько же видимого места, сколько от края навбара до значка (--pad);
+   у значка в рамке 20px по ~1.5px пустоты с каждой стороны, поэтому промежуток на 1px меньше --pad */
+.brand-mark { margin-right: 0 !important; }
+a.brand { gap: calc(var(--pad) - 1px) !important; }
