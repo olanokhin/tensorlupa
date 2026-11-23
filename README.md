@@ -6,7 +6,7 @@ through each layer. Scrub back to any token, move a slider and the story rewrite
 
 **[Open TensorLupa →](https://tensorlupa.com)** · desktop browser · nothing to install
 
-![TensorLupa: the model writes a story, then the temperature slider rewrites it](docs/demo.gif)
+![TensorLupa: the model writes a story, a losing candidate is compared with the winner, one attention head is picked, and the temperature slider rewrites the story](docs/demo.gif)
 
 ## What you are looking at
 

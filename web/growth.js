@@ -70,9 +70,9 @@ export class GrowthChart {
     g.fillStyle = css('--chosen'); g.beginPath(); g.arc(X(n), Yv(cumA(n)), 3.5, 0, 7); g.fill();
     g.font = '10px ' + mono; g.textBaseline = 'middle'; g.textAlign = 'right';
     g.fillStyle = Y; g.textAlign = 'right'; g.fillText(tx('gr2.attnLabel'), X(K * 0.97), Yv(cumA(K * 0.97)) + 10);
-    g.fillStyle = Li; g.textAlign = 'left'; g.fillText(tx('gr.matLabel'), X(K * 0.45) + 4, Yv(cumM(K * 0.45)) - 8);
+    g.fillStyle = Li; g.textAlign = 'right'; g.fillText(tx('gr.matLabel'), x1, Yv(cumM(K * 0.6)) + 12);     // от правого края: в узкой панели подпись не обрезается
     g.fillStyle = css('--dim'); g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText(tx('gr.ctx', { n: P }), X(P), y0 + 2);
-    g.textAlign = 'right'; g.fillText(tx('gr.tokens', { x: fmt(K) }), x1, y0 + 2);
+    if (x1 - X(P) > 110) { g.textAlign = 'right'; g.fillText(tx('gr.tokens', { x: fmt(K) }), x1, y0 + 2); }   // иначе наезжает на подпись контекста
   }
 }
