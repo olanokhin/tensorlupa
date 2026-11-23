@@ -30,15 +30,23 @@ export class GrowthChart {
     const pairs = n * (n + 1) / 2, attnTok = this.A1 * n, share = attnTok / (attnTok + this.M);
     const shareEnd = this.A1 * P / (this.A1 * P + this.M);
     const xc = Math.ceil(2 * this.M / this.A1);     // накопленная работа attention обгоняет матрицы
-    g.font = '11px ' + mono; g.textBaseline = 'top'; g.textAlign = 'left';
+    g.textBaseline = 'top'; g.textAlign = 'left';
+    // Одна мысль: чем длиннее история, тем дороже каждый новый токен. Сравнений столько, сколько записей в кэше,
+    // а остальные слои стоят одинаково на любом шаге. (Раньше здесь были пять строк с MAC и парами «запрос–ключ».)
     const lines = [
-      [tx('gr.context', { n }), css('--text')],
-      [tx('gr.pairs', { per: fmt(pairs), all: fmt(pairs * L * H) }), Y],
-      [tx('gr.attn', { x: fmt(attnTok), share: (100 * share).toFixed(0) }), Y],
-      [tx('gr.matrices', { x: fmt(this.M) }), Li],
-      [tx('gr.end', { P, share: (100 * shareEnd).toFixed(0), x: fmt(xc) }), css('--muted')],
+      [tx('gr2.title'), css('--ink-1') || css('--text')],
+      [tx('gr2.now', { n, all: fmt(n * L * H), cmp: n * L * H, heads: L * H }), css('--ink-2') || css('--text')],
+      [tx('gr2.share', { share: (100 * share).toFixed(0) }), Y],
+      [tx('gr2.rest', { rest: (100 * (1 - share)).toFixed(0) }), Li],
+      [tx('gr2.end', { P, share: (100 * shareEnd).toFixed(0) }), css('--muted')],
     ];
-    lines.forEach(([t, c], i) => { g.fillStyle = c; g.fillText(t, 10, 6 + i * 15); });
+    g.font = '11px ' + (css('--ui') || mono);
+    while (lines.length > 2 && 7 + lines.length * 16 + 10 > Hh) lines.pop();      // низкая панель: последние строки не помещаются
+    lines.forEach(([t, c], i) => { g.fillStyle = c; g.font = (i === 0 ? '600 ' : '') + '11px ' + (css('--ui') || mono); g.fillText(t, 10, 7 + i * 16); });
+    // доля внимания в работе над этим токеном: полоска с отметкой «на последнем токене контекста»
+    const bw = Math.min(260, W * 0.42), by = 7 + lines.length * 16 + 3;
+    if (by + 6 < Hh) { g.fillStyle = Li + '88'; g.fillRect(10, by, bw, 5); g.fillStyle = Y; g.fillRect(10, by, Math.max(2, bw * share), 5);
+      g.fillStyle = css('--muted'); g.fillRect(10 + bw * shareEnd, by - 2, 1, 9); }
     // график накопленной работы: ось продлена за контекст модели, чтобы была видна вся парабола
     const textW = Math.max(...lines.map(([s]) => g.measureText(s).width)) + 10;
     const x0 = Math.round(Math.max(W * 0.55, textW + 24)), x1 = W - 12, y0 = Hh - 15, y1 = 8, K = Math.ceil(xc * 1.15);
@@ -61,7 +69,7 @@ export class GrowthChart {
     curve(cumM, Li, 0, n, false); curve(cumA, Y, 0, n, false);
     g.fillStyle = css('--chosen'); g.beginPath(); g.arc(X(n), Yv(cumA(n)), 3.5, 0, 7); g.fill();
     g.font = '10px ' + mono; g.textBaseline = 'middle'; g.textAlign = 'right';
-    g.fillStyle = Y; g.textAlign = 'right'; g.fillText('attention ∝ n²', X(K * 0.97), Yv(cumA(K * 0.97)) + 10);
+    g.fillStyle = Y; g.textAlign = 'right'; g.fillText(tx('gr2.attnLabel'), X(K * 0.97), Yv(cumA(K * 0.97)) + 10);
     g.fillStyle = Li; g.textAlign = 'left'; g.fillText(tx('gr.matLabel'), X(K * 0.45) + 4, Yv(cumM(K * 0.45)) - 8);
     g.fillStyle = css('--dim'); g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText(tx('gr.ctx', { n: P }), X(P), y0 + 2);

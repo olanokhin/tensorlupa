@@ -76,11 +76,10 @@ if (matchMedia('(max-width: 699px)').matches) location.replace((/^\/ru(\/|$)/.te
   </section>
   <section id="view-attn" class="viewport">
     <div class="vp-title vp-tabs"><span data-i18n="attn.title" data-term="attention"></span>
-      <span class="pair" id="aview-pair"><button class="pair-o on" data-v="3d" data-i18n="view.3d"></button><input type="checkbox" class="ctl-sw" aria-label="3D / 2D"><button class="pair-o" data-v="2d" data-i18n="aview.2d"></button></span>
       <span class="pair amode-pair" id="amode-pair"><button class="pair-o on" data-v="look" data-i18n="amode.look" data-term="weights"></button><input type="checkbox" class="ctl-sw" aria-label="look / contribution"><button class="pair-o" data-v="contrib" data-i18n="amode.contrib" data-term="valueWeighted"></button></span>
       <span id="attn-sub" data-i18n="attn.sub.default"></span></div>
     <div class="vp-body attn-body">
-      <div class="attn-view"><div id="attn-3d" class="fill"></div><canvas id="attn-canvas" class="fill" hidden></canvas></div>
+      <div class="attn-view"><canvas id="attn-canvas" class="fill"></canvas></div>
       <canvas id="growth-canvas" class="growth"></canvas>
     </div>
   </section>

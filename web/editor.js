@@ -82,12 +82,11 @@ function setMode(m, persist = true) {
   if (S.deck) { S.deck.show('order', m === 'lab'); S.deck.setLead(m === 'guide' ? t('g.title') : null); S.deck.setMode(m); }   // в Гайде «что произошло» — первой
   if (m === 'guide' && S.engine) {
     if (S.view !== '3d') switchView('3d');
-    if (S.aview !== '3d') switchAttn('3d');
-    if (S.amode !== 'look') { S.amode = 'look'; S.attn.mode = 'look'; if (S.a3d) { S.a3d.mode = 'look'; S.a3d.ridges(); } setPair('amode-pair', 'look'); }
+    if (S.amode !== 'look') { S.amode = 'look'; S.attn.mode = 'look'; setPair('amode-pair', 'look'); }
   }
   if (S.stage) S.stage.layout();
   if (S.run) { setCur(S.cur); writeLink(); }
-  requestAnimationFrame(() => { if (S.a3d) S.a3d.resize(); if (S.strip) S.strip.draw(); });
+  requestAnimationFrame(() => { if (S.strip) S.strip.draw(); });
 }
 // модели студии: пока одна; новые добавляются сюда и появляются в меню модели
 // одна модель, две версии весов: 8 бит — по умолчанию, качество как у полных весов; 4 бит (W4R) — сжатая, как на плате
@@ -118,39 +117,35 @@ async function boot() {
   $('status').textContent = ''; $('status').hidden = true;
   S.strip = new LogitStrip($('logits-canvas'), $('tip'), S.engine.tokenText);
   S.amode = 'look';
-  S.attn = new AttentionView($('attn-canvas'), (sel) => { if (S.a3d) S.a3d.setSel(sel); tintStory(); renderInspector(S.run.steps[S.cur]); });
+  S.attn = new AttentionView($('attn-canvas'), (sel) => { tintStory(); linkAttnToModel(); renderInspector(S.run.steps[S.cur]); });
   S.attn.engine = S.engine; S.attn.mode = S.amode;
-  if (S.a3d) { S.a3d.weightsFn = (sel) => S.attn.weights(S.amode, sel); S.a3d.mode = S.amode; }
-  S.aview = '3d';
+  // связь окон: голова под курсором или выбранная во «Внимании» обводит пластину голов своего слоя в «Модели»
+  S.attn.onHover = () => linkAttnToModel();
+  // счёт какого слова показывать в карточке головы: то же слово, за которым следят в «Модели»
+  S.attn.tokFn = () => (S.v3d && S.v3d.step ? S.v3d.tok : S.run.steps[S.cur].output);
   // 3D нужен WebGL. На некоторых машинах его нет (Linux с отключённым драйвером, школьные компьютеры, старые
   // видеокарты): тогда обе панели сразу в 2D, переключатели 3D скрыты, Гайд не возвращает 3D (no3d).
-  let View3D = null, AttnStack3D = null;
+  let View3D = null;
   if (webglOK()) {
-    try { ({ View3D } = await import('./view3d.js')); ({ AttnStack3D } = await import('./attn3d.js')); }
+    try { ({ View3D } = await import('./view3d.js')); }   // 3D только у «Модели»; «Внимание» плоское
     catch (e) { console.error(e); }
   }
-  if (AttnStack3D) try { S.a3d = new AttnStack3D($('attn-3d'), S.engine.info, (sel) => { S.attn.sel = { ...sel }; tintStory(); renderInspector(S.run.steps[S.cur]); }, S.engine.tokenText); }
-  catch (e) { S.a3d = null; console.error(e); }
   S.growth = new GrowthChart($('growth-canvas'), S.engine.info);
   S.model = new ModelView($('model-canvas'), S.engine);
   S.view = '3d';
-  if (View3D) try { S.v3d = new View3D($('model-3d'), S.engine); S.v3d.onSelect = () => renderInspector(S.run.steps[S.cur]); }
+  if (View3D) try { S.v3d = new View3D($('model-3d'), S.engine); S.v3d.onSelect = () => { linkModelToAttn(); renderInspector(S.run.steps[S.cur]); };
+    S.v3d.onHover = (pl, idx) => { S.attn.link = pl && pl.kind === 'heads' ? { layer: pl.layer, head: idx >= 0 && idx < S.engine.info.heads ? idx : -1 } : null; S.attn.cardKey = ''; S.attn.draw(); }; }
   catch (e) { S.v3d = null; console.error(e); }
-  if (!S.v3d || !S.a3d) no3d();
+  if (!S.v3d) no3d();              // 3D теперь только у «Модели»; «Внимание» плоское и от WebGL не зависит
   // драйвер может потерять WebGL и позже: тогда тоже переходим на 2D, а не оставляем чёрный прямоугольник
-  for (const v of [S.v3d, S.a3d]) v?.renderer?.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); no3d(); });
+  for (const v of [S.v3d]) v?.renderer?.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); no3d(); });
   // управление 3D-видами: выпадающая стеклянная панель в углу (камера, раздвинуть, линии, сброс)
-  S.spreadK = 1; S.explodeK = 0.25;
+  S.spreadK = 1;
   if (S.v3d) navPad($('model-3d'), {
     view: () => S.v3d,
     spread: { get: () => (S.spreadK - 0.6) / 1.4, set: (f) => { S.spreadK = 0.6 + 1.4 * f; S.v3d.setSpread(S.spreadK); } },
     toggles: [{ label: t('nav.traces'), icon: 'lines', get: () => S.v3d.wiresOn !== false, set: (on) => S.v3d.showWires(on) }],
     reset: () => { S.spreadK = 1; S.v3d.setSpread(1); S.v3d.preset('perspective', true); },
-  });
-  if (S.a3d) navPad($('attn-3d'), {
-    view: () => S.a3d, layersLabel: t('nav.maps'),
-    spread: { get: () => S.explodeK, set: (f) => { S.explodeK = f; S.a3d.setExplode(f); } },
-    reset: () => { S.explodeK = 0.25; S.a3d.userMoved = false; S.a3d.setExplode(0.25); },
   });
   bindUI();
   S.booted = true;
@@ -368,8 +363,7 @@ function setCur(i) {
   $('logits-sub').textContent = t('logits.sub.head', { step: S.cur + 1, tok: show(S.engine.tokenText[step.input]) }) +
     (step.forced >= 0 ? t('logits.sub.forced') : step.kind === 'prompt' ? t('logits.sub.prompt')
       : t('logits.sub.gen', { temp: S.run.settings.temperature, topk: S.run.settings.topK }));
-  if (S.aview === '2d') S.attn.set(S.run.steps, S.cur, S.engine.info);
-  else { S.attn.steps = S.run.steps; S.attn.cur = S.cur; S.attn.info = S.engine.info; if (S.a3d) S.a3d.set(S.run.steps, S.cur); }
+  S.attn.set(S.run.steps, S.cur, S.engine.info);
   S.growth.set(step.pos);
   if (S.view === 'schema') S.model.set(step); else S.model.step = step;
   if (S.v3d && S.view === '3d') S.v3d.set(step, true, S.timer ? Math.min(600, 900 / P.speed) : 600, S.run.steps);
@@ -388,6 +382,7 @@ function tintStory() {
     const key = it.step + 1;                       // позиция токена в тексте (первый токен промпта — 0)
     const v = w && key <= S.cur ? w[key] : 0;
     it.el.style.backgroundColor = v > 0.01 && !it.el.classList.contains('cur') ? `rgba(${rgb},${Math.min(0.85, Math.sqrt(v))})` : '';
+    it.el.classList.toggle('kv-sel', key === S.attn.selTok);      // выбранная запись KV-кэша в окне «Внимание»
   }
 }
 
@@ -462,7 +457,7 @@ function renderInspector(s) {
   const tt = S.engine.tokenText, pill = (t) => `<span class="tokpill">${esc(show(tt[t]))}</span>`;
   const chosen = s.topk.find((c) => c.tok === s.output);
   const how = t(s.kind === 'prompt' ? 'insp.how.prompt' : s.forced >= 0 ? 'insp.how.forced' : 'insp.how.sampled');
-  let h = (S.v3d && S.view === '3d' ? S.v3d.describe() : '') + (S.a3d ? S.a3d.describe() : '');
+  let h = (S.v3d && S.view === '3d' ? S.v3d.describe() : '');
   if (S.run && S.attn.steps) {
     const sel = S.attn.sel, look = S.attn.weights('look'), con = S.attn.weights('contrib');
     if (look && con) {
@@ -528,21 +523,25 @@ function webglOK() {
 }
 // 3D недоступен: обе панели в 2D, переключатели 3D скрыты, в заголовках пояснение
 function no3d() {
-  S.no3d = true; S.v3d = null; S.a3d = null;
+  S.no3d = true; S.v3d = null;
   document.body.classList.add('no3d');
-  for (const id of ['view-model', 'view-attn']) {
+  for (const id of ['view-model']) {      // «Внимание» плоское всегда, пометка про 3D ему не нужна
     const title = document.querySelector(`#${id} .vp-title`);
     if (title && !title.querySelector('.no3d-note')) { const n = document.createElement('span'); n.className = 'no3d-note'; n.textContent = t('no3d'); n.title = t('no3d.title'); title.appendChild(n); }
   }
-  switchView('schema'); switchAttn('2d');
+  switchView('schema');
 }
-function switchAttn(v) {
-  if (v === '3d' && !S.a3d) v = '2d';
-  S.aview = v;
-  setPair('aview-pair', v);
-  $('attn-3d').hidden = v !== '3d'; $('attn-canvas').hidden = v !== '2d';
-  if (S.run) setCur(S.cur);
-  if (v === '3d' && S.a3d) { S.a3d.resize(); S.a3d.setSel(S.attn.sel); }
+// «Модель» → «Внимание»: щелчок по плитке головы на пластине голов выбирает эту голову и там
+function linkModelToAttn() {
+  const sel = S.v3d && S.v3d.sel;
+  if (!sel || sel.plate.kind !== 'heads' || sel.idx < 0 || sel.idx >= S.engine.info.heads) return;
+  S.attn.sel = { layer: sel.plate.layer, head: sel.idx }; S.attn.cardKey = ''; S.attn.draw(); tintStory(); linkAttnToModel();
+}
+// «Внимание» → «Модель»: пластина голов слоя, где голова под курсором (или выбранная)
+function linkAttnToModel() {
+  if (!S.v3d) return;
+  const c = S.attn.hoverCell && !S.attn.hoverCell.shelf ? S.attn.hoverCell : S.attn.sel.layer >= 0 ? S.attn.sel : null;
+  S.v3d.linkPlate = c ? S.v3d.heads[c.layer] : null;
 }
 
 function switchView(v) {
@@ -664,10 +663,9 @@ function bindUI() {
   // стеклянные ручки — у ползунков интерфейса; у ползунков панели камеры свой вид (как в Пункте управления)
   document.querySelectorAll('input[type=range]').forEach((el) => { if (el.closest('.cc, .cc-track')) return; glassRange(el); el.addEventListener('input', () => fillRange(el)); });
   bindPair('amode-pair', (v) => {
-    S.amode = v; S.attn.mode = v; if (S.a3d) { S.a3d.mode = v; S.a3d.ridges(); }
+    S.amode = v; S.attn.mode = v; S.attn.draw();
     setPair('amode-pair', v); tintStory(); if (S.run) renderInspector(S.run.steps[S.cur]);
   });
-  bindPair('aview-pair', switchAttn);
   bindPair('view-pair', switchView);
   $('mode').addEventListener('change', () => {
     const order = $('mode').value === 'order';

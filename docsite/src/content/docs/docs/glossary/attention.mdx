@@ -68,17 +68,21 @@ tokens. In large models with long contexts, attention is where most of the cost 
 
 ## Where it is in the studio
 
-![The Attention panel: the 3D stack of attention maps, the mode switch and the growth chart](../../../../assets/attention-studio.webp)
+![The Attention panel: twelve strips, one per head, the KV cache shelf above them and the cost of attention below](../../../../assets/attention-studio.webp)
 
-The **Attention** panel shows the maps of all heads as a 3D stack, or as a 2D grid. The story below is
-highlighted by where attention went at the current step. Click a map to see one head instead of all of them, and
-switch between **weights** and **value-weighted** at the top of the panel.
+The **Attention** panel shows the current step: twelve strips, one per head, grouped by layer. In a strip the
+earlier tokens go from left to right, and the height of a bar is how much the current token looks at that one. The
+words a head looks at most are written to the right. The story below is highlighted the same way. Click a strip to
+see one head instead of all of them, and switch between **weights** and **value-weighted** at the top of the panel.
+
+The row above the strips is the KV cache, one cell per earlier token: click a cell to see which heads look at
+that token now. The line under the strips lists the steps inside a head.
 
 ## Try it
 
 <a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=70" target="_blank" rel="noopener">Open this step in the studio</a>
 
-Click the maps one by one to find the head that looks back at "dragon" in the request. Then step forward and
+Click the strips one by one to find the head that looks back at "dragon" in the request. Then step forward and
 watch the highlight move.
 
 ## In micro-qwen3

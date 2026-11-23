@@ -131,7 +131,7 @@ button:disabled { opacity: .5; cursor: default; }
 .note { color: var(--muted); margin: 6px 0 10px; }
 
 canvas.fill { position: absolute; inset: 0; width: 100%; height: 100%; }
-#attn-canvas { cursor: pointer; }
+#attn-canvas { cursor: default; }   /* рука ставится из attention.js только над полосой головы и ячейкой кэша */
 
 div.fill { position: absolute; inset: 0; }
 div.fill canvas { display: block; }
@@ -145,7 +145,7 @@ div.fill canvas { display: block; }
 
 .attn-body { display: flex; flex-direction: column; }
 .attn-view { position: relative; flex: 1; min-height: 0; }
-canvas.growth { flex: none; height: 86px; width: 100%; border-top: 1px solid var(--line); display: block; }
+canvas.growth { flex: none; height: 108px; width: 100%; border-top: 1px solid var(--line); display: block; }
 .explode { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); text-transform: none; letter-spacing: 0; margin-left: 8px; }
 .explode input { width: 72px; }
 
@@ -951,7 +951,6 @@ a.ab-link:hover { background: rgba(255, 255, 255, 0.16); }
 /* Гайд: без лабораторных деталей */
 body[data-mode="guide"] #growth-canvas,
 body[data-mode="guide"] #view-pair,
-body[data-mode="guide"] #aview-pair,
 body[data-mode="guide"] #amode-pair,
 body[data-mode="guide"] #logits-canvas,
 body[data-mode="guide"] #tip,
@@ -1102,7 +1101,7 @@ body[data-mode="lab"] .share-btn { display: inline-flex !important; }
 .hover-hint { position: fixed; left: 0; right: 0; bottom: 78px; margin: 0 auto; width: max-content; max-width: 90vw; z-index: 120;
   padding: 9px 16px !important; font: 500 12.5px var(--ui); color: var(--ink-1); pointer-events: none; animation: cc-drop 200ms ease-out; }
 /* без WebGL: переключателей 3D нет, в заголовках панелей — пояснение */
-body.no3d #view-pair, body.no3d #aview-pair { display: none !important; }
+body.no3d #view-pair { display: none !important; }
 .no3d-note { margin-left: 8px; font: var(--fs-1) var(--ui); color: var(--ink-3); cursor: help; }
 
 /* граница между панелями модели и attention (split.js): зазор, за который можно тянуть */
@@ -1364,7 +1363,7 @@ html.pane-lifting, html.pane-lifting body { overflow: hidden !important; }
 .card-h { padding: 0 var(--pad) !important; }
 .card-b { padding-left: var(--pad) !important; padding-right: var(--pad) !important; }
 #top { padding-left: var(--pad) !important; padding-right: var(--pad) !important; }
-#view-pair, #aview-pair { margin-left: -2px !important; }
+#view-pair { margin-left: -2px !important; }
 
 /* активный язычок — над соседями: его переход в окно ложится поверх их нижнего угла */
 .split-strip .split-tab.on { z-index: 8; }
@@ -1572,3 +1571,37 @@ body[data-mode="lab"] #top .tour-btn { display: inline-flex !important; }
 .v3-info a.v3-info-doc { pointer-events: auto; }   /* вид — общий .gloss-more, как в подсказках терминов */
 .v3-narrow .v3-formula { display: none; }
 .v3-formula a { white-space: nowrap; display: inline-block; }
+/* «Внимание»: карточка-пояснение поверх панели стоимости, пока что-то выбрано или под курсором */
+.attn-body { position: relative; }
+/* высота карточки и панели стоимости одна и постоянная: иначе строка шагов прыгает под курсором */
+.attn-card { flex: none; height: 108px; overflow: hidden; box-sizing: border-box; padding: 7px 12px 8px; pointer-events: none;
+  border-top: 1px solid var(--line); font: var(--fs-1)/1.4 var(--ui); color: var(--ink-2); }
+.attn-card:not([hidden]) ~ canvas.growth { display: none; }   /* карточка занимает место панели стоимости */
+.attn-card b { display: block; color: var(--ink-1); font-weight: 600; font-size: var(--fs-2); }
+.attn-card i { font-style: normal; font-family: var(--mono); color: #ffe08a; }
+.attn-card p { margin: 2px 0 0; }
+.attn-card .attn-card-list span { margin-right: 10px; white-space: nowrap; }
+.attn-card .attn-card-hint { color: var(--ink-3); }
+.tok.kv-sel { box-shadow: 0 0 0 1.5px #f2b33d; }
+/* «Внимание»: строка шагов внутри головы (тот же вид, что строка под моделью) */
+.attn-steps { flex: none; padding: 3px 10px 5px; font: var(--fs-1)/18px var(--mono); color: var(--ink-3); }
+.attn-steps small { font: var(--fs-1)/18px var(--ui); }
+.attn-steps i { font-style: normal; opacity: 0.6; }
+.attn-steps a { color: var(--ink-2); cursor: pointer; border-radius: 4px; padding: 0 3px; white-space: nowrap; display: inline-block; }
+.attn-steps a:hover { color: var(--ink-1); background: rgba(255, 255, 255, 0.12); }
+/* шаг, который нарисован на полосах, — цветом самих полос и чертой снизу (это легенда, а не выбор):
+   янтарный «веса внимания», лиловый «смесь значений» при тумблере value. Выбор шага — плашка, как в «Модели». */
+.attn-steps a.hot { color: #f2b33d; box-shadow: inset 0 -2px 0 #f2b33d; border-radius: 0; }
+.attn-steps.v-contrib a.hot { color: #a98cf0; box-shadow: inset 0 -2px 0 #a98cf0; }
+.attn-steps a.hot.on { border-radius: 4px; }
+.attn-steps a.on { color: #ffe08a; background: rgba(242, 179, 61, 0.18); }
+.attn-card a.gloss-more { pointer-events: auto; margin-top: 3px; }
+/* Гайд: только полосы и слова; строка шагов и карточка — в Лаб */
+body[data-mode="guide"] .attn-steps, body[data-mode="guide"] .attn-card { display: none !important; }
+/* «Внимание» в низком окне: панель стоимости и карточка ниже; ссылка на Docs в строке заголовка карточки */
+.attn-compact canvas.growth, .attn-compact .attn-card { height: 84px; }
+.attn-compact .attn-card { position: relative; padding-top: 5px; line-height: 1.32; }
+.attn-compact .attn-card a.gloss-more { position: absolute; top: 5px; right: 12px; margin: 0; }
+.attn-compact .attn-steps { padding-top: 1px; padding-bottom: 2px; }
+.attn-compact .attn-card .attn-card-hint { display: none; }   /* не помещается: подсказка про щелчок уступает содержанию */
+.attn-tiny .attn-steps { display: none; }

@@ -257,7 +257,7 @@ export class View3D {
     const el = this.renderer.domElement;
     let down = null;
     el.addEventListener('pointermove', (e) => this.pick(e, false));
-    el.addEventListener('pointerleave', () => { this.cursor.visible = false; this.tip.visible = false; this.hov = null; this.hovPlate = null; });
+    el.addEventListener('pointerleave', () => { this.cursor.visible = false; this.tip.visible = false; this.hov = null; this.hovPlate = null; this.hovKey = ''; if (this.onHover) this.onHover(null, -1); });
     el.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
     el.addEventListener('pointerup', (e) => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 4) this.pick(e, true); });
     this.baseOutX = L * LAYER_DX + 1.8; this.outX = this.baseOutX;
@@ -278,6 +278,8 @@ export class View3D {
     const hit = this.ray.intersectObjects(this.plates.map((p) => p.mesh))[0];
     const plate = hit ? this.plates.find((p) => p.mesh === hit.object) : null, idx = hit ? hit.instanceId : -1;
     this.hovPlate = plate || null;
+    // связь с окном «Внимание»: какая пластина (и плитка) под курсором
+    const hk = (plate ? plate.tag : '') + ':' + idx; if (hk !== this.hovKey) { this.hovKey = hk; if (this.onHover) this.onHover(plate || null, idx); }
     if (plate && idx >= 0 && this.step) {
       this.cursor.position.copy(plate.at(idx)); this.cursor.scale.setScalar(plate.tile > 1 ? plate.tile : 1); this.cursor.visible = true;
       this.setTip(plate, idx);
@@ -315,6 +317,8 @@ export class View3D {
     this.formula.addEventListener('pointerover', (e) => { const a = e.target.closest('a[data-op]'); this.opHov = a ? a.dataset.op : null; });
     this.formula.addEventListener('pointerleave', () => { this.opHov = null; });
     this.formula.addEventListener('click', (e) => { const a = e.target.closest('a[data-op]'); if (!a) return; this.opSel = this.opSel === a.dataset.op ? null : a.dataset.op; });
+    // закреплённый шаг сбрасывается щелчком в любое другое место (кроме самой строки шагов и карточки со ссылкой)
+    document.addEventListener('pointerdown', (e) => { if (this.opSel && !this.formula.contains(e.target) && !this.info.contains(e.target)) this.opSel = null; });
     this.docs = new Set();                             // какие статьи Docs уже написаны (список пишет сборка Docs)
     fetch('/docs/pages.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.glossary) { this.docs = new Set(j.glossary); this.infoKey = null; } }).catch(() => {});
   }
@@ -323,7 +327,7 @@ export class View3D {
     const cur = this.sel ? this.sel.plate : this.hovPlate;
     if (cur && cur !== this.fPlate) { this.fPlate = cur; this.opSel = null; this.opHov = null; }
     const pl = this.fPlate, opId = this.opHov || this.opSel || '';
-    const key = (pl ? pl.tag : '') + '|' + opId + '|' + (this.sel ? this.sel.plate.tag : '') + '|' + (cur ? 1 : 0);
+    const key = (pl ? pl.tag : '') + '|' + opId + '|' + (this.sel ? this.sel.plate.tag : '') + '|' + (cur ? 1 : 0) + '|' + (this.linkPlate ? this.linkPlate.tag : '');
     if (key === this.opKey) return; this.opKey = key; this.infoKey = null;
     const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'), L = this.e.info.layers;
     if (!pl) this.formula.innerHTML = `<small>${esc(tx('m.op.idle'))}</small>`;
@@ -335,7 +339,7 @@ export class View3D {
     // рамка: выбранная пластина; пока мышь на строке — пластина, о которой строка
     const mark = this.sel ? this.sel.plate : (!cur && this.opHov ? pl : null);
     this.opPlate = !cur && this.opHov ? pl : null;
-    for (const p of this.plates) { const on = p === mark, sel = this.sel && p === this.sel.plate;
+    for (const p of this.plates) { const on = p === mark || p === this.linkPlate, sel = this.sel && p === this.sel.plate;   // linkPlate: голова выбрана в окне «Внимание»
       p.frame.material.color.set(on ? 0xf2b33d : RIM); p.frame.material.opacity = on ? 1 : 0.55;
       p.glass.material.color.set(sel ? 0xf2c46a : GLASS); p.glass.material.opacity = sel ? 0.1 : 0.075; }
   }
@@ -489,6 +493,10 @@ export class View3D {
     let t = `${name}: ${v >= 0 ? '+' : ''}${v.toFixed(2)}`;
     if (plate.kind === 'mlp') { const c = this.neuronParts(plate.layer)[i];
       t = `${name} · «${show(this.e.tokenText[this.tok])}» ${Math.abs(c) < 0.005 ? '≈0' : (c >= 0 ? '+' : '−') + Math.abs(c).toFixed(2)} · ${tx('m.tip.pushes')} ${this.push(plate.layer, i, 3).map((x) => x.w).join(', ')}`; }
+    // голова: вклад в счёт слова, как у нейрона (раньше здесь стояла длина её выхода — число, которое ни с чем не сходилось;
+    // теперь четыре головы слоя в сумме дают «вним. +x» из линии счёта, и то же число стоит в карточке окна «Внимание»)
+    if (plate.kind === 'heads') { const c = this.headPart(plate.layer, i);
+      t = `${name} · «${show(this.e.tokenText[this.tok])}» ${Math.abs(c) < 0.005 ? '≈0' : (c >= 0 ? '+' : '−') + Math.abs(c).toFixed(2)}`; }
     this.tip.el.textContent = t; this.tip.pos.copy(plate.at(i)); this.tip.visible = true;
   }
 
@@ -511,6 +519,12 @@ export class View3D {
   partLogit(v, tok) {
     const { layers: L, dim: d } = this.e.info, xf = this.step.resid.subarray(L * d, (L + 1) * d), rms = (a) => { let q = 0; for (const x of a) q += x * x; return Math.sqrt(q / a.length); };
     const rv = rms(v); return rv < 1e-9 ? 0 : this.e.lens(v)[tok] * rv / rms(xf);
+  }
+  // вклад головы h слоя l в логит отслеживаемого токена: её выход через W_o, прочитанный логит-линзой
+  headPart(l, h) {
+    const { dim: d, heads: H, headDim: hd } = this.e.info, Wo = this.e.weights(l, 'o'), ho = this.step.headOut, v = new Float32Array(d);
+    for (let i = 0; i < d; i++) { let y = 0; const row = i * H * hd + h * hd; for (let j = 0; j < hd; j++) y += Wo[row + j] * ho[(l * H + h) * hd + j]; v[i] = y; }
+    return this.partLogit(v, this.tok);
   }
   // вклад каждого нейрона слоя l в логит написанного токена (кэш: считается один раз на шаг и слой)
   neuronParts(l) {
@@ -878,7 +892,7 @@ export class View3D {
     for (let i2 = 0; i2 < n; i2++) {
       const o = sc[i2], x0 = xs[i2];
       o.el.style.display = ''; o.line.style.display = '';
-      const hot = o.plate === focus || (!focus && o.plate === this.opPlate); if (hot !== o.hot) { o.hot = hot; o.el.classList.toggle('on', hot); o.line.classList.toggle('on', hot); if (o.el2) o.el2.classList.toggle('on', hot); }
+      const hot = o.plate === focus || (!focus && (o.plate === this.opPlate || o.plate === this.linkPlate)); if (hot !== o.hot) { o.hot = hot; o.el.classList.toggle('on', hot); o.line.classList.toggle('on', hot); if (o.el2) o.el2.classList.toggle('on', hot); }
       const cx = x0 + o.w / 2;
       o.el.style.transform = `translate(${Math.round(cx - o.w1 / 2)}px, ${Math.round(chainY)}px)`;
       if (o.el2) { o.el2.style.display = ''; o.el2.style.transform = `translate(${Math.round(cx - o.w2 / 2)}px, ${Math.round(chainY + 21)}px)`; }
