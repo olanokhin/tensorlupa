@@ -1488,3 +1488,76 @@ body[data-mode="lab"] #top .tour-btn { display: inline-flex !important; }
 .lang-pop > :nth-child(2), .cc > :nth-child(2) { animation-delay: 30ms; }
 .lang-pop > :nth-child(n+3), .cc > :nth-child(n+3) { animation-delay: 60ms; }
 @media (prefers-reduced-motion: reduce) { .lang-pop > *, .cc > * { animation: none; } }
+
+/* 3D-модель: подписи поверх сцены (постоянный размер, полоса под моделью, выноски к пластинам) */
+.v3-caps { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.v3-leaders { position: absolute; inset: 0; width: 100%; height: 100%; }
+.v3-leaders line { stroke: rgba(255, 255, 255, 0.2); stroke-width: 1; }
+.v3-cap { position: absolute; left: 0; top: 0; white-space: nowrap; font: var(--fs-1)/15px var(--ui); color: var(--ink-2); padding: 0 4px; border-radius: 4px; background: rgba(17, 19, 23, 0.82); }   /* подложка: выноски соседних строк не перечёркивают текст */
+.v3-cap.v3-title { font: 600 var(--fs-3)/16px var(--ui); color: var(--ink-1); background: none; }
+.v3-cap.v3-lilac { color: #c9b8ff; }
+/* плавающие подписи 3D-модели: значение под курсором и самые длинные столбики выбранной пластины — всегда поверх сцены */
+.v3-cap.v3-float { z-index: 2; font: var(--fs-1)/16px var(--mono); padding: 1px 6px; background: rgba(17, 19, 23, 0.9); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.10); }
+.v3-cap.v3-tip { color: #ffe08a; z-index: 3; }
+.v3-cap.v3-pos { color: #f2b33d; }
+.v3-cap.v3-neg { color: #c9b8ff; }
+/* карточка-пояснение в углу 3D-модели */
+/* правый нижний угол: самое свободное место сцены (модель уходит вправо вверх, подписи пластин — слева и по центру) */
+.v3-info { position: absolute; right: 10px; bottom: 10px; width: min(196px, 40%); padding: 8px 10px; border-radius: var(--r-control); font: var(--fs-1)/1.4 var(--ui); color: var(--ink-2);
+  background: rgba(17, 19, 23, 0.78); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.v3-info b { display: block; color: var(--ink-1); font-weight: 600; font-size: var(--fs-2); }
+.v3-info .v3-info-n { display: block; font: var(--fs-1) var(--mono); color: var(--ink-3); margin-top: 1px; }
+.v3-info p { margin: 4px 0 0; }
+.v3-info .v3-info-hint { color: var(--ink-3); }
+.v3-info .v3-info-sel { color: #ffe08a; }
+.v3-narrow .v3-info { width: auto; max-width: 46%; } .v3-narrow .v3-info p { display: none; }   /* узкое окно: карточка не должна закрывать сцену */
+.v3-info .v3-info-lens { color: var(--ink-1); } .v3-info .v3-info-lens span { display: block; font: var(--fs-1)/1.5 var(--mono); color: var(--ink-2); } .v3-info .v3-info-lens i { font-style: normal; color: #ffe08a; }
+.v3-info .v3-info-heads span { display: block; }
+.v3-cap.v3-run { color: var(--ink-1); }   /* счёт потока — нейтральный: это итог, а не вклад блока */
+/* начало и конец пути в 3D-модели: вход (прошлый токен) и выход (написанный токен) — пара одинаковых блоков */
+.v3-io { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 1px; white-space: nowrap; padding: 4px 8px; border-radius: var(--r-chip); background: rgba(17, 19, 23, 0.72); }
+.v3-io small { font: var(--fs-1)/1.3 var(--ui); color: var(--ink-3); }
+.v3-io b { font: 600 var(--fs-5)/1.3 var(--mono); color: #ffe08a; }
+.v3-io b i { font-style: normal; font-weight: 500; font-size: var(--fs-2); color: var(--ink-1); }
+.v3-io span { font: var(--fs-1)/1.4 var(--mono); color: var(--ink-3); max-width: 190px; white-space: normal; }
+.v3-in { align-items: flex-end; text-align: right; }
+.v3-info .v3-info-story { color: var(--ink-1); } .v3-info .v3-info-story i { font-style: normal; font-family: var(--mono); color: #ffe08a; }
+/* ЭСКИЗ M2: линия счёта под 3D-моделью */
+.v3-cap.v3-score { font: var(--fs-1)/16px var(--mono); padding: 0 4px; z-index: 1; }
+.v3-cap.v3-score.v3-run { color: var(--ink-1); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22); }
+.v3-leaders .v3-spine { fill: none; stroke: rgba(255, 255, 255, 0.5); stroke-width: 1.5; }
+/* выноска от числа к пластине — только у пластины в фокусе: 13 выносок сразу перекрещивались */
+.v3-leaders .v3-score-lead { stroke: none; }
+/* кандидаты в блоке выхода кликабельны: за любым можно проследить */
+.v3-io.v3-out { pointer-events: auto; }
+.v3-io a { cursor: pointer; border-radius: 4px; padding: 0 2px; }
+.v3-io a:hover { background: rgba(255, 255, 255, 0.12); color: var(--ink-1); }
+.v3-io span a.on { color: #ffe08a; background: rgba(242, 179, 61, 0.16); }
+.v3-io b a:not(.on) { color: var(--ink-2); }
+.v3-io .v3-io-hint { color: var(--ink-3); opacity: 0.8; }
+.v3-cap.v3-title i { font-style: normal; font-family: var(--mono); font-weight: 500; font-size: var(--fs-2); }
+.v3-cap.v3-title i.v3-pos { color: #f2b33d; } .v3-cap.v3-title i.v3-neg { color: #c9b8ff; }
+/* блок выхода: кандидаты колонкой, по строке на слово — удобно переключаться */
+.v3-io.v3-out { gap: 1px; min-width: 118px; }
+.v3-io.v3-out > a { display: flex; justify-content: space-between; gap: 14px; padding: 0 6px; margin: 0 -6px; font: var(--fs-2)/1.3 var(--mono); color: var(--ink-2); }
+.v3-io.v3-out > a em { font-style: normal; }
+.v3-io.v3-out > a i { font-style: normal; color: var(--ink-3); }
+.v3-io.v3-out > a.won { font-size: var(--fs-5); font-weight: 600; color: #ffe08a; }
+.v3-io.v3-out > a.won i { color: var(--ink-1); font-weight: 500; font-size: var(--fs-2); align-self: center; }
+.v3-io.v3-out > a.on { background: rgba(242, 179, 61, 0.16); color: #ffe08a; }
+.v3-io.v3-out > a.on i { color: var(--ink-1); }
+/* ячейка линии счёта у раскрытой или наведённой пластины */
+.v3-cap.v3-score.on { box-shadow: 0 0 0 1.5px #ffe08a; color: #ffe08a; background: rgba(40, 32, 12, 0.95); }
+.v3-leaders .v3-score-lead.on { stroke: rgba(255, 224, 138, 0.8); }
+.v3-info.v3-tight p, .v3-info.v3-tight .v3-info-n { display: none; }   /* тесно: карточка уступает место линии счёта и блоку выхода */
+.v3-io.v3-out.v3-compact > a:not(.on):not(.won), .v3-io.v3-out.v3-compact > small:not(:first-child) { display: none; }   /* тесно и пластина в фокусе: только написанное и отслеживаемое слово */
+/* линия счёта — одна цепочка чисел; над вкладами словами: чей вклад и какой слой */
+.v3-cap.v3-score-name { font: var(--fs-1)/14px var(--ui); color: var(--ink-3); background: none; padding: 0; }
+.v3-cap.v3-score-what { color: var(--ink-2); }
+.v3-cap.v3-score.v3-pos, .v3-cap.v3-score.v3-neg { padding: 0 2px; background: rgba(17, 19, 23, 0.9); }
+.v3-cap.v3-title { font: 600 var(--fs-2)/14px var(--ui); color: var(--ink-2); }
+.v3-leaders .v3-brace { fill: none; stroke: rgba(255, 255, 255, 0.28); stroke-width: 1; }
+.v3-cap.v3-score-what { display: flex; flex-direction: column; align-items: flex-end; line-height: 13px; } .v3-cap.v3-score-what b { font: 500 var(--fs-1)/14px var(--mono); color: #ffe08a; }
+/* вторая строка линии счёта: выбранный кандидат под написанным словом */
+.v3-cap.v3-score.v3-alt.v3-run { color: var(--ink-2); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12); }
+.v3-cap.v3-score-what b.v3-alt { color: var(--ink-1); line-height: 21px; }

@@ -206,7 +206,6 @@ export class View3D {
       this.mid.push(new Plate(d, 8, x0 + X_MID));
       this.mlp.push(new Plate(I, 16, x0 + X_MLP, 1));
       this.res.push(new Plate(d, 8, x0 + LAYER_DX));
-      const t = label(tx('m.layer', { n: l + 1 }), '#f0b37a', 52, 0.5); t.position.set(x0 + LAYER_DX / 2, 3.1, 0); this.scene.add(t);
     }
     this.res.forEach((p, l) => Object.assign(p, { tag: 'res' + l, kind: 'resid', layer: l, name: l === 0 ? tx('m.embedding') : tx('m.resAfter', { n: l }) }));
     this.mid.forEach((p, l) => Object.assign(p, { tag: 'mid' + l, kind: 'mid', layer: l, name: tx('m.midAfter', { n: l + 1 }) }));
@@ -214,9 +213,25 @@ export class View3D {
     this.mlp.forEach((p, l) => Object.assign(p, { tag: 'mlp' + l, kind: 'mlp', layer: l, name: tx('m.mlpOf', { n: l + 1 }) }));
     this.plates = [...this.res, ...this.heads, ...this.mid, ...this.mlp];
     for (const p of this.plates) { this.scene.add(p.points); this.scene.add(p.glass, p.frame); }
-    const sub = (p, t, c = '#6b7280') => { const s = label(t, c, 38, 0.28); s.position.set(p.x, -p.height / 2 - 0.35, 0); this.scene.add(s); };
-    sub(this.res[0], tx('m.embedding'), '#8a919c');
-    for (let l = 0; l < L; l++) { sub(this.heads[l], tx('m.sub.heads'), '#b79cff'); sub(this.mlp[l], `MLP · ${I}`); sub(this.res[l + 1], tx('m.sub.stream')); sub(this.mid[l], '+ attention'); }
+    // Подписи — слой HTML поверх сцены, а не спрайты в ней: размер на экране постоянный при любом ракурсе, подписи
+    // пластин стоят в общей полосе под моделью, расходятся по строкам, если им тесно, и ведут выноской к своей пластине
+    this.caps = document.createElement('div'); this.caps.className = 'v3-caps';
+    this.capLines = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); this.capLines.setAttribute('class', 'v3-leaders');
+    this.caps.appendChild(this.capLines); container.appendChild(this.caps);
+    this.labels = [];
+    // layer: подписи пластин слоя 1 видны всегда, слоёв 2 и 3 — когда слой под курсором или в нём выбрана пластина
+    // (слои устроены одинаково: один подписанный читается лучше трёх)
+    const cap = (kind, text, anchor, cls = '', layer) => { const el = document.createElement('span'); el.className = `v3-cap v3-${kind} ${cls}`; el.textContent = text;
+      this.caps.appendChild(el); const o = { kind, el, anchor, line: null, layer };
+      if (kind === 'sub') { o.line = document.createElementNS('http://www.w3.org/2000/svg', 'line'); this.capLines.appendChild(o.line); }
+      this.labels.push(o); };
+    const under = (p) => () => new THREE.Vector3(p.x, -p.height / 2 - 0.06, 0);
+    cap('sub', tx('m.sub.embed'), under(this.res[0]));
+    for (let l = 0; l < L; l++) {
+      cap('sub', tx('m.sub.heads'), under(this.heads[l]), 'v3-lilac', l); cap('sub', tx('m.sub.mid'), under(this.mid[l]), '', l);
+      cap('sub', tx('m.sub.mlp', { n: I }), under(this.mlp[l]), '', l); cap('sub', tx('m.sub.stream'), under(this.res[l + 1]), '', l);
+      cap('title', tx('m.layer', { n: l + 1 }), () => new THREE.Vector3((this.heads[l].x + this.res[l + 1].x) / 2, Math.max(this.mlp[l].height, this.res[l + 1].height) / 2 + 0.25, 0));
+    }
     // базовые x для ползунка «раздвинуть»: пластины и подписи
     this.spread = 1;
     for (const p of this.plates) p.bx = p.x;
@@ -227,12 +242,20 @@ export class View3D {
     const ring = new THREE.EdgesGeometry(new THREE.PlaneGeometry(S * 1.15, S * 1.15).rotateY(Math.PI / 2));
     this.cursor = new THREE.LineSegments(ring, new THREE.LineBasicMaterial({ color: 0xffe08a })); this.cursor.visible = false;
     this.scene.add(this.cursor);
-    this.tip = label(' ', '#ffe08a', 40, 0.3); this.tip.visible = false; this.tip.center.set(0, 0); this.scene.add(this.tip);
+    // подсказка под курсором и подписи самых длинных столбиков — тоже на слое поверх сцены: внутри сцены их закрывали
+    // пластины, стоящие ближе к камере
+    this.tip = { el: this.floatCap('v3-tip'), pos: new THREE.Vector3(), visible: false };
+    this.peakCaps = [];
+    this.inCap = document.createElement('div'); this.inCap.className = 'v3-io v3-in'; this.caps.appendChild(this.inCap);
+    this.outCap = document.createElement('div'); this.outCap.className = 'v3-io v3-out'; this.caps.appendChild(this.outCap);
+    this.outCap.addEventListener('click', (e) => { const a = e.target.closest('a[data-tok]'); if (a && this.step) { e.stopPropagation(); this.trackTok(Number(a.dataset.tok)); } });
+    // карточка-пояснение в углу: как читать сцену; что за пластина под курсором; что значат столбики и три подписи
+    this.info = document.createElement('div'); this.info.className = 'v3-info'; this.caps.appendChild(this.info); this.infoKey = null;
     this.ray = new THREE.Raycaster(); this.mouse = new THREE.Vector2();
     const el = this.renderer.domElement;
     let down = null;
     el.addEventListener('pointermove', (e) => this.pick(e, false));
-    el.addEventListener('pointerleave', () => { this.cursor.visible = false; this.tip.visible = false; this.hov = null; });
+    el.addEventListener('pointerleave', () => { this.cursor.visible = false; this.tip.visible = false; this.hov = null; this.hovPlate = null; });
     el.addEventListener('pointerdown', (e) => { down = [e.clientX, e.clientY]; });
     el.addEventListener('pointerup', (e) => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 4) this.pick(e, true); });
     this.baseOutX = L * LAYER_DX + 1.8; this.outX = this.baseOutX;
@@ -252,6 +275,7 @@ export class View3D {
     this.ray.setFromCamera(this.mouse, this.camera);
     const hit = this.ray.intersectObjects(this.plates.map((p) => p.mesh))[0];
     const plate = hit ? this.plates.find((p) => p.mesh === hit.object) : null, idx = hit ? hit.instanceId : -1;
+    this.hovPlate = plate || null;
     if (plate && idx >= 0 && this.step) {
       this.cursor.position.copy(plate.at(idx)); this.cursor.scale.setScalar(plate.tile > 1 ? plate.tile : 1); this.cursor.visible = true;
       this.setTip(plate, idx);
@@ -271,9 +295,50 @@ export class View3D {
 
   // рельеф выбранной пластины: столбик из каждой плитки перпендикулярно пластине — плюс (жёлтый) влево,
   // минус (сиреневый) вправо, длина — значение (нормировка по вектору); подписи у трёх самых длинных
+  // ЭСКИЗ M2. Линия счёта под моделью: как написанный токен набирал свою оценку вдоль остаточного потока.
+  // Под каждой пластиной потока — сколько набрано к этой точке (верхняя строка, соединена линией: это «хребет»);
+  // под каждым блоком — сколько он добавил (нижняя строка: внимание и MLP ответвляются от потока и возвращаются).
+  buildScore() {
+    for (const o of this.score || []) { o.el.remove(); o.line.remove(); if (o.nameEl) o.nameEl.remove(); if (o.el2) o.el2.remove(); }
+    this.score = [];
+    if (this.spine) this.spine.remove();
+    this.spine = document.createElementNS('http://www.w3.org/2000/svg', 'polyline'); this.spine.setAttribute('class', 'v3-spine'); this.capLines.appendChild(this.spine);
+    if (!this.step) return;
+    const { layers: L, dim: d } = this.e.info, st = this.step, tok = st.output, alt = this.track, fmt = (x) => (x < 0 ? '−' : '') + Math.abs(x).toFixed(1);
+    // Одна строка чисел, читается слева направо как арифметика: счёт, +вклад блока, новый счёт… Над каждым вкладом —
+    // словом, чей он (внимание или MLP), над парой — слой. Чисел нет нигде, кроме цепочки: раньше сумма слоя, вклад
+    // блока и счёт стояли в трёх строках и читались как три разных «плюса».
+    // Верхняя строка — всегда написанное слово. Если выбран другой кандидат, его числа встают второй строкой под ней:
+    // поток один, а каждое слово читает его по-своему, и видно, на каком блоке кандидат отстал.
+    const add = (plate, text, cls, name, text2, cls2) => { const el = document.createElement('span'); el.className = 'v3-cap v3-score ' + cls; el.textContent = text; this.caps.appendChild(el);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line'); line.setAttribute('class', 'v3-score-lead'); this.capLines.appendChild(line);
+      let nameEl = null; if (name) { nameEl = document.createElement('span'); nameEl.className = 'v3-cap v3-score-name'; nameEl.textContent = name; this.caps.appendChild(nameEl); }
+      let el2 = null; if (text2 != null) { el2 = document.createElement('span'); el2.className = 'v3-cap v3-score v3-alt ' + cls2; el2.textContent = text2; this.caps.appendChild(el2); }
+      this.score.push({ el, el2, line, plate, nameEl, layer: name ? plate.layer : -1 }); };
+    const vec = new Float32Array(d), sign = (x) => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(1);   // один знак: цепочка должна помещаться над моделью
+    const total = (l, mid, t) => { for (let i = 0; i < d; i++) vec[i] = st.resid[l * d + i] + (mid ? st.attnOut[l * d + i] : 0); return this.partLogit(vec, t); };
+    const run = (plate, l, mid) => add(plate, fmt(total(l, mid, tok)), 'v3-run', null, alt == null ? null : fmt(total(l, mid, alt)), 'v3-run');
+    const delta = (plate, arr, l, name) => { const part = Float32Array.from(arr.subarray(l * d, (l + 1) * d)), a = this.partLogit(part, tok), b = alt == null ? 0 : this.partLogit(part, alt);
+      add(plate, sign(a), a >= 0 ? 'v3-pos' : 'v3-neg', name, alt == null ? null : sign(b), b >= 0 ? 'v3-pos' : 'v3-neg'); };
+    run(this.res[0], 0, false);
+    for (let l = 0; l < L; l++) {
+      delta(this.heads[l], st.attnOut, l, tx('m.score.attn'));
+      run(this.mid[l], l, true);
+      delta(this.mlp[l], st.mlpOut, l, 'MLP');
+      run(this.res[l + 1], l + 1, false);
+    }
+    let k = 0; for (const o of this.labels) if (o.kind === 'title') { o.el.textContent = tx('m.layer', { n: k + 1 }); o.w = 0; o.layerIdx = k; k++; }
+    if (!this.scoreLabel) { this.scoreLabel = document.createElement('span'); this.scoreLabel.className = 'v3-cap v3-score-name v3-score-what'; this.caps.appendChild(this.scoreLabel); }
+    // подпись слева — в две строки («счёт» и под ним токен): она узкая и не сдвигает цепочку вправо от пластин
+    const q = (t) => `«${String(show(this.e.tokenText[t])).replace(/&/g, '&amp;').replace(/</g, '&lt;')}»`;
+    this.scoreLabel.innerHTML = `${tx('m.score.what')}<b>${q(tok)}</b>` + (alt == null ? '' : `<b class="v3-alt">${q(alt)}</b>`); this.scoreLabel.w = 0;
+    this.scoreTok = show(this.e.tokenText[tok]);
+  }
+
   buildPeaks() {
     for (const o of this.peaks.children) { o.geometry && o.geometry.dispose(); }
     this.peaks.clear();
+    for (const c of this.peakCaps) c.el.remove(); this.peakCaps = [];
     if (!this.sel || !this.step) return;
     const p = this.sel.plate, w = S * 0.55 * (p.tile > 1 ? p.tile * 0.7 : 1);
     const xs = this.plates.map((q) => q.x).sort((a, b) => a - b), k = xs.indexOf(p.x);
@@ -297,7 +362,16 @@ export class View3D {
     // подписи трёх самых длинных столбиков — столбиком над пластиной, с выносками от концов столбиков
     // (как в attention): концы соседних столбиков бывают рядом, и подписи у них накладывались бы
     order.sort((a, b) => Math.abs(p.to[b]) - Math.abs(p.to[a]));
-    const picks = order.slice(0, 3).sort((a, b) => a - b);
+    // что подписывать: у MLP — три самых сильных нейрона и слова, которые каждый подталкивает; у голов — все четыре
+    // и токен, на который голова смотрит сильнее всего; у потока — ничего (у отдельного числа потока нет понятного
+    // смысла: вместо этого карточка показывает, что модель сказала бы, остановись она здесь)
+    // (у MLP — не самые активные, а те, что сильнее всего подтолкнули написанный токен: активация и влияние — разное)
+    // У MLP отдельные нейроны не подписываем вовсе: работа слоя размазана по десяткам нейронов (80% дают ~80 из 336),
+    // и «три лидера» ничего не объясняют. Над пластиной — одна подпись по сути: сколько весь слой добавил написанному
+    // токену. Отдельный нейрон виден при наведении на его столбик.
+    // (у голов так же: над пластиной — итог всего внимания слоя; куда смотрит каждая голова — в карточке)
+    // отдельной подписи над раскрытой пластиной нет: её число уже стоит в линии счёта наверху — там оно подсвечивается
+    const picks = [];
     const name = tx(p.kind === 'mlp' ? 'm.neuron' : p.kind === 'heads' ? 'm.head' : 'm.number');
     const lead = [], leadCol = [];
     picks.forEach((i, k) => {
@@ -305,9 +379,13 @@ export class View3D {
       const tip = new THREE.Vector3(at.x + (p.to[i] >= 0 ? -len : len), at.y, at.z);
       // выше заголовка «слой N» (он на высоте 3.1), чтобы не наезжать на него
       const ly = Math.max(p.height / 2 + 0.35, 3.6) + (picks.length - 1 - k) * 0.36, anchor = new THREE.Vector3(p.x, ly, at.z * 0.3);
-      const s = label(`${name} ${p.kind === 'heads' ? i + 1 : i}: ${v >= 0 ? '+' : ''}${v.toFixed(2)}`, v >= 0 ? '#f2b33d' : '#a98cf0', 44, 0.34);
-      s.position.copy(anchor).add(new THREE.Vector3(0, 0.02, 0)); s.center.set(0.5, 0);
-      this.peaks.add(s);
+      const el = this.floatCap('v3-peak ' + (v >= 0 ? 'v3-pos' : 'v3-neg'));
+      {                                         // голова: куда она смотрит сильнее всего на этом шаге
+        const H = this.e.info.heads, n = this.step.pos + 1, wts = this.step.attnP.subarray((p.layer * H + i) * n, (p.layer * H + i + 1) * n);
+        let best = 0; for (let t = 1; t < n; t++) if (wts[t] > wts[best]) best = t;
+        el.textContent = tx('m.peak.head', { h: i + 1, tok: show(this.e.tokenText[this.steps[best].input]), pct: (100 * wts[best]).toFixed(0) });
+      }
+      this.peakCaps.push({ el, pos: anchor.clone() });
       const col = (v >= 0 ? POS : NEG);
       lead.push(tip, anchor); leadCol.push(col.r, col.g, col.b, col.r, col.g, col.b);
     });
@@ -367,10 +445,9 @@ export class View3D {
   setTip(plate, i) {
     const v = this.value(plate, i), name = `${tx(plate.kind === 'mlp' ? 'm.neuron' : plate.kind === 'heads' ? 'm.head' : 'm.number')} ${plate.kind === 'heads' ? i + 1 : i}`;
     let t = `${name}: ${v >= 0 ? '+' : ''}${v.toFixed(2)}`;
-    if (plate.kind === 'mlp') t += ` → ${this.push(plate.layer, i, 3).map((x) => x.w).join(', ')}`;
-    this.scene.remove(this.tip);
-    this.tip = label(t, '#ffe08a', 40, 0.3); this.tip.center.set(0, 0);
-    this.tip.position.copy(plate.at(i)).add(new THREE.Vector3(0, 0.25, 0)); this.scene.add(this.tip);
+    if (plate.kind === 'mlp') { const c = this.neuronParts(plate.layer)[i];
+      t = `${name} · «${show(this.e.tokenText[this.tok])}» ${Math.abs(c) < 0.005 ? '≈0' : (c >= 0 ? '+' : '−') + Math.abs(c).toFixed(2)} · ${tx('m.tip.pushes')} ${this.push(plate.layer, i, 3).map((x) => x.w).join(', ')}`; }
+    this.tip.el.textContent = t; this.tip.pos.copy(plate.at(i)); this.tip.visible = true;
   }
 
   value(plate, i) {
@@ -382,6 +459,26 @@ export class View3D {
   }
 
   // слова, которые вектор «толкает» вверх (logit lens): топ-k
+  // Токен, чей путь показывает сцена: по умолчанию тот, что модель написала; щелчок по кандидату в блоке выхода
+  // переключает на него — видно, почему проигравший проиграл (а не только как победил победитель).
+  get tok() { return this.track != null ? this.track : this.step.output; }
+
+  // Сколько очков вектор v (часть остаточного потока) добавил логиту токена tok на этом шаге. Финальная норма делит
+  // весь поток на его rms, поэтому вклад части — её проекция через норму и словарь в масштабе фактического потока.
+  // Вклады эмбеддинга, внимания и MLP всех слоёв в сумме дают логит модели (проверено: расхождение в сотых).
+  partLogit(v, tok) {
+    const { layers: L, dim: d } = this.e.info, xf = this.step.resid.subarray(L * d, (L + 1) * d), rms = (a) => { let q = 0; for (const x of a) q += x * x; return Math.sqrt(q / a.length); };
+    const rv = rms(v); return rv < 1e-9 ? 0 : this.e.lens(v)[tok] * rv / rms(xf);
+  }
+  // вклад каждого нейрона слоя l в логит написанного токена (кэш: считается один раз на шаг и слой)
+  neuronParts(l) {
+    const key = this.step.pos + ':' + l + ':' + this.tok;
+    if (this.npCache && this.npCache.key === key) return this.npCache.c;
+    const { dim: d, inter: I } = this.e.info, Wd = this.e.weights(l, 'down'), a = this.step.mlpAct, c = new Float32Array(I), v = new Float32Array(d);
+    for (let j = 0; j < I; j++) { const x = a[l * I + j]; if (Math.abs(x) < 1e-6) continue; for (let i = 0; i < d; i++) v[i] = Wd[i * I + j] * x; c[j] = this.partLogit(v, this.tok); }
+    this.npCache = { key, c }; return c;
+  }
+
   lensTop(vec, k) {
     const lg = this.e.lens(vec), idx = Array.from(lg.keys()).sort((a, b) => lg[b] - lg[a]).slice(0, k);
     let mx = -Infinity; for (const x of lg) mx = Math.max(mx, x);
@@ -462,6 +559,7 @@ export class View3D {
 
   set(step, animate = true, dur = 600, steps = null) {
     if (!step) return;
+    if (!this.step || this.step.pos !== step.pos || this.step.output !== step.output) this.track = null;   // новый шаг — снова написанный токен
     this.step = step; if (steps) this.steps = steps;
     this.dur = dur;
     const { layers: L, dim: d, inter: I, heads: H, headDim: hd } = this.e.info;
@@ -531,11 +629,14 @@ export class View3D {
     }
 
     // вход и кандидаты на выходе
-    if (this.inLabel) this.scene.remove(this.inLabel);
-    this.inLabel = label(`«${show(this.e.tokenText[step.input])}»`, '#ffe08a', 56, 0.5);
-    this.inLabel.position.set(-0.7, 0, 0); this.inLabel.center.set(1, 0.5); this.scene.add(this.inLabel);
+    // начало и конец пути — пара одинаковых блоков поверх сцены: слева вход (прошлый токен), справа выход (токен,
+    // который модель написала, его шанс и остальные кандидаты). Раньше вход был словом в кавычках, а победитель в
+    // списке отличался только цветом — что это старт и финиш одного пути, из картинки не читалось.
+    const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    this.inCap.innerHTML = `<small>${esc(tx('m.io.in'))}</small><b>«${esc(show(this.e.tokenText[step.input]))}»</b>`;
     this.out.clear();
     const top = step.forced >= 0 ? [{ tok: step.forced, p: 1 }] : step.topk.slice(0, 7);
+    this.outTop = top; this.renderOut();
     top.forEach((c, i) => {
       const y = ((top.length - 1) / 2 - i) * 0.5, chosen = c.tok === step.output;
       const col = chosen ? gold.clone() : new THREE.Color(0xd9894a);
@@ -543,13 +644,12 @@ export class View3D {
       const tileM = new THREE.Mesh(new THREE.PlaneGeometry(sq, sq).rotateY(Math.PI / 2),
         new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: chosen ? 1 : 0.25 + 0.75 * Math.sqrt(c.p), side: THREE.DoubleSide, depthWrite: false }));
       tileM.position.set(this.outX, y, 0); this.out.add(tileM);
-      const s = label(`${show(this.e.tokenText[c.tok])} ${(100 * c.p).toFixed(0)}%`, chosen ? '#ffe08a' : '#c9ced6', 40, 0.3);
-      s.position.set(this.outX + 0.35, y, 0); s.center.set(0, 0.5); this.out.add(s);
       if (chosen) for (const k of dims.slice(0, 6)) W.seg(this.res[L].at(k), new THREE.Vector3(this.outX, y, 0), gold, 0.3, 4, [this.res[L].tag]);
     });
     W.commit();
     this.pulse = animate ? 0 : 1; this.t0 = performance.now();
     this.buildPeaks();
+    this.buildScore();
     if (!animate) { for (const p of this.plates) p.apply(1); this.wires.reveal(1e9); }
     this.out.visible = !animate;
   }
@@ -575,6 +675,185 @@ export class View3D {
     }
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
+    this.placeCaps();
+  }
+
+  // Подписи: якорь каждой проецируется на экран. Заголовки слоёв — над слоем. Подписи пластин — в полосе под самой
+  // нижней пластиной; при тесноте подпись уходит на следующую строку, а к пластине ведёт тонкая выноска.
+  // текст карточки-пояснения: выбранная пластина важнее наведённой; без них — как читать сцену
+  updateInfo() {
+    const pl = this.sel ? this.sel.plate : this.hovPlate, key = (this.sel ? 's' : 'h') + (pl ? pl.tag : '-') + ':' + (this.step ? this.step.pos + ':' + this.tok : '');
+    if (key === this.infoKey) return; this.infoKey = key;
+    const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    if (!pl) {                                       // ничего не выбрано: история этого шага настоящими токенами
+      if (!this.step) { this.info.innerHTML = `<b>${esc(tx('m.info.idle.h'))}</b>`; return; }
+      const st = this.step, L = this.e.info.layers, d = this.e.info.dim, T = (t) => `<i>«${esc(show(this.e.tokenText[t]))}»</i>`;
+      const fin = Float32Array.from(st.resid.subarray(L * d, (L + 1) * d)), score = this.partLogit(fin, st.output).toFixed(1);
+      const story = this.track == null ? tx('m.info.idle', { in: T(st.input), out: T(st.output), score })
+        : tx('m.info.idle.lost', { in: T(st.input), out: T(st.output), score, alt: T(this.track), altScore: this.partLogit(fin, this.track).toFixed(1) });
+      this.info.innerHTML = `<b>${esc(tx('m.info.idle.h'))}</b><p class="v3-info-story">${story}</p>` +
+        `<p class="v3-info-hint">${esc(tx(this.track == null ? 'm.info.idle.click' : 'm.io.back'))}</p>`;
+      return;
+    }
+    const kind = pl.kind === 'resid' && pl.layer === 0 ? 'embed' : pl.kind;
+    const n = pl.kind === 'resid' ? pl.layer : pl.layer + 1;
+    let extra = '';
+    if (this.step && (pl.kind === 'resid' || pl.kind === 'mid')) {   // поток: что модель сказала бы, остановись она здесь
+      const d = this.e.info.dim, st = this.step, l = pl.layer, vec = new Float32Array(d);
+      for (let i = 0; i < d; i++) vec[i] = pl.kind === 'resid' ? st.resid[l * d + i] : st.resid[l * d + i] + st.attnOut[l * d + i];
+      extra = `<p class="v3-info-lens">${esc(tx('m.info.lens'))}<span>${this.lensTop(vec, 4).map((x) => `<i>${esc(x.w)}</i> ${(100 * x.p).toFixed(0)}%`).join(' · ')}</span></p>`;
+    }
+    let selText = '';
+    if (this.step && (pl.kind === 'mlp' || pl.kind === 'heads')) {   // слой целиком: сколько очков блок добавил написанному токену
+      const d = this.e.info.dim, st = this.step, l = pl.layer, src = pl.kind === 'mlp' ? st.mlpOut : st.attnOut;
+      const tot = this.partLogit(Float32Array.from(src.subarray(l * d, (l + 1) * d)), this.tok), tokS = `«${esc(show(this.e.tokenText[this.tok]))}»`;
+      if (!this.sel) extra = `<p class="v3-info-lens">${esc(tx(pl.kind === 'mlp' ? 'm.info.sum.mlp' : 'm.info.sum.attn'))} <i>${tokS} ${tot >= 0 ? '+' : '−'}${Math.abs(tot).toFixed(2)}</i></p>`;
+      if (pl.kind === 'heads') {                      // куда смотрит каждая голова сильнее всего
+        const H = this.e.info.heads, n = st.pos + 1; let rows = '';
+        for (let hh = 0; hh < H; hh++) { const wts = st.attnP.subarray((l * H + hh) * n, (l * H + hh + 1) * n); let best = 0; for (let t = 1; t < n; t++) if (wts[t] > wts[best]) best = t;
+          rows += `<span>${hh + 1} → <i>${esc(show(this.e.tokenText[this.steps[best].input]))}</i> ${(100 * wts[best]).toFixed(0)}%</span>`; }
+        extra += `<p class="v3-info-lens v3-info-heads">${esc(tx('m.info.looks'))}${rows}</p>`;
+      }
+    }
+    const selKey = pl.kind === 'mlp' ? 'm.info.sel' : pl.kind === 'heads' ? 'm.info.sel.heads' : 'm.info.sel.stream';
+    this.info.innerHTML = `<b>${esc(pl.name)}</b><span class="v3-info-n">${esc(tx('m.info.count', { n: pl.n }))}</span><p>${esc(tx('m.info.' + kind, { n, count: pl.n }))}</p>` + extra +
+      (this.sel ? `<p class="v3-info-sel">${esc(selText || tx(selKey))}</p>` : `<p class="v3-info-hint">${esc(tx('m.info.click'))}</p>`);
+  }
+
+  // блок выхода: написанный токен крупно, остальные кандидаты — строкой; любой можно щёлкнуть, и сцена покажет его путь
+  renderOut() {
+    const st = this.step, top = this.outTop || [], esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const win = top.find((c) => c.tok === st.output) || { tok: st.output, p: 0 }, rest = top.filter((c) => c.tok !== st.output).slice(0, 4);
+    const row = (c, written) => `<a data-tok="${c.tok}" class="${this.tok === c.tok ? 'on' : ''}${written ? ' won' : ''}"><em>${esc(show(this.e.tokenText[c.tok]))}</em><i>${(100 * c.p).toFixed(0)}%</i></a>`;
+    this.outCap.innerHTML = `<small>${esc(tx(st.forced >= 0 ? 'm.io.forced' : 'm.io.out'))}</small>` + row(win, true) +
+      (rest.length ? `<small>${esc(tx('m.io.rest'))}</small>` + rest.map((c) => row(c, false)).join('') : '');
+  }
+  // щелчок по кандидату: следим за ним (щелчок по написанному — вернуться)
+  trackTok(t) {
+    this.track = t === this.step.output ? null : t;
+    this.npCache = null; this.infoKey = null;
+    this.renderOut(); this.buildPeaks(); this.buildScore();
+  }
+
+  floatCap(cls) { const el = document.createElement('span'); el.className = 'v3-cap v3-float ' + cls; el.style.display = 'none'; this.caps.appendChild(el); return el; }
+
+  placeCaps() {
+    const w = this.box.clientWidth, h = this.box.clientHeight; if (!w || !h) return;
+    this.updateInfo();
+    this.caps.classList.toggle('v3-narrow', w < 620);   // узкое окно: в карточке только название, без абзацев
+    const v = new THREE.Vector3(), items = [], titles = [];
+    // плавающие подписи: подсказка — справа-сверху от плитки под курсором; подписи столбиков — над своим якорем
+    const float = (el, pos, on, dx, dy, center, maxY = Infinity) => {
+      v.copy(pos).project(this.camera);
+      if (!on || v.z < -1 || v.z > 1) { el.style.display = 'none'; return Infinity; }
+      el.style.display = '';
+      const ew = el.offsetWidth, x = (v.x * 0.5 + 0.5) * w + dx - (center ? ew / 2 : 0), y = Math.max(4, Math.min(maxY, (-v.y * 0.5 + 0.5) * h + dy));
+      el.style.transform = `translate(${Math.round(Math.max(4, Math.min(w - ew - 4, x)))}px, ${Math.round(y)}px)`;
+      return y;
+    };
+    float(this.tip.el, this.tip.pos, this.tip.visible, 12, -26, false);
+    // вход — справа прижат к точке перед эмбеддингом; выход — слева прижат к столбику кандидатов
+    const io = (el, x, on, alignRight) => { v.set(x, 0, 0).project(this.camera);
+      if (!on || !el.firstChild || v.z < -1 || v.z > 1) { el.style.display = 'none'; return; }
+      el.style.display = ''; const ew = el.offsetWidth, eh = el.offsetHeight, sx = (v.x * 0.5 + 0.5) * w, sy = (-v.y * 0.5 + 0.5) * h;
+      const px = Math.max(4, Math.min(w - ew - 4, alignRight ? sx - ew : sx)); let py = Math.max(4, sy - eh / 2);
+      // Справа сцене тесно: линия счёта наверху, под ней блок выхода, внизу карточка-пояснение. Если всё не помещается,
+      // уступает то, что сейчас менее нужно: при наведённой или раскрытой пластине блок выхода сжимается до написанного
+      // и отслеживаемого слова; иначе карточка сворачивается до заголовка. Решаем по полным высотам, чтобы не мигало.
+      if (!alignRight) {
+        const top0 = (this.laneBottom || 0) + 8, iw = this.info.offsetWidth + 14;
+        if (!this.info.classList.contains('v3-tight')) this.infoFull = this.info.offsetHeight + 16;
+        if (!el.classList.contains('v3-compact')) this.outFull = eh;
+        const fits = top0 + (this.outFull || eh) + (this.infoFull || 0) <= h, clash = px + ew > w - iw, focused = !!(this.sel || this.hovPlate);
+        el.classList.toggle('v3-compact', clash && !fits && focused);
+        this.info.classList.toggle('v3-tight', clash && !fits && !focused);
+        py = Math.max(py, top0);
+        if (clash) py = Math.max(top0, Math.min(py, h - this.info.offsetHeight - 16 - el.offsetHeight));
+      }
+      el.style.transform = `translate(${Math.round(px)}px, ${Math.round(py)}px)`; };
+    io(this.inCap, this.res[0].x - 0.6, true, true); io(this.outCap, this.outX + 0.4, this.out.visible, false);
+    // подписи столбиков — столбиком: каждая следующая не ближе 20px к предыдущей (якоря в сцене стоят теснее)
+    let top = Infinity;
+    for (let k = this.peakCaps.length - 1; k >= 0; k--) { const c = this.peakCaps[k]; top = float(c.el, c.pos, this.peaks.visible, 0, -18, true, top - 20); }
+    // слой, чьи подписи показать: выбранная пластина важнее наведённой; поток после слоя l относится к слою l
+    const lay = (pl) => (pl ? (pl.kind === 'resid' ? Math.max(0, pl.layer - 1) : pl.layer) : -1);
+    const capL = this.sel ? lay(this.sel.plate) : lay(this.hovPlate);
+    for (const o of this.labels) {
+      v.copy(o.anchor()).project(this.camera);
+      const on = v.z > -1 && v.z < 1;
+      const mine = o.layer === undefined || o.layer === 0 || o.layer === capL;
+      o.sx = (v.x * 0.5 + 0.5) * w; o.sy = (-v.y * 0.5 + 0.5) * h; o.on = on && mine && o.sx > -40 && o.sx < w + 40;
+      if (o.w === undefined || o.w === 0) o.w = o.el.offsetWidth;
+      if (o.kind === 'title') { o.el.style.display = 'none'; if (o.on) titles.push(o); }
+      else if (o.on) items.push(o); else { o.el.style.display = 'none'; o.line.style.display = 'none'; }
+    }
+    // подписи пластин — полоса под моделью (слой 1 всегда, слои 2 и 3 — при наведении или выборе)
+    const right = w - this.info.offsetWidth - 14;
+    if (items.length) {
+      items.sort((a, b) => a.sx - b.sx);
+      const ROWS = 5, lane = Math.min(h - ROWS * 17 - 6, Math.max(...items.map((o) => o.sy)) + 16), rows = [];
+      for (const o of items) {
+        const x0 = Math.max(4, Math.min(right - o.w - 4, o.sx - o.w / 2)); let r = 0;
+        while (rows[r] !== undefined && rows[r] > x0 - 10) r++;
+        const showIt = r < ROWS;
+        o.el.style.display = showIt ? '' : 'none'; o.line.style.display = showIt ? '' : 'none';
+        if (!showIt) continue;
+        rows[r] = x0 + o.w; const y = lane + r * 17;
+        o.el.style.transform = `translate(${Math.round(x0)}px, ${Math.round(y)}px)`;
+        o.line.setAttribute('x1', o.sx.toFixed(1)); o.line.setAttribute('y1', (o.sy + 2).toFixed(1));
+        o.line.setAttribute('x2', Math.max(x0 + 6, Math.min(x0 + o.w - 6, o.sx)).toFixed(1)); o.line.setAttribute('y2', (y - 1).toFixed(1));
+      }
+    }
+    // линия счёта — над моделью: путь токена. Верхняя строка — названия слоёв с суммой слоя, под ней вклады блоков,
+    // ниже «хребет»: сколько токен набрал к каждой точке потока. Выноски идут вниз, к верху своих пластин.
+    const sc = (this.score || []).filter((o) => { v.set(o.plate.x, o.plate.height / 2 + 0.06, 0).project(this.camera); o.sx = (v.x * 0.5 + 0.5) * w; o.sy = (-v.y * 0.5 + 0.5) * h;
+      const on = v.z > -1 && v.z < 1; if (!on) { o.el.style.display = 'none'; o.line.style.display = 'none'; if (o.el2) o.el2.style.display = 'none'; } return on; });
+    if (!sc.length) { if (this.spine) this.spine.setAttribute('points', ''); if (this.scoreLabel) this.scoreLabel.style.display = 'none'; return; }
+    const focus = this.sel ? this.sel.plate : this.hovPlate;      // её ячейка в линии счёта подсвечена
+    const laneTop = Math.max(40, Math.min(...sc.map((o) => o.sy)) - 50), chainY = laneTop + 18, pts = [], mid = {}, bound = {}; let last = -Infinity;
+    sc.sort((a, b) => a.sx - b.sx);
+    if (!this.scoreLabel.w) this.scoreLabel.w = this.scoreLabel.offsetWidth;
+    const startX = Math.max(this.scoreLabel.w + 10, 4);        // слева от цепочки — подпись, что это за числа
+    // Числа стоят над своими пластинами, насколько позволяет место. Где им тесно, раздвигаем в обе стороны поровну:
+    // раскладка «всё вправо от желаемого» и «всё влево» усредняются (обе без наложений, значит и среднее без них),
+    // иначе вся цепочка уезжала вправо от пластин.
+    const GAP = 3, n = sc.length, want = [], fw = [], bw = [];
+    for (const o of sc) { if (!o.w) { o.w1 = o.el.offsetWidth; o.w2 = o.el2 ? o.el2.offsetWidth : 0; o.w = Math.max(o.w1, o.w2); } want.push(o.sx - o.w / 2); }
+    for (let i2 = 0; i2 < n; i2++) fw[i2] = Math.max(want[i2], i2 ? fw[i2 - 1] + sc[i2 - 1].w + GAP : -Infinity);
+    for (let i2 = n - 1; i2 >= 0; i2--) bw[i2] = Math.min(want[i2], i2 < n - 1 ? bw[i2 + 1] - sc[i2].w - GAP : Infinity);
+    const xs = fw.map((f, i2) => (f + bw[i2]) / 2);
+    for (let i2 = 0; i2 < n; i2++) xs[i2] = Math.max(xs[i2], startX, i2 ? xs[i2 - 1] + sc[i2 - 1].w + GAP : -Infinity);   // левая граница
+    for (let i2 = n - 1; i2 >= 0; i2--) xs[i2] = Math.min(xs[i2], w - sc[i2].w - 56, i2 < n - 1 ? xs[i2 + 1] - sc[i2].w - GAP : Infinity);   // правая: кнопка камеры
+    for (let i2 = 0; i2 < n; i2++) {
+      const o = sc[i2], x0 = xs[i2];
+      o.el.style.display = ''; o.line.style.display = '';
+      const hot = o.plate === focus; if (hot !== o.hot) { o.hot = hot; o.el.classList.toggle('on', hot); o.line.classList.toggle('on', hot); if (o.el2) o.el2.classList.toggle('on', hot); }
+      const cx = x0 + o.w / 2;
+      o.el.style.transform = `translate(${Math.round(cx - o.w1 / 2)}px, ${Math.round(chainY)}px)`;
+      if (o.el2) { o.el2.style.display = ''; o.el2.style.transform = `translate(${Math.round(cx - o.w2 / 2)}px, ${Math.round(chainY + 21)}px)`; }
+      o.line.setAttribute('x1', cx.toFixed(1)); o.line.setAttribute('y1', (chainY + (o.el2 ? 38 : 17)).toFixed(1)); o.line.setAttribute('x2', o.sx.toFixed(1)); o.line.setAttribute('y2', (o.sy - 2).toFixed(1));
+      pts.push(`${cx.toFixed(1)},${(chainY + 8).toFixed(1)}`);
+      // слой владеет своим вкладом внимания, вкладом MLP и счётом после себя; эмбеддинг (первое число) — ничей
+      if (o.plate.kind === 'resid') bound['e' + o.plate.layer] = x0 + o.w - 2;
+      else if (o.nameEl && bound['s' + o.layer] === undefined) bound['s' + o.layer] = x0 + 2;       // счёт на границе слоёв: конец одного и начало следующего
+      if (o.nameEl) { if (!o.nw) o.nw = o.nameEl.offsetWidth; o.nameEl.style.display = ''; o.nameEl.style.transform = `translate(${Math.round(cx - o.nw / 2)}px, ${Math.round(laneTop + 2)}px)`;
+        (mid[o.layer] = mid[o.layer] || []).push(cx); }
+    }
+    for (const o of this.score) if (o.nameEl && !sc.includes(o)) o.nameEl.style.display = 'none';
+    this.spine.setAttribute('points', pts.join(' '));
+    this.scoreLabel.style.display = ''; this.scoreLabel.style.transform = `translate(${Math.round(Math.max(4, xs[0] - this.scoreLabel.w - 6))}px, ${Math.round(chainY - 6)}px)`;
+    this.laneBottom = chainY + 18 + (this.track != null ? 21 : 0);
+    // слой — отрезок цепочки от счёта до него до счёта после него: скобка идёт от граничного числа до граничного, соседние
+    // скобки сходятся на общем числе (оно и «после слоя 1», и «до слоя 2»). Так видно, что 12.82 — итог слоя 2,
+    // а не чей-то отдельный вклад.
+    for (const o of titles) { const a = bound['s' + o.layerIdx], b = bound['e' + (o.layerIdx + 1)];
+      if (!o.brace) { o.brace = document.createElementNS('http://www.w3.org/2000/svg', 'polyline'); o.brace.setAttribute('class', 'v3-brace'); this.capLines.appendChild(o.brace); }
+      if (a === undefined || b === undefined) { o.el.style.display = 'none'; o.brace.setAttribute('points', ''); continue; }
+      o.el.style.display = ''; if (!o.w) o.w = o.el.offsetWidth;
+      o.el.style.transform = `translate(${Math.round((a + b) / 2 - o.w / 2)}px, ${Math.round(laneTop - 15)}px)`;
+      const x1 = a, x2 = b, by = laneTop + 1;
+      o.brace.setAttribute('points', `${x1.toFixed(1)},${(by + 5).toFixed(1)} ${x1.toFixed(1)},${by.toFixed(1)} ${x2.toFixed(1)},${by.toFixed(1)} ${x2.toFixed(1)},${(by + 5).toFixed(1)}`); }
+    void 0;
   }
 }
 
