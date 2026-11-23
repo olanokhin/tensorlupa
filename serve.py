@@ -6,6 +6,7 @@
 import functools
 import http.server
 import sys
+import urllib.request
 from pathlib import Path
 
 
@@ -27,6 +28,37 @@ class NoCache(http.server.SimpleHTTPRequestHandler):
             if d.exists():
                 return str(d)
         return str(p)
+
+    # Счётчики лендинга живут на Cloudflare (worker/index.js). Локально: чтение /api/stats — с живого сайта, чтобы
+    # блок счётчиков был виден как там; всё остальное под /api/ (в том числе «+1» после истории) глушим, чтобы
+    # локальные прогоны не попадали в настоящие счётчики.
+    def api(self):
+        if not self.path.split("?", 1)[0].startswith("/api/"):
+            return False
+        body, code = b"{}", 204
+        if self.command == "GET" and self.path.split("?", 1)[0] == "/api/stats":
+            try:
+                req = urllib.request.Request("https://tensorlupa.com/api/stats", headers={"User-Agent": "tensorlupa-dev-server"})
+                with urllib.request.urlopen(req, timeout=5) as r:   # без User-Agent Cloudflare отвечает 403
+                    body, code = r.read(), 200
+            except OSError:
+                body, code = b'{"runs":0,"users":0}', 200
+        self.send_response(code)
+        if code == 200:
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if code == 200:
+            self.wfile.write(body)
+        return True
+
+    def do_GET(self):
+        if not self.api():
+            super().do_GET()
+
+    def do_POST(self):
+        if not self.api():
+            self.send_error(405)
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, must-revalidate")

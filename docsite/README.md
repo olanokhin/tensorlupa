@@ -38,5 +38,5 @@ shows the English text with a notice, and `scripts/pending-links.mjs` points its
 
 - **FAQ** at the end of every page: 3–5 questions in the exact wording people search for (Bing Webmaster
   keyword research API, Yandex Wordstat, later Google Search Console), with FAQPage JSON-LD.
-- **Model links**: the micro-qwen3 repository will live at `github.com/olanokhin/micro-qwen3` and
+- **Model links**: the micro-qwen3 repository will live at `github.com/olanokhin/micro-qwen3-esp32` and
   `huggingface.co/olanokhin/micro-qwen3`; link to them from the pages once they are published.

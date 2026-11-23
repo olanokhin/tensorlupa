@@ -10,10 +10,15 @@ through each layer. Scrub back to any token, move a slider and the story rewrite
 
 ## What you are looking at
 
-The built-in model is **micro-qwen3**, and I built the whole chain behind it: the model trained from
-scratch in MLX on a MacBook → weights quantized to 4 bits → an inference engine in C → that same engine running on
-an ESP32-S3 microcontroller (about 60 tokens per second) → and compiled to WebAssembly with tracing turned on.
-What you see in TensorLupa is that very C code, recording every number of every step.
+The built-in model is **micro-qwen3**, and I built the whole chain behind it: the Qwen3 architecture at a micro
+scale → its own 4096-token tokenizer → pretraining from scratch in MLX on a MacBook → instruction tuning → an
+inference engine in C, compiled to WebAssembly with tracing turned on. What you see in TensorLupa is that very C
+code, recording every number of every step.
+
+The studio runs the model with 8-bit weights, as precise as the original. The same model also comes in a 4-bit
+version, made with quantization-aware training for an ESP32-S3 microcontroller, where it writes about 60 tokens
+per second. You can open either version in the studio. How every size and setting was chosen, with the branches
+that lost: [How micro-qwen3 was made](https://tensorlupa.com/docs/model/how-it-was-made/).
 
 **Set your expectations honestly.** micro-qwen3 has 1,056,656 parameters, about 560 times fewer than the
 smallest Qwen3 (0.6B). It writes short
@@ -29,7 +34,8 @@ are small enough to see all at once.
 - **Checked against the reference:** the training code's layer-by-layer model matches Qwen3 from mlx-lm
   numerically (a parity test in micro-qwen3, which is not public yet). In this repository `sh build.sh check`
   replays browser runs in a native build of the same C code: logits agree to about 10⁻⁶ and every token matches.
-- **Everything stays in your browser:** the model (0.68 MB) and the engine (64 KB) are downloaded once; the page
+- **Everything stays in your browser:** the model (1.14 MB, or 0.68 MB for the 4-bit version) and the engine
+  (64 KB) are downloaded once; the page
   makes no requests to third-party servers. After each finished story the studio sends one anonymous "+1" to
   tensorlupa.com itself (a random browser id, no text or words) for the counters on the landing page.
 
@@ -39,8 +45,8 @@ are small enough to see all at once.
   plain-language card "what just happened" for every step. A six-step tour walks you through it.
 - **Lab:** every number: the full logits strip, attention heads in 3D and 2D, residual stream plates, logit
   lens, neurons, how the requested words are nudged in (logit bias, constrained decoding).
-- **Change and compare:** temperature, top-k and seed rewrite the story instantly with the same random seed,
-  so you see exactly what each setting does. Ask for a story with up to three words of your own, or continue
+- **Change and compare:** temperature, top-k, min-p, the repetition penalty and seed rewrite the story instantly
+  with the same random seed, so you see exactly what each setting does. Ask for a story with up to three words of your own, or continue
   your own beginning.
 - **Share an experiment:** the address bar always holds the words, settings and the step you are on; send the
   link and the other person lands on exactly the same token.

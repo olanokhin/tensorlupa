@@ -78,7 +78,7 @@ import { LANGS, langUrl } from './i18n.js';
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') open(false); });
 }
 
-// ---------------------------------------------------------------- счётчики: кольца с набегающими числами
+// ---------------------------------------------------------------- счётчики: набегающие числа
 // Числа набегают от нуля, когда полоса впервые видна; потом страница раз в 30 секунд спрашивает свежие значения
 // и докручивает разницу — счётчик живой, пока страница открыта.
 const nf = new Intl.NumberFormat(L);
@@ -97,7 +97,10 @@ function roll(key, to, ms) {
 }
 function render(first) {
   if (!target || !seen) return;
-  for (const k of ['runs', 'users']) roll(k, target[k], first ? 1800 : 900);
+  for (const k of ['runs', 'users']) {
+    if (!first && target[k] > shown[k]) { nums[k].classList.add('up'); setTimeout(() => nums[k].classList.remove('up'), 700); }   // вспышка: +1 вживую
+    roll(k, target[k], first ? 1800 : 900);
+  }
   for (const k of ['runs', 'users']) document.querySelector(`.ctr-${k} .ctr-label`).textContent = t(`land.ctr.${k}`)(target[k]);
 }
 async function load(first) {

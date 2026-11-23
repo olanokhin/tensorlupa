@@ -172,33 +172,21 @@ h3 { font-size: 18px; margin-bottom: 8px; }
 
 /* ---------------------------------------------------------------- счётчики: два кольца с набегающими числами
    янтарь — истории (главный), лиловый — люди. Шкала с делениями и дуга медленно вращаются навстречу друг другу. */
-.counters { display: flex; justify-content: center; gap: clamp(32px, 8vw, 120px); padding: 24px 0 64px; }
+.counters { display: flex; flex-wrap: wrap; gap: 20px clamp(32px, 7vw, 96px); padding: 8px 0 56px; }
 .counters[hidden] { display: none; }
-.ctr { display: flex; flex-direction: column; align-items: center; text-align: center; width: 240px; --c: var(--amber); }
+/* счётчик — число и подпись, без колец: дуга на круге читалась как «процент заполнения». Цвет — как у данных в студии:
+   янтарный — истории, лиловый — люди */
+.ctr { display: flex; align-items: center; gap: 16px; --c: var(--amber); }
 .ctr-users { --c: var(--lilac); }
-.ctr-ring { position: relative; width: 220px; height: 220px; }
-.ctr-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.ctr-ring circle { fill: none; }
-.ctr-track { stroke: rgba(255, 255, 255, 0.07); stroke-width: 10; }
-.ctr-ticks circle { stroke: var(--c); stroke-opacity: 0.35; stroke-width: 6; stroke-dasharray: 1.2 8.95; }
-.ctr-sweep circle { stroke: var(--c); stroke-width: 10; stroke-linecap: round; stroke-dasharray: 150 390.4;
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--c) 55%, transparent)); }
-.ctr-ticks, .ctr-sweep { transform-origin: 100px 100px; }
-.ctr-sweep { animation: ctr-spin 9s linear infinite; }
-.ctr-ticks { animation: ctr-spin 60s linear infinite reverse; }
-.ctr-users .ctr-sweep { animation-duration: 13s; animation-direction: reverse; }
-@keyframes ctr-spin { to { transform: rotate(360deg); } }
-.ctr-num { position: absolute; inset: 0; display: grid; place-items: center; font: 650 clamp(30px, 3.6vw, 44px) var(--mono);
-  letter-spacing: -0.03em; color: var(--ink-1); font-variant-numeric: tabular-nums; }
-.ctr-label { margin-top: 16px; font-size: 15px; color: var(--ink-2); max-width: 15em; }
+.ctr-num { font: 600 clamp(44px, 5.2vw, 64px)/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--c); transition: text-shadow 0.9s ease; }
+.ctr-num.up { text-shadow: 0 0 22px var(--c); transition-duration: 0.12s; }   /* значение выросло, пока страница открыта */
+.ctr-label { font-size: 15px; line-height: 1.4; color: var(--ink-2); max-width: 13em; }
 @media (max-width: 699px) {
-  .counters { gap: 16px; padding: 8px 0 40px; }
-  .ctr { width: auto; flex: 1; }
-  .ctr-ring { width: 148px; height: 148px; }
-  .ctr-num { font-size: 26px; }
-  .ctr-label { font-size: 13.5px; }
+  .counters { flex-direction: column; gap: 14px; padding: 4px 0 36px; }
+  .ctr-num { font-size: 40px; min-width: 2.2ch; }
+  .ctr-label { font-size: 14px; }
 }
-@media (prefers-reduced-motion: reduce) { .ctr-sweep, .ctr-ticks { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ctr-num { transition: none; } }
 
 /* страница 404 */
 .nf { grid-template-columns: 1fr; min-height: 60vh; }
