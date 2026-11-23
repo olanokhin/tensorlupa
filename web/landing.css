@@ -200,3 +200,8 @@ h3 { font-size: 18px; margin-bottom: 8px; }
 .chain-6 li::before { top: 4px; }
 .chain-6 .cs-n { margin-bottom: 4px; }
 .chain-6 .btn-small { margin-top: 14px; white-space: nowrap; }
+
+/* ссылки на веса и репозиторий платы под шагами истории */
+.chain-link { margin-top: 12px; font-size: 15px; font-weight: 600; color: var(--amber); text-decoration: none; }
+.chain-link:hover { text-decoration: underline; }
+.chain-link::after { content: ' ↗'; font-weight: 400; opacity: 0.8; }

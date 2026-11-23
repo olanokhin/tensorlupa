@@ -353,6 +353,8 @@
   'land.ver.3': 'From scratch on TinyStories V2, short children’s stories. The task is next-token prediction: guess the next piece of text, again and again. This is how the model learns the language.',
   'land.ver.4.n': '150M tokens', 'land.ver.4.h': 'Instruction tuning',
   'land.ver.4': 'A second pass over the whole model on 900,000 dialogues from TinyStoriesInstruct, in the Qwen chat format: a request with words, then a story. Only the answer is scored. From the first step of this pass, the model also trains with its weights rounded to 4 bits (quantization-aware training, QAT).',
+  'land.ver.4.link': 'Weights on Hugging Face',
+  'land.ver.6.link': 'Firmware and training code on GitHub',
   'land.ver.5.n': '8 bits · 1.14 MB', 'land.ver.5.h': 'In the studio',
   'land.ver.5': 'The studio runs the model with 8-bit weights, as precise as the original. Every step, layer and attention head is on screen.',
   'land.ver.5.open': 'Open the studio',

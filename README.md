@@ -20,6 +20,10 @@ version, made with quantization-aware training for an ESP32-S3 microcontroller, 
 per second. You can open either version in the studio. How every size and setting was chosen, with the branches
 that lost: [How micro-qwen3 was made](https://tensorlupa.com/docs/model/how-it-was-made/).
 
+The model has its own homes: the weights are on
+[Hugging Face](https://huggingface.co/olanokhin/micro-qwen3), and the firmware, the C core and the training code are in
+[micro-qwen3-esp32](https://github.com/olanokhin/micro-qwen3-esp32).
+
 **Set your expectations honestly.** micro-qwen3 has 1,056,656 parameters, about 560 times fewer than the
 smallest Qwen3 (0.6B). It writes short
 children's stories in English, not essays. But the mechanics are the same as in the big models, and here they
@@ -32,7 +36,7 @@ are small enough to see all at once.
   with the words you ask for. Of the requested words, 5.7% made it into the story before tuning and 64% after; a decoding
   rule that gives unused words a growing push brings it to 100%: all three words in every one of 200 test orders.
 - **Checked against the reference:** the training code's layer-by-layer model matches Qwen3 from mlx-lm
-  numerically (a parity test in micro-qwen3, which is not public yet). In this repository `sh build.sh check`
+  numerically (a parity test in the model's training code). In this repository `sh build.sh check`
   replays browser runs in a native build of the same C code: logits agree to about 10⁻⁶ and every token matches.
 - **Everything stays in your browser:** the model (1.14 MB, or 0.68 MB for the 4-bit version) and the engine
   (64 KB) are downloaded once; the page
@@ -67,7 +71,8 @@ sh build.sh check    # …and replay browser runs against the native build; fail
 ```
 
 The engine sources in `engine/microqwen.{c,h}` are a copy from micro-qwen3; refresh them with
-`sh scripts/sync-engine.sh <path to micro-qwen3>`. The trace format is described in [TRACE.md](TRACE.md), the
+`sh scripts/sync-engine.sh <path to micro-qwen3>` (the public copy of the core is `firmware/microqwen.c` in
+[micro-qwen3-esp32](https://github.com/olanokhin/micro-qwen3-esp32)). The trace format is described in [TRACE.md](TRACE.md), the
 model in [MODEL.md](MODEL.md).
 
 ## License

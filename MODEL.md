@@ -22,4 +22,8 @@ in TinyStories V2 with their counts. The studio's repetition penalty uses it to 
 
 How it was made, with every branch that was tried: https://tensorlupa.com/docs/model/how-it-was-made/
 
-Source, training and firmware: the micro-qwen3 project by Alex Anokhin.
+Weights: https://huggingface.co/olanokhin/micro-qwen3
+
+Training code, firmware and the C core: https://github.com/olanokhin/micro-qwen3-esp32
+
+micro-qwen3 by Alex Anokhin.
