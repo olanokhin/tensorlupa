@@ -205,3 +205,55 @@ h3 { font-size: 18px; margin-bottom: 8px; }
 .chain-link { margin-top: 12px; font-size: 15px; font-weight: 600; color: var(--amber); text-decoration: none; }
 .chain-link:hover { text-decoration: underline; }
 .chain-link::after { content: ' ↗'; font-weight: 400; opacity: 0.8; }
+
+/* ---------------------------------------------------------------- страница прошивки платы (flash.html) */
+.flash { max-width: 760px; }
+.flash-hero { padding-bottom: 8px; }
+.flash-back { margin-bottom: 20px; font-size: 15px; }
+.flash-back a { color: var(--ink-2); text-decoration: none; }
+.flash-back a::before { content: '← '; }
+.flash-back a:hover { color: var(--ink-1); }
+.flash h1 { font-size: clamp(32px, 4.6vw, 48px); line-height: 1.1; letter-spacing: -0.02em; }
+.flash .lede { margin-top: 16px; }
+.flash-warn { margin-top: 20px; padding: 12px 16px; border-radius: 12px; font-size: 15px; color: var(--ink-1);
+  background: rgba(242, 179, 61, 0.10); box-shadow: inset 0 0 0 1px rgba(242, 179, 61, 0.35); }
+/* шаги — та же вертикальная линия с узлами, что в истории модели на главной, но с номерами */
+.flash-steps { list-style: none; margin: 0; padding: 0; position: relative; counter-reset: fs; }
+.flash-steps::before { content: ""; position: absolute; left: 15px; top: 16px; bottom: 16px; width: 1px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(242, 179, 61, 0.6)); }
+.flash-steps > li { position: relative; padding: 0 0 34px 52px; counter-increment: fs; }
+.flash-steps > li::before { content: counter(fs); position: absolute; left: 0; top: 0; width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center;
+  font: 600 14px var(--mono); color: var(--ink-1); background: var(--bg); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.4); }
+.flash-steps h2 { font-size: 20px; line-height: 31px; margin-bottom: 8px; }
+.flash-steps p, .flash-need li { color: var(--ink-2); font-size: 16px; line-height: 1.55; }
+.flash-steps p + p { margin-top: 10px; }
+.flash-need { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.flash-steps esp-web-install-button { display: block; margin: 16px 0; }
+.flash-steps .btn-open { cursor: pointer; font: 600 16px var(--ui); }
+.flash-note { padding: 12px 16px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); color: var(--ink-1) !important; }
+/* то, что человек увидит на экране: строка «как в окне» */
+.flash-quote { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font: 14px/1.4 var(--mono); color: var(--ink-1) !important;
+  background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10); width: fit-content; max-width: 100%; }
+.flash-tip { font-size: 15px !important; padding-left: 14px; border-left: 2px solid rgba(169, 140, 240, 0.6); }
+.flash-wifi { margin: 14px 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; }
+.flash-wifi dt { color: var(--ink-2); font-size: 15px; }
+.flash-wifi dd { margin: 0; font: 15px var(--mono); color: var(--ink-1); }
+.flash-more h2 { font-size: 24px; margin-bottom: 10px; }
+.flash-more p { color: var(--ink-2); }
+.flash-more pre { margin: 14px 0; padding: 14px 16px; border-radius: 12px; overflow-x: auto; font: 13.5px/1.5 var(--mono); color: var(--ink-1);
+  background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.flash-more .chain-link { display: inline-block; margin-top: 4px; }
+.chain-link.chain-in::after { content: ' →'; }   /* ссылка внутри сайта */
+/* снимки окон установки на странице прошивки */
+.flash-shot { display: block; max-width: 100%; height: auto; margin: 14px 0 4px; border-radius: 0 0 14px 14px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.10), 0 14px 40px rgba(0, 0, 0, 0.35); }
+.flash-shot-small { border-radius: 22px; }
+/* окно выбора порта — нарисовано, а не снято: в настоящем списке видны личные устройства человека */
+.flash-chooser { margin: 12px 0 14px; width: min(100%, 400px); padding: 16px 18px 14px; border-radius: 12px; background: #fff; color: #1f1f1f;
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45); }
+.fc-title { font-size: 15px; margin-bottom: 12px; }
+.fc-list { border: 1px solid #c4c7c5; min-height: 132px; }
+.fc-list div { padding: 8px 12px; font-size: 12px; }
+.fc-list div:nth-child(even) { background: #f3f3f3; }
+.fc-list .fc-pick { background: #d3e3fd !important; }
+.fc-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.fc-actions span { padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 500; background: #e8def8; color: #1d192b; }
+.fc-actions .fc-connect { background: #0b57d0; color: #fff; }

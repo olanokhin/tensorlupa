@@ -13,5 +13,9 @@ under the Community Data License Agreement, Sharing, Version 1.0 (CDLA-Sharing-1
 web/corpus-4grams.bin holds counts of four-token phrases from TinyStories V2; as data derived from that
 dataset it is shared under the same CDLA-Sharing-1.0 license (https://cdla.dev/sharing-1-0/).
 
+This product includes ESP Web Tools 10.5.2 (web/vendor/esp-web-tools), Copyright ESPHome,
+licensed under the Apache License 2.0 (see web/vendor/esp-web-tools/LICENSE). It flashes the board
+from the browser on the page /flash.
+
 This product includes Three.js 0.170.0 (web/vendor/three), Copyright 2010-2024 three.js authors,
 licensed under the MIT License (see web/vendor/three/LICENSE).

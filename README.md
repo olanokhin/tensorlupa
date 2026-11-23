@@ -22,7 +22,8 @@ that lost: [How micro-qwen3 was made](https://tensorlupa.com/docs/model/how-it-w
 
 The model has its own homes: the weights are on
 [Hugging Face](https://huggingface.co/olanokhin/micro-qwen3), and the firmware, the C core and the training code are in
-[micro-qwen3-esp32](https://github.com/olanokhin/micro-qwen3-esp32).
+[micro-qwen3-esp32](https://github.com/olanokhin/micro-qwen3-esp32). An ESP32-S3 board can be flashed straight from the browser at
+[tensorlupa.com/flash](https://tensorlupa.com/flash).
 
 **Set your expectations honestly.** micro-qwen3 has 1,056,656 parameters, about 560 times fewer than the
 smallest Qwen3 (0.6B). It writes short

@@ -12,7 +12,8 @@ for (const l of ['en', 'ru']) vm.runInNewContext(readFileSync(`${root}web/i18n/$
 const D = ctx.window.MQ_DICTS, LANGS = ['en', 'ru'], SITE = 'https://tensorlupa.com/';
 const LOCALE = { en: 'en_US', ru: 'ru_RU' };
 // страница → путь на сайте и ключи заголовка/описания
-const PAGES = { 'index.html': { path: '', title: 'meta.land.title', desc: 'meta.land.desc' }, 'studio.html': { path: 'studio', title: 'meta.studio.title', desc: 'meta.studio.desc' } };
+const PAGES = { 'index.html': { path: '', title: 'meta.land.title', desc: 'meta.land.desc' }, 'studio.html': { path: 'studio', title: 'meta.studio.title', desc: 'meta.studio.desc' },
+  'flash.html': { path: 'flash', title: 'meta.flash.title', desc: 'meta.flash.desc' } };
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const attr = (s) => esc(s).replace(/"/g, '&quot;');
@@ -34,7 +35,7 @@ for (const [file, page] of Object.entries(PAGES)) {
     }
     const pre = l === 'en' ? '' : l + '/';
     html = html.replace(/<html lang="[^"]*">/, `<html lang="${l}">`)
-      .replace(/(<a\b[^>]*\shref=")(\.\/|studio|docs\/)("[^>]*\sdata-local)/g, (m, a, href, b) => a + pre + (href === './' ? '' : href) + b)
+      .replace(/(<a\b[^>]*\shref=")(\.\/|studio|flash|docs\/)("[^>]*\sdata-local)/g, (m, a, href, b) => a + pre + (href === './' ? '' : href) + b)
       .replace(/<title>[^<]*<\/title>/, `<title>${esc(g(page.title))}</title>`)
       .replace(/<meta name="description" content="[^"]*">/, `<meta name="description" content="${attr(g(page.desc))}">`)
       .replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${attr(g(page.title))}">`)

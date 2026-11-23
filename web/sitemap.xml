@@ -9,4 +9,8 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://tensorlupa.com/studio"/><xhtml:link rel="alternate" hreflang="ru" href="https://tensorlupa.com/ru/studio"/></url>
   <url><loc>https://tensorlupa.com/ru/studio</loc><changefreq>weekly</changefreq><priority>0.7</priority>
     <xhtml:link rel="alternate" hreflang="en" href="https://tensorlupa.com/studio"/><xhtml:link rel="alternate" hreflang="ru" href="https://tensorlupa.com/ru/studio"/></url>
+  <url><loc>https://tensorlupa.com/flash</loc><changefreq>monthly</changefreq><priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tensorlupa.com/flash"/><xhtml:link rel="alternate" hreflang="ru" href="https://tensorlupa.com/ru/flash"/></url>
+  <url><loc>https://tensorlupa.com/ru/flash</loc><changefreq>monthly</changefreq><priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://tensorlupa.com/flash"/><xhtml:link rel="alternate" hreflang="ru" href="https://tensorlupa.com/ru/flash"/></url>
 </urlset>
