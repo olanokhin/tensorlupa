@@ -181,8 +181,8 @@ QAT, the model learns weights that survive that rounding.
 </ul>
 
 These are two passes of one training, one after the other, not two options. The second pass teaches the model to
-write a story with the requested words, in the Qwen chat format. All three words made it into the story in 5.7% of
-stories before it and in 64% after it. On held-out answers the model needs 0.747 bits per byte with 8-bit weights
+write a story with the requested words, in the Qwen chat format. Of the requested words, 5.7% made it into the
+story before it and 64% after it. On held-out answers the model needs 0.747 bits per byte with 8-bit weights
 and 0.762 with 4-bit weights, which is 2% more. The dialogues come from
 [TinyStoriesInstruct](https://huggingface.co/datasets/roneneldan/TinyStoriesInstruct) by the same authors, converted to the Qwen chat format.
 
