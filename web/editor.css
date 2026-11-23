@@ -1425,3 +1425,66 @@ a.brand { gap: calc(var(--pad) - 1px) !important; }
 .trail .tr-win .tr-val { color: var(--tr-amber); }
 .trail .tr-note { font-size: 0.88em; opacity: 0.75; }
 :root[data-theme='light'] .trail { --tr-line: rgba(60, 64, 72, 0.4); --tr-amber: #b67a00; }
+
+/* ================================================================ НАВБАР: ТРИ ВИДА ЭЛЕМЕНТОВ (см. DESIGN.md, «Controls»)
+   Поле — то, что человек задаёт (модель · режим · слова; выбор Guide/Lab): тёмное утопленное.
+   Кнопка — действие: одно стекло, один радиус, одна тень; кнопка-иконка — тот же квадрат, не круг.
+   Главная кнопка — только Generate. Группы: внутри --gap, между группами --s4. */
+:root { --ctl-font: 500 var(--fs-3) var(--ui);
+  --field-bg: rgba(0, 0, 0, 0.28); --field-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  --btn-bg: rgba(255, 255, 255, 0.07); --btn-bg-hover: rgba(255, 255, 255, 0.13);
+  --btn-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), inset 0 0 14px rgba(255, 255, 255, 0.05);
+  --btn-rim: linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.14) 28%, rgba(255, 255, 255, 0.06) 62%, rgba(255, 255, 255, 0.42)); }
+#top { gap: var(--s4) !important; }
+.order { gap: var(--gap) !important; }
+/* составное поле: модель · режим · слова */
+.field { display: flex; flex: 1 1 auto; min-width: 0; height: var(--ctl-h); border-radius: var(--r-control); background: var(--field-bg); box-shadow: var(--field-shadow); }
+.field:focus-within { box-shadow: var(--field-shadow), 0 0 0 3px rgba(242, 179, 61, 0.22); }
+.field > * { height: var(--ctl-h) !important; background-color: transparent !important; box-shadow: none !important; border-radius: 0 !important; border: 0 !important; }
+.field > * + * { border-left: 1px solid rgba(255, 255, 255, 0.08) !important; }
+.field > :first-child { border-radius: var(--r-control) 0 0 var(--r-control) !important; }
+.field > input { border-radius: 0 var(--r-control) var(--r-control) 0 !important; }
+.field .model-pill { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px 0 12px !important; font: var(--ctl-font) !important; color: var(--ink-1) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.field .model-pill::before { display: none !important; }
+.field .model-pill:hover, .field .model-pill.open, .field #mode:hover { background-color: rgba(255, 255, 255, 0.06) !important; }
+.field #mode { font: var(--ctl-font) !important; }
+/* кнопки: Tour, Docs, Share, кубик, «О проекте», язык — одно и то же стекло */
+#top .tour-btn, #top .navpad-btn, #top .lang-btn { position: relative; height: var(--ctl-h) !important; border-radius: var(--r-control) !important; font: var(--ctl-font) !important;
+  color: var(--ink-1) !important; opacity: 1 !important; background: var(--btn-bg) !important; box-shadow: var(--btn-shadow) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(190%) brightness(1.15) !important; backdrop-filter: blur(14px) saturate(190%) brightness(1.15) !important; }
+#top .navpad-btn, #top .lang-btn { width: var(--ctl-h) !important; display: inline-grid !important; place-items: center; padding: 0 !important; }
+#top .tour-btn:hover, #top .navpad-btn:hover, #top .lang-btn:hover { background: var(--btn-bg-hover) !important; }
+#top .navpad-btn::before, #top .lang-btn::before { display: block !important; content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.2px; pointer-events: none;
+  background: var(--btn-rim) !important; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+#top .navpad-btn svg, #top .lang-btn svg, #top .tour-btn svg { width: 16px !important; height: 16px !important; }
+#top .lang, #top #lang, #top #about { width: var(--ctl-h) !important; height: var(--ctl-h) !important; flex: none; }
+/* помощь и ссылки — одна группа */
+.bar-group { display: flex; align-items: center; gap: var(--gap); flex: none; }
+/* Guide / Lab — выбор из двух, а не «вкл/выкл»: сегменты в утопленном поле */
+.mode-pair { height: var(--ctl-h); margin: 0 !important; padding: 3px; gap: 2px !important; border-radius: var(--r-control); background: var(--field-bg); box-shadow: var(--field-shadow); }
+.mode-pair .ctl-sw { display: none !important; }
+.mode-pair .pair-o { height: calc(var(--ctl-h) - 6px) !important; padding: 0 12px !important; border-radius: 7px !important; font: var(--ctl-font) !important; color: var(--ink-3) !important; background: transparent !important; box-shadow: none !important; }
+.mode-pair .pair-o:hover { color: var(--ink-2) !important; }
+.mode-pair .pair-o.on { color: var(--ink-1) !important; background: rgba(255, 255, 255, 0.13) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 3px rgba(0, 0, 0, 0.35) !important; }
+/* главная кнопка и подписи — тот же шрифт, что у остальных */
+button.primary { font: 600 var(--fs-3) var(--ui) !important; }
+.field #mode, .field #words, .field #prompt { box-shadow: none !important; background-color: transparent !important; }
+.field #mode { border-radius: 0 !important; }
+/* строка состояния: только «загрузка» и ошибка; после загрузки её нет */
+#top .status[hidden] { display: none !important; }
+#top .status.fail { display: block !important; color: var(--pos) !important; max-width: 40vw; }
+/* навбар одинаков в Guide и Lab: Tour виден всегда (тур сам переходит в Guide), ничего не сдвигается при переключении */
+body[data-mode="lab"] #top .tour-btn { display: inline-flex !important; }
+/* части составного поля стоят встык: старый отрицательный отступ списка режимов (закрывал прежний зазор) больше не нужен */
+.field #mode { margin-right: 0 !important; }
+.field #words, .field #prompt { padding: 0 var(--pad) !important; }
+
+/* Выпадающие меню: анимация появления — на самих стеклянных плашках, а не на их контейнере. Пока контейнер
+   полупрозрачен или масштабируется, браузер рисует его отдельным слоем, и плашки внутри не могут размыть страницу за
+   собой: размытие появлялось рывком в конце анимации (заметно у Share, About и языка — они открываются над текстом). */
+.lang-pop, .cc { animation: none !important; }
+.lang-pop > *, .cc > * { transform-origin: top right; animation: cc-drop 220ms cubic-bezier(.2, .9, .3, 1.15) backwards; }
+.lang-pop > :nth-child(2), .cc > :nth-child(2) { animation-delay: 30ms; }
+.lang-pop > :nth-child(n+3), .cc > :nth-child(n+3) { animation-delay: 60ms; }
+@media (prefers-reduced-motion: reduce) { .lang-pop > *, .cc > * { animation: none; } }

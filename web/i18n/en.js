@@ -20,7 +20,6 @@
   'gen': 'Generate',
   'status.loading': 'loading the model…',
   'status.fail': 'could not load the model: {msg}',
-  'status.model': (v, h) => `${v.layers} ${h.plural(v.layers, { one: 'layer', other: 'layers' })} × ${v.dim}, ${v.heads} ${h.plural(v.heads, { one: 'head', other: 'heads' })}, vocabulary ${v.vocab} · WebAssembly`,
 
   // model view
   'model.title': 'Model',

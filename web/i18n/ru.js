@@ -19,7 +19,6 @@
   'gen': 'Сгенерировать',
   'status.loading': 'загрузка модели…',
   'status.fail': 'не удалось загрузить модель: {msg}',
-  'status.model': (v, h) => `${v.layers} ${h.plural(v.layers, { one: 'слой', few: 'слоя', many: 'слоёв', other: 'слоя' })} × ${v.dim}, ${v.heads} ${h.plural(v.heads, { one: 'голова', few: 'головы', many: 'голов', other: 'головы' })}, словарь ${v.vocab} · WebAssembly`,
 
   'model.title': 'Модель',
   'model.hint': 'Поток слева направо. Мышью вращать, колесом приближать, щелчок по пластине разбирает слой',

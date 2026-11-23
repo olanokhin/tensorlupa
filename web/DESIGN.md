@@ -69,6 +69,35 @@ Nested shapes are rounded less than the shape around them.
 
 The window area (`#stage`) rounds only its bottom corners. Its top corners would cut the first tab's corner.
 
+## Controls
+
+Three kinds of control, and nothing else. The tokens are at the end of `editor.css` ("НАВБАР: ТРИ ВИДА ЭЛЕМЕНТОВ").
+
+| Kind | What it is for | Look |
+|---|---|---|
+| Field | something the person sets: the model, the mode, the words, Guide / Lab | dark and inset: `--field-bg`, `--field-shadow` |
+| Button | an action: Tour, Docs, Share, another story, About, language | one glass for all: `--btn-bg`, `--btn-shadow`, the lens rim `--btn-rim` |
+| Primary button | the one main action, Generate | the bright top rim and the light inside |
+
+Rules:
+- Every control is `--ctl-h` (32px) high with radius `--r-control`. An icon-only button is the same 32 × 32 square,
+  never a circle. Circles are for knobs, switches and the round buttons inside the 3D views.
+- One font for all controls: `--ctl-font` (12.5px, weight 500). The primary button is weight 600. Mono is only for
+  what the person types as tokens (the words, the story start).
+- Parts of one input join into one field with hairline dividers: model · mode · words. The focus ring goes around
+  the whole field.
+- A choice between two modes is a segmented control inside a field, not an on/off switch.
+- Groups: `--gap` (6px) between controls of one group, `--s4` (16px) between groups. The top bar has four groups:
+  the brand; what to generate (the field, Generate, another story); how to look (Guide / Lab); help and links
+  (Tour, Docs, Share, About, language).
+- The top bar has the same controls in Guide and in Lab, in the same places. Nothing appears, disappears or moves
+  when the mode changes, so a control never slides from under the pointer. Reference text (layers, heads,
+  vocabulary) belongs in the model menu, not in the bar; the status line shows only loading and errors.
+
+Dropdown menus are separate glass tiles on the top level of the page. The entrance animation goes on the tiles,
+never on their container: while a container is translucent or scaled, the tiles inside cannot blur the page behind
+them, and the blur would pop in at the end.
+
 ## Glass rim
 
 | Token | Value |

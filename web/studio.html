@@ -40,24 +40,28 @@ if (matchMedia('(max-width: 699px)').matches) location.replace((/^\/ru(\/|$)/.te
   <h1 class="sr-only" data-i18n="studio.h1"></h1>
   <header id="top">
     <a class="brand" href="./" data-local data-i18n-title="land.home"><img class="brand-mark" src="media/logo.svg" alt="" width="20" height="20"><span class="brand-name">TensorLupa</span></a>
-    <button id="model-pill" class="model-pill" data-i18n-title="model.pill.title"><span class="mp-name" data-term="languageModel">micro-qwen3</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <div class="order">
+      <div class="field">
+      <button id="model-pill" class="model-pill" data-i18n-title="model.pill.title"><span class="mp-name" data-term="languageModel">micro-qwen3</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <select id="mode" data-term="mode">
         <option value="order" data-i18n="mode.order"></option>
         <option value="continue" data-i18n="mode.continue"></option>
       </select>
       <input id="words" type="text" value="dragon, cookie, school" data-i18n-ph="words.ph" spellcheck="false">
       <input id="prompt" type="text" value="Once upon a time" data-i18n-ph="prompt.ph" spellcheck="false" hidden>
+      </div>
       <button id="gen" class="primary"><span class="gen-core" aria-hidden="true"></span><span class="gen-star" aria-hidden="true"></span><span data-i18n="gen"></span></button>
       <button id="reroll" class="navpad-btn reroll" data-i18n-title="gen.another" aria-label="another story"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.2" y="3.2" width="13.6" height="13.6" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="7" r="1.25" fill="currentColor"/><circle cx="13" cy="7" r="1.25" fill="currentColor"/><circle cx="10" cy="10" r="1.25" fill="currentColor"/><circle cx="7" cy="13" r="1.25" fill="currentColor"/><circle cx="13" cy="13" r="1.25" fill="currentColor"/></svg></button>
     </div>
-    <button id="tour-btn" class="tour-btn" data-i18n-title="tour.start"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12.9 7.1l-1.8 4-4 1.8 1.8-4z" fill="currentColor"/></svg><span data-i18n="tour.btn"></span></button>
     <span class="pair mode-pair" id="mode-pair" data-i18n-title="mode.title"><button class="pair-o on" data-v="guide" data-i18n="mode.guide"></button><input type="checkbox" class="ctl-sw" aria-label="Guide / Lab"><button class="pair-o" data-v="lab" data-i18n="mode.lab"></button></span>
     <div id="status" class="status" data-i18n="status.loading"></div>
-    <button id="docs-btn" class="tour-btn docs-btn" data-i18n-title="docs.open"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.6C8.6 4.5 6.6 4 3.8 4.1v10.6c2.8-.1 4.8.4 6.2 1.5 1.4-1.1 3.4-1.6 6.2-1.5V4.1c-2.8-.1-4.8.4-6.2 1.5zM10 5.6v10.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span>Docs</span></button>
-    <button id="share-btn" class="tour-btn share-btn" data-i18n-title="share.title"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 12.5V3.5M6.6 6.6 10 3.2l3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 9.5H5.3A1.3 1.3 0 0 0 4 10.8v4.9A1.3 1.3 0 0 0 5.3 17h9.4a1.3 1.3 0 0 0 1.3-1.3v-4.9a1.3 1.3 0 0 0-1.3-1.3h-1.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="share.btn"></span></button>
-    <div id="about" class="lang"></div>
-    <div id="lang" class="lang"></div>
+    <div class="bar-group">
+      <button id="tour-btn" class="tour-btn" data-i18n-title="tour.start"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12.9 7.1l-1.8 4-4 1.8 1.8-4z" fill="currentColor"/></svg><span data-i18n="tour.btn"></span></button>
+      <button id="docs-btn" class="tour-btn docs-btn" data-i18n-title="docs.open"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.6C8.6 4.5 6.6 4 3.8 4.1v10.6c2.8-.1 4.8.4 6.2 1.5 1.4-1.1 3.4-1.6 6.2-1.5V4.1c-2.8-.1-4.8.4-6.2 1.5zM10 5.6v10.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span>Docs</span></button>
+      <button id="share-btn" class="tour-btn share-btn" data-i18n-title="share.title"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 12.5V3.5M6.6 6.6 10 3.2l3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 9.5H5.3A1.3 1.3 0 0 0 4 10.8v4.9A1.3 1.3 0 0 0 5.3 17h9.4a1.3 1.3 0 0 0 1.3-1.3v-4.9a1.3 1.3 0 0 0-1.3-1.3h-1.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="share.btn"></span></button>
+      <div id="about" class="lang"></div>
+      <div id="lang" class="lang"></div>
+    </div>
   </header>
 
 

@@ -109,11 +109,13 @@ async function boot() {
     S.modelBytes = buf.length;
     S.engine = await loadEngine(buf);
   } catch (e) {
-    $('status').textContent = t('status.fail', { msg: e.message });
+    $('status').textContent = t('status.fail', { msg: e.message }); $('status').classList.add('fail');
     return;
   }
   const i = S.engine.info;
-  $('status').textContent = t('status.model', { layers: i.layers, dim: i.dim, heads: i.heads, vocab: i.vocab });
+  // справка о модели (слои, головы, словарь) — в меню модели, а не в навбаре: строка состояния нужна только на время
+  // загрузки и для ошибки, потом исчезает и не сдвигает кнопки
+  $('status').textContent = ''; $('status').hidden = true;
   S.strip = new LogitStrip($('logits-canvas'), $('tip'), S.engine.tokenText);
   S.amode = 'look';
   S.attn = new AttentionView($('attn-canvas'), (sel) => { if (S.a3d) S.a3d.setSel(sel); tintStory(); renderInspector(S.run.steps[S.cur]); });
