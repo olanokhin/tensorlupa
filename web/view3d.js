@@ -284,17 +284,20 @@ export class View3D {
       this.cursor.position.copy(plate.at(idx)); this.cursor.scale.setScalar(plate.tile > 1 ? plate.tile : 1); this.cursor.visible = true;
       this.setTip(plate, idx);
     } else { this.cursor.visible = false; this.tip.visible = false; }
-    if (click) {
-      this.sel = plate ? { plate, idx } : null; this.opSel = null;
-      this.wires.focus = plate ? plate.tag : null;
-      for (const p of this.plates) {
-        const on = p === plate;
-        p.frame.material.color.set(on ? 0xf2b33d : RIM); p.frame.material.opacity = on ? 1 : 0.55;
-        p.glass.material.color.set(on ? 0xf2c46a : GLASS); p.glass.material.opacity = on ? 0.1 : 0.075;
-      }
-      this.layout(true);
-      if (this.onSelect) this.onSelect();
+    if (click) this.select(plate, idx);
+  }
+  // выбрать пластину (или снять выбор: plate = null). Щелчок мыши приходит сюда же; напрямую метод зовёт скрипт
+  // пересъёмки скриншотов Docs (scripts/docs-shots), потому что в 3D нужную пластину может заслонять соседняя.
+  select(plate, idx = 0) {
+    this.sel = plate ? { plate, idx } : null; this.opSel = null;
+    this.wires.focus = plate ? plate.tag : null;
+    for (const p of this.plates) {
+      const on = p === plate;
+      p.frame.material.color.set(on ? 0xf2b33d : RIM); p.frame.material.opacity = on ? 1 : 0.55;
+      p.glass.material.color.set(on ? 0xf2c46a : GLASS); p.glass.material.opacity = on ? 0.1 : 0.075;
     }
+    this.layout(true);
+    if (this.onSelect) this.onSelect();
   }
 
   // рельеф выбранной пластины: столбик из каждой плитки перпендикулярно пластине — плюс (жёлтый) влево,
