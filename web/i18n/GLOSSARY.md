@@ -24,6 +24,9 @@ To add a language: add its code to `LANGS` in the source and fill `word` and `ti
 | special token | translate |  | служебный токен | служебный токен | special-tokens |  |
 | Instruct | keep |  | по инструкции | Instruct | instruct | instruct models on Hugging Face |
 | Completion | keep |  | продолжение текста | Completion | completion | completions API, base models |
+| base model | translate |  | базовая модель | базовая модель | completion |  |
+| pre-training | translate |  | предобучение | предобучение | completion |  |
+| fine-tuning | translate |  | дообучение | дообучение | instruct | instruction tuning, supervised fine-tuning (SFT) |
 | transformer | calque |  | трансформер | трансформер | transformer |  |
 | embedding | calque |  | эмбеддинг | эмбеддинг | residual-stream |  |
 | residual stream | translate |  | остаточный поток | остаточный поток | residual-stream |  |
@@ -39,11 +42,15 @@ To add a language: add its code to `LANGS` in the source and fill `word` and `ti
 | MLP | keep |  | многослойный перцептрон | MLP | mlp | multilayer perceptron |
 | SwiGLU | keep |  | MLP с затвором | SwiGLU | swiglu |  |
 | logit lens | keep |  | линза логитов | logit lens | logit-lens |  |
+| neuron | calque |  | нейрон | нейрон | mlp |  |
 | logits | calque |  | логиты | логиты | logits |  |
+| softmax | keep |  | превращение оценок в шансы | softmax | logits |  |
 | sampling | calque |  | сэмплинг | сэмплинг | sampling |  |
 | temperature | calque |  | температура | температура | temperature |  |
 | top-k | keep |  | K лучших | top-k | top-k |  |
 | min-p | keep |  | порог от фаворита | min-p | min-p |  |
+| top-p | keep |  | ядро вероятности | top-p | min-p | nucleus sampling, Holtzman et al., 2019 |
+| greedy decoding | translate |  | жадное декодирование | жадное декодирование | sampling |  |
 | seed | keep |  | зерно случайности | seed | seed |  |
 | entropy | calque |  | энтропия | энтропия | entropy |  |
 | max new tokens | translate |  | макс. новых токенов | макс. новых токенов | max-new-tokens | max_new_tokens in Hugging Face |
@@ -82,6 +89,21 @@ To add a language: add its code to `LANGS` in the source and fill `word` and `ti
 
 - en: Completion: the model simply continues the text you started, without any request.
 - ru: Completion · продолжение текста. Модель просто продолжает начатый вами текст, без всякой просьбы.
+
+**base model**
+
+- en: A base model only continues text. It has not been taught to follow requests.
+- ru: Base model · базовая модель. Умеет только продолжать текст. Выполнять просьбы её ещё не учили.
+
+**pre-training**
+
+- en: Pre-training is the first stage: the model learns to predict the next token on a large amount of text.
+- ru: Pre-training · предобучение. Первый этап: модель учится предсказывать следующий токен на большом объёме текста.
+
+**fine-tuning**
+
+- en: Fine-tuning continues the training of a ready model on a narrower task. Instruction tuning teaches it to answer requests.
+- ru: Fine-tuning · дообучение. Продолжение обучения готовой модели на более узкой задаче. Дообучение на инструкциях учит её отвечать на просьбы.
 
 **transformer**
 
@@ -158,10 +180,20 @@ To add a language: add its code to `LANGS` in the source and fill `word` and `ti
 - en: Logit lens: decode the stream in the middle of the model as if it were the end, to see what it would say at this point.
 - ru: Logit lens · линза логитов. Прочитать поток в середине модели так, будто это её конец, и увидеть, что она сказала бы на этом месте.
 
+**neuron**
+
+- en: A neuron is one of the 336 units of an MLP: it fires on a pattern in the stream and pushes certain next words up or down.
+- ru: Neuron · нейрон. Один из 336 элементов MLP: срабатывает на шаблон в потоке и подталкивает одни следующие слова вверх, другие вниз.
+
 **logits**
 
 - en: Logits are the model's raw scores for all 4,096 tokens. Softmax turns them into probabilities that add up to 100%.
 - ru: Logits · логиты. Сырые оценки модели для всех 4096 токенов. Softmax превращает их в вероятности, которые в сумме дают 100%.
+
+**softmax**
+
+- en: Softmax turns the scores of all tokens into chances that add up to 100%.
+- ru: Softmax · превращение оценок в шансы. Превращает оценки всех токенов в шансы, которые в сумме дают 100%.
 
 **sampling**
 
@@ -182,6 +214,16 @@ To add a language: add its code to `LANGS` in the source and fill `word` and `ti
 
 - en: Min-p: the model never draws a token that is more than 1/min-p times less likely than the favourite. At 0.02 that rules out tokens 50 times less likely: rare slips that break words.
 - ru: Min-p · порог от фаворита. Модель не выбирает токен, который в 1/min-p раз и более менее вероятен, чем фаворит. При 0,02 отсекаются токены, в 50 раз менее вероятные: редкие срывы, которые ломают слова.
+
+**top-p**
+
+- en: Top-p (nucleus sampling): keep the most likely tokens until their chances add up to p, and rule out the rest.
+- ru: Top-p · ядро вероятности. Оставить самые вероятные токены, пока их шансы в сумме не дойдут до p, а остальные исключить. Другое название: nucleus sampling.
+
+**greedy decoding**
+
+- en: Greedy decoding always takes the most likely token, with no random draw.
+- ru: Greedy decoding · жадное декодирование. Всегда брать самый вероятный токен, без случайного жребия.
 
 **seed**
 

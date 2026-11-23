@@ -1,0 +1,242 @@
+---
+title: Как сделана micro-qwen3
+description: Цепочка решений, из которых получилась micro-qwen3, от словаря до правил декодирования, со всеми ветками, которые мы пробовали, и причиной, по которой победила одна из них.
+---
+
+**Одной фразой:** каждый размер и каждая настройка micro-qwen3 появились на развилке, где пробовали несколько
+вариантов и дальше шёл один.
+
+Веса лежат на [Hugging Face](https://huggingface.co/olanokhin/micro-qwen3); код обучения, прошивка и ядро на C
+находятся в [micro-qwen3-esp32](https://github.com/olanokhin/micro-qwen3-esp32).
+
+Эта страница показывает путь через эти развилки. Яркая линия это то, что есть в модели сегодня. Бледные ветки мы
+пробовали и отбросили, у каждой указано число, которое решило дело.
+
+Большинство чисел это **бит на байт (bits per byte, bpb)** на отложенном тексте: сколько бит в среднем нужно
+модели, чтобы предсказать каждый байт текста, которого она не видела. Чем меньше, тем лучше. Каждый вариант
+обучался один раз, поэтому разницу меньше примерно 0,01 считаем ничьей. Числа с разных датасетов сравнивать между
+собой нельзя.
+
+<div class="trail">
+
+## Словарь
+
+Сколько [токенов](../../glossary/token/) должна знать модель? Сетка на примерно 0,6 млн параметров на веб-тексте
+(FineWeb-Edu).
+
+<ul class="tr-branches">
+<li><span class="tr-name">2048 токенов</span><span class="tr-val">1,747</span><span class="tr-note">кусочки слишком мелкие</span></li>
+<li class="tr-win"><span class="tr-name">4096 токенов</span><span class="tr-val">1,710</span></li>
+<li><span class="tr-name">8192 токена</span><span class="tr-val">1,785</span><span class="tr-note">эмбеддинги съедают бюджет слоёв</span></li>
+</ul>
+
+Словарь это byte-level BPE, обученный на нашем тексте с правилом разбиения из Qwen3. Родные 151 936 токенов Qwen3
+не поместились бы: одна только их таблица была бы в 16 раз больше всей модели.
+
+## Глубина или ширина
+
+Один и тот же бюджет примерно в 0,6 млн параметров, потраченный на больше слоёв или на более широкие слои.
+
+<ul class="tr-branches">
+<li><span class="tr-name">2 слоя × 96</span><span class="tr-val">1,774</span><span class="tr-note">обрыв на двух</span></li>
+<li class="tr-win"><span class="tr-name">3 слоя × 88</span><span class="tr-val">1,694</span></li>
+<li><span class="tr-name">4 слоя × 80</span><span class="tr-val">1,701</span><span class="tr-note">ничья, но медленнее</span></li>
+<li><span class="tr-name">7 слоёв × 64</span><span class="tr-val">1,710</span></li>
+<li><span class="tr-name">15 слоёв × 48</span><span class="tr-val">1,744</span></li>
+<li><span class="tr-name">28 слоёв × 32, столько слоёв в Qwen3</span><span class="tr-val">остановлено</span><span class="tr-note">отставание 0,15</span></li>
+</ul>
+
+Точная 28-слойная миниатюра Qwen3 оказалась худшей. Число слоёв у Qwen не уменьшается в тысячу раз, а вот
+отношение ширины к глубине уменьшается.
+
+## Головы attention
+
+Качество следовало за произведением «число голов × размер головы», а время за числом голов.
+
+<ul class="tr-branches">
+<li><span class="tr-name">больше голов поменьше</span><span class="tr-note">то же качество, медленнее</span></li>
+<li class="tr-win"><span class="tr-name">4 головы × 64, 2 головы ключей и значений</span><span class="tr-note">лучшее качество за секунду</span></li>
+</ul>
+
+## Итоговая форма
+
+Увеличили примерно до 1 млн параметров с attention 4 × 64.
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">3 слоя × 112</span><span class="tr-val">1,612</span><span class="tr-note">261K токенов/с при обучении</span></li>
+<li><span class="tr-name">4 слоя × 96</span><span class="tr-val">1,614</span><span class="tr-note">ничья, на 9% медленнее</span></li>
+</ul>
+
+## Выбросы в остаточном потоке
+
+Несколько каналов [остаточного потока](../../glossary/residual-stream/) становятся намного громче остальных: мы
+назвали их сталактитами. Гипотеза пришла из звука. Перед каждым блоком поток нормируется по общей громкости, поэтому
+несколько громких каналов прижимают вниз тихий полезный сигнал, как один громкий инструмент в миксе. Два способа
+проверить, на форме 3 × 112 по 146 млн токенов веб-текста на каждый:
+
+- **A. Удержать пики**, как в звуковой цепи: заменить нормировку перед каждым блоком лимитером или компрессором.
+- **B. Не дать пикам вырасти**: повернуть обновления оптимизатора или сменить оптимизатор.
+
+Числа после каждой ветки: качество в bpb, потом во сколько раз самый громкий канал громче типичного.
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">RMSNorm и AdamW, как в Qwen3</span><span class="tr-val">1,610</span><span class="tr-note">самый громкий канал 5,4×</span></li>
+<li><span class="tr-name">A: лимитер, tanh вместо нормировки (Dynamic Tanh)</span><span class="tr-val">2,107</span><span class="tr-note">намного хуже</span></li>
+<li><span class="tr-name">A: компрессор, кривая μ-law (asinh) перед нормировкой</span><span class="tr-val">1,608</span><span class="tr-note">5,5×, пики не удержаны</span></li>
+<li><span class="tr-name">A: компрессор с коэффициентом и мягким коленом</span><span class="tr-val">1,608</span><span class="tr-note">8,8×, пики стали ещё громче</span></li>
+<li><span class="tr-name">B: поворот Адамара для обновлений AdamW</span><span class="tr-val">1,607</span><span class="tr-note">3,0×: спокойнее, качество то же</span></li>
+<li><span class="tr-name">B: тот же поворот блоками по 16 или по 4</span><span class="tr-val">от 1,609 до 1,611</span></li>
+<li><span class="tr-name">B: оптимизатор Muon</span><span class="tr-val">1,909</span><span class="tr-note">2,5×, самый тихий, но с нашими настройками сильно отстаёт</span></li>
+</ul>
+
+Выбросы удалось укротить, но качество не сдвинулось: при таком размере громкие каналы почти не отнимали у тихих.
+Модель осталась на обычном рецепте Qwen3.
+
+## Контекст
+
+На сколько токенов назад модель может заглядывать.
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">256 токенов</span></li>
+<li><span class="tr-name">512 токенов</span><span class="tr-note">лучше на 0,8%, медленнее на 29%</span></li>
+</ul>
+
+Короткая история помещается в 256 токенов, а далёким контекстом модель всё равно почти не пользуется.
+
+## Данные
+
+<ul class="tr-branches">
+<li><span class="tr-name">веб-текст, 1,06 млрд токенов</span><span class="tr-val">1,567</span><span class="tr-note">слишком сложно для миллиона параметров</span></li>
+<li><span class="tr-name">TinyStories, первая версия</span><span class="tr-val">0,769</span><span class="tr-note">на историях V2</span></li>
+<li class="tr-win"><span class="tr-name">TinyStories V2</span><span class="tr-val">0,669</span><span class="tr-note">истории, написанные GPT-4</span></li>
+</ul>
+
+Миллиард токенов это тысяча на параметр, в пятьдесят раз больше обычного правила примерно в двадцать, и модель всё
+равно не смогла вместить веб: грамматику она выучила, а что говорить нет. У детских историй маленький мир, который
+миллион параметров способен описать.
+
+## Сколько бит на вес
+
+Готовая модель 3 × 112 на веб-тексте (1,599 bpb), каждый вес округлён до меньшего числа бит с одним масштабом на
+строку, без дообучения. Потеря относительно полной точности:
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">8 бит</span><span class="tr-val">+0,000</span><span class="tr-note">без потерь: версия для студии</span></li>
+<li><span class="tr-name">6 бит</span><span class="tr-val">+0,003</span></li>
+<li><span class="tr-name">5 бит</span><span class="tr-val">+0,014</span></li>
+<li class="tr-open"><span class="tr-name">4 бита</span><span class="tr-val">+0,066</span><span class="tr-note">вдвое меньше, первая настоящая потеря: версия для платы, см. две следующие развилки</span></li>
+<li><span class="tr-name">3 бита</span><span class="tr-val">+0,431</span><span class="tr-note">текст разваливается</span></li>
+<li><span class="tr-name">2 бита</span><span class="tr-val">+3,17</span></li>
+</ul>
+
+Простое округление бесплатно до 6 бит и ломает всё ниже 4.
+
+## Меньше бит, больше модель?
+
+Лучше ли модель побольше с меньшим числом бит на вес при той же памяти на плате (около 0,8 МБ)? Тернарная ветка
+шла по рецепту Bonsai: веса −1, 0 или +1 с выученным масштабом на строку.
+
+<ul class="tr-branches">
+<li><span class="tr-name">тернарные слои, обучение с нуля, 3 × 192</span><span class="tr-val">0,704</span></li>
+<li><span class="tr-name">тернарные слои, из полной точности + QAT</span><span class="tr-val">0,697</span></li>
+<li><span class="tr-name">2-битные слои, 3 × 192</span><span class="tr-val">0,698</span></li>
+<li><span class="tr-name">3 бита</span><span class="tr-note">то же качество на байт, что и у 4 бит, ядро сложнее</span></li>
+<li class="tr-win"><span class="tr-name">4 бита, 3 × 144</span><span class="tr-val">0,643</span></li>
+</ul>
+
+Ниже 4 бит качество падает ступенькой, и больше обучающих данных этот порог не сдвигает. 4 бита это лучшее, что
+влезает в бюджет.
+
+## Как заставить 4 бита работать
+
+Как округлить веса до 4 бит и потерять как можно меньше. Потеря относительно полной точности, на базовой модели,
+100 МБ дообучения для обученных вариантов.
+
+<ul class="tr-branches">
+<li><span class="tr-name">простое округление</span><span class="tr-val">+0,045</span></li>
+<li><span class="tr-name">масштаб на каждые 32 веса, как в GGUF Q4</span><span class="tr-note">на чипе медленнее, чем 8 бит</span></li>
+<li><span class="tr-name">поиск масштаба на строку, без обучения</span><span class="tr-val">+0,037</span></li>
+<li><span class="tr-name">обычное обучение с учётом квантования (quantization-aware training, QAT)</span><span class="tr-val">+0,029</span></li>
+<li><span class="tr-name">поворот Адамара, вшитый в веса</span><span class="tr-note">нужен отдельный выходной слой, +458K параметров</span></li>
+<li><span class="tr-name">поворот Адамара после QAT</span><span class="tr-note">на итоговой модели хуже</span></li>
+<li class="tr-win"><span class="tr-name">QAT с поиском масштаба на строку (W4R)</span><span class="tr-val">+0,022</span></li>
+</ul>
+
+Для каждой строки весов поиск пробует 25 уровней обрезки и оставляет тот, где ошибка меньше всего. Внутри QAT
+модель учит веса, которые переживают такое округление.
+
+## Обучение
+
+<ul class="tr-branches">
+<li class="tr-win"><span class="tr-name">предобучение с нуля на TinyStories V2</span><span class="tr-val">124 млн токенов</span><span class="tr-note">предсказание следующего токена</span></li>
+<li class="tr-win"><span class="tr-name">дообучение по инструкциям с QAT с первого шага</span><span class="tr-val">150 млн токенов</span><span class="tr-note">900 000 диалогов</span></li>
+</ul>
+
+Второй проход учит модель писать историю с заданными словами в чат-формате Qwen. Все три слова попадали в историю
+в 5,7% историй до него и в 64% после. 4-битная версия теряет около 2% качества по сравнению с 8 битами.
+
+## Logit bias
+
+Модель хочет заданных слов, но редко хочет их достаточно сильно, чтобы они победили. Доплата к их
+[логитам](../../glossary/logits/) закрывает разрыв. Истории со всеми тремя словами, из 200 тестовых заказов:
+
+<ul class="tr-branches">
+<li><span class="tr-name">без доплаты</span><span class="tr-val">36,5%</span></li>
+<li><span class="tr-name">постоянная доплата</span><span class="tr-val">79,5%</span></li>
+<li><span class="tr-name">большая постоянная доплата, +6</span><span class="tr-note">менее естественный текст, слова всё равно пропущены в 8,5%</span></li>
+<li><span class="tr-name">каждое использованное слово поднимает доплату для остальных</span><span class="tr-val">94%</span></li>
+<li><span class="tr-name">доплата растёт ещё и пока слово ждёт</span><span class="tr-val">99,5%</span></li>
+<li class="tr-win"><span class="tr-name">то же правило при температуре 0,6</span><span class="tr-val">100%</span></li>
+</ul>
+
+Вся история в статье [Logit bias](../../glossary/logit-bias/).
+
+## Автомат написания слов
+
+Доплата решает, *когда* появится слово, а не *как* оно будет написано. Маленькая модель может начать редкое слово и
+сбиться на полпути или приклеить лишние буквы: «examineineine».
+
+<ul class="tr-branches">
+<li><span class="tr-name">только доплата</span><span class="tr-note">сломанные слова</span></li>
+<li><span class="tr-name">FSM, где формы слова клеят любое окончание к любому слову</span><span class="tr-note">пропускает «dareing», «invitationing»: 6,0% историй с выдуманным словом</span></li>
+<li class="tr-win"><span class="tr-name">FSM с формами по английскому правописанию (daring, stopped, invitations)</span><span class="tr-note">3,3%</span></li>
+</ul>
+
+Как это работает: [Constrained decoding (FSM)](../../glossary/fsm/).
+
+## Отсечение хвоста
+
+[Top-k](../../glossary/top-k/) оставляет 40 кандидатов, и за историю жребий иногда падает на кандидата с шансом
+0,003% и начинает слово, которого не существует («Byican»). Истории с выдуманным словом, 300 историй, со штрафом за
+повторы, веса 8 бит / 4 бита:
+
+<ul class="tr-branches">
+<li><span class="tr-name">только top-k 40</span><span class="tr-val">2,7% / 6,7%</span></li>
+<li><span class="tr-name">top-p 0,9</span><span class="tr-val">3,3% / 1,3%</span><span class="tr-note">самое сильное отсечение, наименее разнообразный текст</span></li>
+<li><span class="tr-name">top-p 0,95</span><span class="tr-val">1,3% / 3,3%</span><span class="tr-note">ничья с min-p 0,02</span></li>
+<li><span class="tr-name">min-p 0,05 или 0,1</span><span class="tr-val">1,7–2,3% / 1,7%</span><span class="tr-note">менее разнообразно</span></li>
+<li class="tr-win"><span class="tr-name">min-p 0,02: отбросить то, что в 50 раз менее вероятно, чем фаворит</span><span class="tr-val">1,0% / 3,0%</span></li>
+</ul>
+
+Min-p и top-p сошлись при одинаковой силе; min-p выиграл в ясности, потому что его линия лежит на фиксированном
+расстоянии от фаворита. Как это работает: [Min-p](../../glossary/min-p/).
+
+## Статистика корпуса
+
+Таблица четырёхтокенных фраз, подсчитанных в обучающих историях и используемых рядом с моделью. Один файл служит
+двум задачам, поэтому его размер выбирали под обе: фразы, встреченные не меньше 50 раз, 2,3 МБ.
+
+<ul class="tr-branches">
+<li><span class="tr-name">без штрафа за повторы</span><span class="tr-note">истории зацикливаются в 17%</span></li>
+<li><span class="tr-name">простой штраф за любой недавний повтор (плата оставляет его)</span><span class="tr-note">зацикливание 4%, трудные слова превращает в выдуманные</span></li>
+<li><span class="tr-name">штраф по степени распространённости фразы</span><span class="tr-note">зацикливание 1%</span></li>
+<li class="tr-win"><span class="tr-name">обычные фразы (1000 и больше раз в корпусе) бесплатны, остальные повторы теряют 4 пункта</span><span class="tr-note">зацикливание 0%</span></li>
+<li class="tr-open"><span class="tr-name">черновые токены для speculative decoding из того же файла</span><span class="tr-note">1,84 токена за одну проверку моделью: следующая развилка</span></li>
+</ul>
+
+Штраф позволяет повторяться «once upon a time» и не даёт вернуться «the tree was very tall». Как это работает:
+[Штраф за повторы](../../glossary/repetition-penalty/). Черновик угадывает несколько следующих токенов по таблице,
+а модель проверяет их все за один проход; отдельная черновая таблица в 14 МБ дала лишь немногим лучше (1,87). На
+плате это однажды может означать скорость; в студии это был бы способ посмотреть, как угадывают и проверяют.
+
+</div>
