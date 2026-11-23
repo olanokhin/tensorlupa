@@ -21,7 +21,7 @@ each byte of text it has not seen. Lower is better. Each variant was trained onc
 ## Vocabulary
 
 How many [tokens](../../glossary/token/) should the model know? Grid at about 0.6M parameters on web text
-(FineWeb-Edu).
+([FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu)).
 
 <ul class="tr-branches">
 <li><span class="tr-name">2,048 tokens</span><span class="tr-val">1.747</span><span class="tr-note">pieces too small</span></li>
@@ -106,14 +106,22 @@ A short story fits in 256 tokens, and the model barely uses distant context anyw
 ## Data
 
 <ul class="tr-branches">
-<li><span class="tr-name">web text, 1.06 billion tokens</span><span class="tr-val">1.567</span><span class="tr-note">too hard for a million parameters</span></li>
-<li><span class="tr-name">TinyStories, first version</span><span class="tr-val">0.769</span><span class="tr-note">on V2 stories</span></li>
+<li><span class="tr-name">web text, 1.06 billion tokens</span><span class="tr-val">1.567</span><span class="tr-note">scored on web text; too hard for a million parameters</span></li>
+<li><span class="tr-name">TinyStories, first version</span><span class="tr-val">0.769</span><span class="tr-note">scored on the same V2 stories as the next row</span></li>
 <li class="tr-win"><span class="tr-name">TinyStories V2</span><span class="tr-val">0.669</span><span class="tr-note">stories written by GPT-4</span></li>
 </ul>
 
 A billion tokens is a thousand per parameter, fifty times the usual rule of about twenty, and the model still
 could not hold the web: it learned grammar but not what to say. Children's stories have a small world that a million
 parameters can describe.
+
+The two TinyStories rows are scored on the same held-out V2 stories. V2 is narrower, not simply better: the model
+trained on it is a specialist. It is stronger on V2 stories (0.669 against 0.769) and weaker on stories of the first
+version (0.933 against 0.765).
+
+Where the data comes from: the web text is [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu), and both versions of the stories are in the
+[TinyStories](https://huggingface.co/datasets/roneneldan/TinyStories) dataset by Ronen Eldan and Yuanzhi Li: the first has stories written by GPT-3.5 and GPT-4, V2
+only by GPT-4.
 
 ## How many bits per weight
 
@@ -172,9 +180,11 @@ QAT, the model learns weights that survive that rounding.
 <li class="tr-win"><span class="tr-name">instruction tuning with QAT from the first step</span><span class="tr-val">150M tokens</span><span class="tr-note">900,000 dialogues</span></li>
 </ul>
 
-The second pass teaches the model to write a story with the requested words, in the Qwen chat format. All three
-words made it into the story in 5.7% of stories before it and in 64% after it. The 4-bit version loses about
-2% of quality against 8 bits.
+These are two passes of one training, one after the other, not two options. The second pass teaches the model to
+write a story with the requested words, in the Qwen chat format. All three words made it into the story in 5.7% of
+stories before it and in 64% after it. On held-out answers the model needs 0.747 bits per byte with 8-bit weights
+and 0.762 with 4-bit weights, which is 2% more. The dialogues come from
+[TinyStoriesInstruct](https://huggingface.co/datasets/roneneldan/TinyStoriesInstruct) by the same authors, converted to the Qwen chat format.
 
 ## Logit bias
 

@@ -61,8 +61,8 @@ The draw picked "The", and the story ended with *"The end."* Right after that th
 100%, the draw picked it, and the engine stopped: as soon as any special token is drawn, the answer is over.
 Before that, `<|im_end|>` never had more than 12% in this story, so the model really waited for a natural ending.
 
-It does not always get there. At the default [temperature](../temperature/) of 0.6, about 85% of stories (300 stories from 100 different orders) end on their
-own. The rest are cut by [max new tokens](../max-new-tokens/), a safety limit on the length of the answer.
+It does not always get there. At the default [temperature](../temperature/) of 0.6, about 85% of stories end on their
+own (measured on 300 stories from 100 different orders). The rest are cut by [max new tokens](../max-new-tokens/), a safety limit on the length of the answer.
 
 ## Where it is in the studio
 

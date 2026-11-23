@@ -21,7 +21,7 @@ four-token phrase that is already written in this story? If yes, that token lose
 [logit](../logits/) for every earlier time the phrase appeared, before the [sampling](../sampling/) draw.
 
 Some repeats are fine. Children's stories say "Once upon a time" and "One day, she" all the time. So the penalty
-knows which phrases are natural: 11,224 four-token phrases that appear at least 1,000 times in TinyStories, the
+knows which phrases are natural: 11,224 four-token phrases that appear at least 1,000 times in [TinyStories](https://huggingface.co/datasets/roneneldan/TinyStories), the
 stories the model was trained on. A repeat of one of them is never penalized. Everything else that repeats is.
 
 More rules, each one found by tracing the invented words the penalty used to cause:

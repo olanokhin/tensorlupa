@@ -22,7 +22,7 @@ description: Цепочка решений, из которых получила
 ## Словарь
 
 Сколько [токенов](../../glossary/token/) должна знать модель? Сетка на примерно 0,6 млн параметров на веб-тексте
-(FineWeb-Edu).
+([FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu)).
 
 <ul class="tr-branches">
 <li><span class="tr-name">2048 токенов</span><span class="tr-val">1,747</span><span class="tr-note">кусочки слишком мелкие</span></li>
@@ -106,14 +106,22 @@ description: Цепочка решений, из которых получила
 ## Данные
 
 <ul class="tr-branches">
-<li><span class="tr-name">веб-текст, 1,06 млрд токенов</span><span class="tr-val">1,567</span><span class="tr-note">слишком сложно для миллиона параметров</span></li>
-<li><span class="tr-name">TinyStories, первая версия</span><span class="tr-val">0,769</span><span class="tr-note">на историях V2</span></li>
+<li><span class="tr-name">веб-текст, 1,06 млрд токенов</span><span class="tr-val">1,567</span><span class="tr-note">оценка на веб-тексте; слишком сложно для миллиона параметров</span></li>
+<li><span class="tr-name">TinyStories, первая версия</span><span class="tr-val">0,769</span><span class="tr-note">оценка на тех же историях V2, что и в следующей строке</span></li>
 <li class="tr-win"><span class="tr-name">TinyStories V2</span><span class="tr-val">0,669</span><span class="tr-note">истории, написанные GPT-4</span></li>
 </ul>
 
 Миллиард токенов это тысяча на параметр, в пятьдесят раз больше обычного правила примерно в двадцать, и модель всё
 равно не смогла вместить веб: грамматику она выучила, а что говорить нет. У детских историй маленький мир, который
 миллион параметров способен описать.
+
+Две строки TinyStories оценены на одних и тех же отложенных историях V2. V2 не просто лучше, она уже: обученная на
+ней модель это специалист. На историях V2 она сильнее (0,669 против 0,769), а на историях первой версии слабее
+(0,933 против 0,765).
+
+Откуда данные: веб-текст это [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu), а обе версии историй лежат в датасете
+[TinyStories](https://huggingface.co/datasets/roneneldan/TinyStories) Ронена Элдана и Юаньчжи Ли: в первой истории написаны GPT-3.5 и GPT-4, в V2
+только GPT-4.
 
 ## Сколько бит на вес
 
@@ -172,8 +180,10 @@ description: Цепочка решений, из которых получила
 <li class="tr-win"><span class="tr-name">дообучение по инструкциям с QAT с первого шага</span><span class="tr-val">150 млн токенов</span><span class="tr-note">900 000 диалогов</span></li>
 </ul>
 
-Второй проход учит модель писать историю с заданными словами в чат-формате Qwen. Все три слова попадали в историю
-в 5,7% историй до него и в 64% после. 4-битная версия теряет около 2% качества по сравнению с 8 битами.
+Это два прохода одного обучения, один за другим, а не два варианта. Второй проход учит модель писать историю с
+заданными словами в чат-формате Qwen. Все три слова попадали в историю в 5,7% историй до него и в 64% после. На
+отложенных ответах модели нужно 0,747 бита на байт с 8-битными весами и 0,762 с 4-битными, то есть на 2% больше. Диалоги взяты из
+[TinyStoriesInstruct](https://huggingface.co/datasets/roneneldan/TinyStoriesInstruct) тех же авторов и переведены в чат-формат Qwen.
 
 ## Logit bias
 

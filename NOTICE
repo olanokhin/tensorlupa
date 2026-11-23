@@ -9,7 +9,9 @@ The micro-qwen3 model follows the Qwen3 architecture; it is trained from scratch
 and contains no Qwen weights.
 
 The model was trained on TinyStories and TinyStoriesInstruct by Ronen Eldan and Yuanzhi Li (2023), released
-under the Community Data License Agreement, Sharing, Version 1.0 (CDLA-Sharing-1.0).
+under the Community Data License Agreement, Sharing, Version 1.0 (CDLA-Sharing-1.0):
+https://huggingface.co/datasets/roneneldan/TinyStories
+https://huggingface.co/datasets/roneneldan/TinyStoriesInstruct
 web/corpus-4grams.bin holds counts of four-token phrases from TinyStories V2; as data derived from that
 dataset it is shared under the same CDLA-Sharing-1.0 license (https://cdla.dev/sharing-1-0/).
 

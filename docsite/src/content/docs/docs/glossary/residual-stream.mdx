@@ -49,8 +49,9 @@ layer 3 gave "be" 53% and left "worry" 43%. The lens shows the raw scores at tem
 numbers differ a little from the final candidates in the studio, which use [temperature](../temperature/) 0.6 and
 [top-k](../top-k/).
 
-The stream also grows as layers add to it. Here its length (the size of the 112-number vector) goes from 1.0 after
-the embedding to 2.0, 2.9 and 4.9 after the three layers.
+The stream also grows as layers add to it. Take its length (the size of the 112-number vector) after the embedding
+as 1.0: after the three layers it is 2.0, 2.9 and 4.9 times that. This is why every block reads the stream through
+[RMSNorm](../rmsnorm/), which brings it back to one scale.
 
 ## Where it is in the studio
 

@@ -9,9 +9,9 @@ The model built into TensorLupa, in two versions of the same trained weights:
 
 - Architecture: Qwen3 (RoPE, grouped-query attention with 4 query / 2 key-value heads, QK-norm, SwiGLU),
   3 layers × 112 dimensions, 4096-token vocabulary, 1,056,656 parameters.
-- Tokenizer: byte-level BPE with Qwen3's splitting rule, trained on TinyStories V2.
+- Tokenizer: byte-level BPE with Qwen3's splitting rule, trained on [TinyStories](https://huggingface.co/datasets/roneneldan/TinyStories) V2.
 - Pretraining: from scratch on TinyStories V2, next-token prediction, 124M tokens.
-- Instruction tuning: 900,000 dialogues from TinyStoriesInstruct in the Qwen chat format, 150M tokens, with
+- Instruction tuning: 900,000 dialogues from [TinyStoriesInstruct](https://huggingface.co/datasets/roneneldan/TinyStoriesInstruct) in the Qwen chat format, 150M tokens, with
   quantization-aware training for the 4-bit format from the first step. The 4-bit version loses about 2% of quality
   against 8 bits (0.762 against 0.747 bits per byte).
 - On an ESP32-S3 the 4-bit version writes about 60 tokens per second in real use (74 in the bare benchmark).
