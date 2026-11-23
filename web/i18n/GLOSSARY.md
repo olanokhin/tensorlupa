@@ -28,7 +28,7 @@ To add a language: add its code to `LANGS` in the source and fill `word` and `ti
 | pre-training | translate |  | предобучение | предобучение | completion |  |
 | fine-tuning | translate |  | дообучение | дообучение | instruct | instruction tuning, supervised fine-tuning (SFT) |
 | transformer | calque |  | трансформер | трансформер | transformer |  |
-| embedding | calque |  | эмбеддинг | эмбеддинг | residual-stream |  |
+| embedding | calque | emb | эмбеддинг | эмбеддинг | residual-stream |  |
 | residual stream | translate |  | остаточный поток | остаточный поток | residual-stream |  |
 | attention | keep | attn | внимание | attention | attention |  |
 | attention head | translate |  | голова | голова attention | attention-head |  |
