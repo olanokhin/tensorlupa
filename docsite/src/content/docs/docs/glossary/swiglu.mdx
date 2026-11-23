@@ -1,0 +1,64 @@
+---
+title: SwiGLU
+description: How the MLP of Qwen3 is built, with a signal, a gate and their product, and how many of the 336 neurons of micro-qwen3 fire at a real step.
+---
+
+**In one sentence:** SwiGLU is the way the [MLP](../mlp/) of each layer is built: the input is expanded twice,
+once as a signal and once as a gate, and the gate decides how much of each signal passes.
+
+## How it works
+
+1. The MLP reads 112 numbers, a normalized copy of the [residual stream](../residual-stream/) (see
+   [RMSNorm](../rmsnorm/)).
+2. They are mixed into 336 numbers, twice, with two different sets of weights. One result is the **gate**, the
+   other is the **signal**.
+3. The gate goes through a smooth switch: a strongly negative number becomes almost zero, a positive one stays
+   almost as it was.
+4. Gate and signal are multiplied, position by position. These 336 products are the **neurons**.
+5. The neurons are mixed back into 112 numbers, and the result is added to the stream.
+
+The smooth switch in step 3 is called SiLU, or Swish, which is where the first half of the name comes from. The
+second half, GLU, stands for "gated linear unit".
+
+## Why a gate
+
+In the older design a neuron had one input and a simple rule: pass if positive, block if negative. Here the
+decision "does this neuron fire" and the amount "how strongly" come from two separate looks at the same input. The
+model can detect a situation with one and choose the response with the other. In practice this gives better
+quality for the same number of weights.
+
+## A real step
+
+The demo story is about to write " saw" after " and". At that step most neurons are nearly silent, and the deeper
+the layer, the more of them take part:
+
+| Layer | Neurons above 0.1, out of 336 | Strongest |
+| --- | --- | --- |
+| 1 | 14 | 0.47 |
+| 2 | 56 | 0.58 |
+| 3 | 84 | 0.68 |
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=60&q=8&mode=lab" target="_blank" rel="noopener">Open this step in the studio</a>
+
+## Where it is in the studio
+
+In the Lab, the large plates in the **Model** window are the neurons, 336 tiles each. Point at one to see what that
+neuron added to the written token and which words it pushes. The line under the model shows SwiGLU as the middle
+step of the MLP.
+
+## In micro-qwen3
+
+- 112 numbers in, 336 neurons, 112 numbers out, in each of 3 layers.
+- Three sets of weights per layer: gate, signal and the way back, 112 × 336 each.
+- The same construction as in Qwen3.
+
+## A bit of history
+
+The family of gated variants, SwiGLU among them, was compared by
+[Shazeer in 2020](https://arxiv.org/abs/2002.05202). It is now the usual MLP of open language models.
+
+## Related
+
+- [MLP and neurons](../mlp/): what single neurons do.
+- [Residual stream](../residual-stream/): where the result is added.
+- [Logit lens](../logit-lens/): how to read which words a neuron pushes.

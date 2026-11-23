@@ -1,0 +1,61 @@
+---
+title: RoPE
+description: Rotary position embedding, the way Qwen3 tells attention about word order by rotating queries and keys, explained on the 64 numbers of a micro-qwen3 head.
+---
+
+**In one sentence:** RoPE tells attention where each token stands by rotating its query and key by an angle that
+depends on the position, so a head can see how far apart two tokens are.
+
+## The problem it solves
+
+[Attention](../attention/) compares the current [token](../token/) with earlier ones, but the comparison itself
+knows nothing about order. Without extra help, "the dog bit the man" and "the man bit the dog" would look the same
+to it. The model needs to know positions.
+
+Early transformers added a separate list of numbers for each position to the token's embedding. RoPE does not add
+anything to the [residual stream](../residual-stream/). It works inside attention, at the moment of comparison.
+
+## How it works
+
+1. A head's query is a list of 64 numbers. Split it into 32 pairs.
+2. Treat each pair as a point on a plane and turn it by an angle. The angle is the token's position multiplied by
+   the pair's own speed: the first pairs turn fast, the last ones very slowly.
+3. Do the same with every key.
+4. Compare query and key as usual.
+
+When two rotated lists are compared, only the difference of their angles matters. So the match between a query at
+position 60 and a key at position 57 depends on the distance, 3 tokens, and not on the numbers 60 and 57. A head
+that learned "look at the previous token" does it the same way at the start of a story and at its end.
+
+The fast pairs tell near positions apart, the slow ones far positions, like the hands of a clock.
+
+## What it does not touch
+
+- The values, the content that attention brings back, are not rotated. Position decides whom to look at, not what
+  is taken.
+- The residual stream carries no position marks.
+- RoPE has no learned weights: the angles are fixed in advance.
+
+## Where it is in the studio
+
+In the Lab, point at an attention plate in the **Model** window. The line under the model lists the steps inside
+it: RoPE comes after [QK-norm](../qk-norm/) and right before the attention weights.
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=60&q=8&mode=lab" target="_blank" rel="noopener">Open this step in the studio</a>
+
+## In micro-qwen3
+
+- 4 heads of 64 numbers each, 32 rotating pairs per head.
+- Applied to queries and keys in every layer, the same way as in Qwen3.
+- The table of angles is computed once for all 256 positions of the context.
+
+## A bit of history
+
+RoPE was proposed by [Su and colleagues in 2021](https://arxiv.org/abs/2104.09864) and became the usual choice for
+open language models, including the Qwen family.
+
+## Related
+
+- [Attention](../attention/): the comparison RoPE works inside.
+- [Attention head](../attention-head/): heads that look at the previous token rely on it.
+- [QK-norm](../qk-norm/): the step right before RoPE.

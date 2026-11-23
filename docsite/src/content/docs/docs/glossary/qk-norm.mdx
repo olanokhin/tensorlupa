@@ -1,0 +1,47 @@
+---
+title: QK-norm
+description: Why Qwen3 normalizes queries and keys before attention compares them, and where this happens in micro-qwen3.
+---
+
+**In one sentence:** QK-norm brings every query and every key to one scale before they are compared, so the
+attention scores stay in a steady range.
+
+## The problem it solves
+
+[Attention](../attention/) scores a pair of tokens by multiplying a query by a key. That product depends on two
+things at once: how well the directions match, and how long the two lists are. A key that happens to be long gets
+a high score from everyone, whether it fits or not. And when scores grow large, the weights after softmax collapse
+onto one token and stop reacting to anything else.
+
+## How it works
+
+1. Each head gets its query, and each key-value head its key, as a list of 64 numbers.
+2. Each list goes through [RMSNorm](../rmsnorm/): divided by its own loudness, then multiplied by learned weights.
+3. Only then come [RoPE](../rope/) and the comparison.
+
+After this the score mostly says how well the directions match, which is what attention is supposed to measure.
+
+## Where it is in the studio
+
+In the Lab, point at an attention plate in the **Model** window. In the line under the model QK-norm stands
+between "Q, K, V" and RoPE.
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=60&q=8&mode=lab" target="_blank" rel="noopener">Open this step in the studio</a>
+
+## In micro-qwen3
+
+- One set of 64 weights for queries and one for keys in every layer, shared by the heads of that layer.
+- 4 queries and 2 keys are normalized at each step of each layer (see [GQA](../grouped-query-attention/)).
+- Values are left as they are.
+- The same step is part of the Qwen3 block.
+
+## A bit of history
+
+Normalizing queries and keys was proposed by [Henry and colleagues in 2020](https://arxiv.org/abs/2010.04245).
+Their version used a plain length normalization with a learned scale. Qwen3 uses RMSNorm for the same purpose.
+
+## Related
+
+- [RMSNorm](../rmsnorm/): the operation itself.
+- [Attention](../attention/): where queries and keys come from.
+- [RoPE](../rope/): the next step.

@@ -226,10 +226,8 @@ export class View3D {
       if (kind === 'sub') { o.line = document.createElementNS('http://www.w3.org/2000/svg', 'line'); this.capLines.appendChild(o.line); }
       this.labels.push(o); };
     const under = (p) => () => new THREE.Vector3(p.x, -p.height / 2 - 0.06, 0);
-    cap('sub', tx('m.sub.embed'), under(this.res[0]));
+    // Подписей под пластинами нет: названия блоков уже стоят в линии счёта наверху. Низ отдан формуле слоя (buildFormula).
     for (let l = 0; l < L; l++) {
-      cap('sub', tx('m.sub.heads'), under(this.heads[l]), 'v3-lilac', l); cap('sub', tx('m.sub.mid'), under(this.mid[l]), '', l);
-      cap('sub', tx('m.sub.mlp', { n: I }), under(this.mlp[l]), '', l); cap('sub', tx('m.sub.stream'), under(this.res[l + 1]), '', l);
       cap('title', tx('m.layer', { n: l + 1 }), () => new THREE.Vector3((this.heads[l].x + this.res[l + 1].x) / 2, Math.max(this.mlp[l].height, this.res[l + 1].height) / 2 + 0.25, 0));
     }
     // базовые x для ползунка «раздвинуть»: пластины и подписи
@@ -251,6 +249,10 @@ export class View3D {
     this.outCap.addEventListener('click', (e) => { const a = e.target.closest('a[data-tok]'); if (a && this.step) { e.stopPropagation(); this.trackTok(Number(a.dataset.tok)); } });
     // карточка-пояснение в углу: как читать сцену; что за пластина под курсором; что значат столбики и три подписи
     this.info = document.createElement('div'); this.info.className = 'v3-info'; this.caps.appendChild(this.info); this.infoKey = null;
+    this.buildFormula();
+    // «Читать в Docs»: обычный щелчок открывает статью во вкладке Docs студии, с Ctrl/⌘/Shift — как обычная ссылка
+    this.info.addEventListener('click', (e) => { const a = e.target.closest('a.v3-info-doc'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault(); window.dispatchEvent(new CustomEvent('mq-open-doc', { detail: a.href })); });
     this.ray = new THREE.Raycaster(); this.mouse = new THREE.Vector2();
     const el = this.renderer.domElement;
     let down = null;
@@ -281,7 +283,7 @@ export class View3D {
       this.setTip(plate, idx);
     } else { this.cursor.visible = false; this.tip.visible = false; }
     if (click) {
-      this.sel = plate ? { plate, idx } : null;
+      this.sel = plate ? { plate, idx } : null; this.opSel = null;
       this.wires.focus = plate ? plate.tag : null;
       for (const p of this.plates) {
         const on = p === plate;
@@ -298,6 +300,46 @@ export class View3D {
   // ЭСКИЗ M2. Линия счёта под моделью: как написанный токен набирал свою оценку вдоль остаточного потока.
   // Под каждой пластиной потока — сколько набрано к этой точке (верхняя строка, соединена линией: это «хребет»);
   // под каждым блоком — сколько он добавил (нижняя строка: внимание и MLP ответвляются от потока и возвращаются).
+  // Строка под моделью: что происходит ВНУТРИ одной пластины — той, на которую навели или которую выбрали (строка
+  // остаётся от последней пластины, чтобы до неё можно было дойти мышью). Шаги идут по порядку вычисления. У RMSNorm,
+  // RoPE, QK-norm, GQA нет своих пластин, поэтому на модели они ничего не подсвечивают: шаг объясняется в карточке.
+  // Пробовали и отвергли: (1) формулу всей модели с подсветкой пластин трёх слоёв — пять шагов внимания светили одно
+  // и то же; (2) формулу всей модели, где горят шаги пластины в контексте — большая формула путала, что считается здесь.
+  buildFormula() {
+    // id → [подпись, статья Docs]
+    this.ops = { embed: [tx('m.op.embed'), 'residual-stream'], norm: ['RMSNorm', 'rmsnorm'], gqa: ['Q, K, V · GQA', 'grouped-query-attention'], qk: ['QK-norm', 'qk-norm'],
+      rope: ['RoPE', 'rope'], attn: [tx('m.op.attn'), 'attention'], add: [tx('m.op.add'), 'residual-stream'], swiglu: ['SwiGLU', 'swiglu'], final: [tx('m.op.final'), 'logits'] };
+    this.opSteps = { embed: ['embed'], heads: ['norm', 'gqa', 'qk', 'rope', 'attn', 'add'], mid: ['add'], mlp: ['norm', 'swiglu', 'add'], resid: ['add'], last: ['add', 'final'] };
+    this.formula = document.createElement('div'); this.formula.className = 'v3-formula'; this.caps.appendChild(this.formula);
+    this.opHov = null; this.opSel = null; this.opKey = null; this.fPlate = null;
+    this.formula.addEventListener('pointerover', (e) => { const a = e.target.closest('a[data-op]'); this.opHov = a ? a.dataset.op : null; });
+    this.formula.addEventListener('pointerleave', () => { this.opHov = null; });
+    this.formula.addEventListener('click', (e) => { const a = e.target.closest('a[data-op]'); if (!a) return; this.opSel = this.opSel === a.dataset.op ? null : a.dataset.op; });
+    this.docs = new Set();                             // какие статьи Docs уже написаны (список пишет сборка Docs)
+    fetch('/docs/pages.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.glossary) { this.docs = new Set(j.glossary); this.infoKey = null; } }).catch(() => {});
+  }
+  // раз в кадр, но DOM и материалы трогаем только когда что-то изменилось
+  syncFormula() {
+    const cur = this.sel ? this.sel.plate : this.hovPlate;
+    if (cur && cur !== this.fPlate) { this.fPlate = cur; this.opSel = null; this.opHov = null; }
+    const pl = this.fPlate, opId = this.opHov || this.opSel || '';
+    const key = (pl ? pl.tag : '') + '|' + opId + '|' + (this.sel ? this.sel.plate.tag : '') + '|' + (cur ? 1 : 0);
+    if (key === this.opKey) return; this.opKey = key; this.infoKey = null;
+    const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'), L = this.e.info.layers;
+    if (!pl) this.formula.innerHTML = `<small>${esc(tx('m.op.idle'))}</small>`;
+    else {
+      const kind = pl.kind === 'resid' ? (pl.layer === 0 ? 'embed' : pl.layer === L ? 'last' : 'resid') : pl.kind;
+      this.formula.innerHTML = `<small>${esc(tx('m.op.inside', { name: pl.name }))}</small> ` +
+        this.opSteps[kind].map((id) => `<a data-op="${id}" class="${id === opId ? 'on' : ''}">${esc(this.ops[id][0])}</a>`).join(' <i>→</i> ');
+    }
+    // рамка: выбранная пластина; пока мышь на строке — пластина, о которой строка
+    const mark = this.sel ? this.sel.plate : (!cur && this.opHov ? pl : null);
+    this.opPlate = !cur && this.opHov ? pl : null;
+    for (const p of this.plates) { const on = p === mark, sel = this.sel && p === this.sel.plate;
+      p.frame.material.color.set(on ? 0xf2b33d : RIM); p.frame.material.opacity = on ? 1 : 0.55;
+      p.glass.material.color.set(sel ? 0xf2c46a : GLASS); p.glass.material.opacity = sel ? 0.1 : 0.075; }
+  }
+
   buildScore() {
     for (const o of this.score || []) { o.el.remove(); o.line.remove(); if (o.nameEl) o.nameEl.remove(); if (o.el2) o.el2.remove(); }
     this.score = [];
@@ -683,8 +725,16 @@ export class View3D {
   // текст карточки-пояснения: выбранная пластина важнее наведённой; без них — как читать сцену
   updateInfo() {
     const pl = this.sel ? this.sel.plate : this.hovPlate, key = (this.sel ? 's' : 'h') + (pl ? pl.tag : '-') + ':' + (this.step ? this.step.pos + ':' + this.tok : '');
-    if (key === this.infoKey) return; this.infoKey = key;
+    const opId = this.opHov || this.opSel || '';
+    if (key + opId === this.infoKey) return; this.infoKey = key + opId;
     const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    if (opId) {                                      // операция из формулы слоя: что это и зачем, со ссылкой на статью
+      const op = { slug: this.ops[opId][1], text: opId }, lang = document.documentElement.lang || 'en', I = this.e.info;
+      const link = this.docs.has(op.slug) ? `<a class="gloss-more v3-info-doc" target="_blank" rel="noopener" href="/${lang === 'en' ? '' : lang + '/'}docs/glossary/${op.slug}/">${esc(tx('gl.more'))}</a>` : '';
+      this.info.innerHTML = `<b>${esc(tx('m.op.' + op.text + '.h'))}</b><p>${esc(tx('m.op.' + op.text + '.t', { d: I.dim, n: I.inter, h: I.heads, kv: I.kvHeads, v: I.vocab }))}</p>` +
+        (this.opSel === opId ? link : `<p class="v3-info-hint">${esc(tx('m.op.pin'))}</p>`);
+      return;
+    }
     if (!pl) {                                       // ничего не выбрано: история этого шага настоящими токенами
       if (!this.step) { this.info.innerHTML = `<b>${esc(tx('m.info.idle.h'))}</b>`; return; }
       const st = this.step, L = this.e.info.layers, d = this.e.info.dim, T = (t) => `<i>«${esc(show(this.e.tokenText[t]))}»</i>`;
@@ -739,7 +789,8 @@ export class View3D {
 
   placeCaps() {
     const w = this.box.clientWidth, h = this.box.clientHeight; if (!w || !h) return;
-    this.updateInfo();
+    this.syncFormula(); this.updateInfo();
+    this.formula.style.right = (this.info.offsetWidth + 22) + 'px';
     this.caps.classList.toggle('v3-narrow', w < 620);   // узкое окно: в карточке только название, без абзацев
     const v = new THREE.Vector3(), items = [], titles = [];
     // плавающие подписи: подсказка — справа-сверху от плитки под курсором; подписи столбиков — над своим якорем
@@ -764,7 +815,7 @@ export class View3D {
         const top0 = (this.laneBottom || 0) + 8, iw = this.info.offsetWidth + 14;
         if (!this.info.classList.contains('v3-tight')) this.infoFull = this.info.offsetHeight + 16;
         if (!el.classList.contains('v3-compact')) this.outFull = eh;
-        const fits = top0 + (this.outFull || eh) + (this.infoFull || 0) <= h, clash = px + ew > w - iw, focused = !!(this.sel || this.hovPlate);
+        const fits = top0 + (this.outFull || eh) + (this.infoFull || 0) <= h, clash = px + ew > w - iw, focused = !!(this.sel || this.hovPlate || this.opHov || this.opSel);
         el.classList.toggle('v3-compact', clash && !fits && focused);
         this.info.classList.toggle('v3-tight', clash && !fits && !focused);
         py = Math.max(py, top0);
@@ -827,7 +878,7 @@ export class View3D {
     for (let i2 = 0; i2 < n; i2++) {
       const o = sc[i2], x0 = xs[i2];
       o.el.style.display = ''; o.line.style.display = '';
-      const hot = o.plate === focus; if (hot !== o.hot) { o.hot = hot; o.el.classList.toggle('on', hot); o.line.classList.toggle('on', hot); if (o.el2) o.el2.classList.toggle('on', hot); }
+      const hot = o.plate === focus || (!focus && o.plate === this.opPlate); if (hot !== o.hot) { o.hot = hot; o.el.classList.toggle('on', hot); o.line.classList.toggle('on', hot); if (o.el2) o.el2.classList.toggle('on', hot); }
       const cx = x0 + o.w / 2;
       o.el.style.transform = `translate(${Math.round(cx - o.w1 / 2)}px, ${Math.round(chainY)}px)`;
       if (o.el2) { o.el2.style.display = ''; o.el2.style.transform = `translate(${Math.round(cx - o.w2 / 2)}px, ${Math.round(chainY + 21)}px)`; }

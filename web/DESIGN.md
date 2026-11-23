@@ -98,6 +98,21 @@ Dropdown menus are separate glass tiles on the top level of the page. The entran
 never on their container: while a container is translucent or scaled, the tiles inside cannot blur the page behind
 them, and the blur would pop in at the end.
 
+## Links to Docs
+
+Every place in the studio that points to a Docs article does it the same way: a glossary tooltip, the card of a
+step in the 3D model view, anything added later.
+
+- **Look:** the class `.gloss-more`. Amber `#f2b33d`, weight 600, on its own line under the explanation, underline
+  only on hover. Do not restyle it per place.
+- **Text:** the key `gl.more` ("Read more in Docs"). Do not write a new wording for a new place.
+- **Behaviour:** a plain click opens the article in the studio's own Docs tab next to the story (`openDoc(href)` in
+  `editor.js`; from another module, dispatch `mq-open-doc` on `window` with the address). With Ctrl, ⌘ or Shift it
+  opens as an ordinary link in a new browser tab, so keep `href`, `target="_blank"` and `rel="noopener"` on it.
+- **Address:** `/docs/glossary/<slug>/`, with the language prefix (`/ru/…`) for other languages.
+- **Only for written articles:** show the link only if the slug is in `/docs/pages.json`, which the Docs build
+  writes. A term without an article gets the explanation and no link.
+
 ## Glass rim
 
 | Token | Value |

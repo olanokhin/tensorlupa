@@ -54,6 +54,16 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Inside a Qwen3 layer', translations: { ru: 'Внутри слоя Qwen3' },
+          items: [
+            { slug: 'docs/glossary/rmsnorm' },
+            { slug: 'docs/glossary/grouped-query-attention' },
+            { slug: 'docs/glossary/qk-norm' },
+            { slug: 'docs/glossary/rope' },
+            { slug: 'docs/glossary/swiglu' },
+          ],
+        },
+        {
           label: 'Going deeper', translations: { ru: 'Глубже' },
           items: [
             { slug: 'docs/glossary/attention-head' },

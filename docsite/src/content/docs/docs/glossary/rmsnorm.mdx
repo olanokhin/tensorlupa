@@ -1,0 +1,72 @@
+---
+title: RMSNorm
+description: The normalization Qwen3 puts in front of every block, why a model needs it, and how much the residual stream grows in micro-qwen3 without it being visible to the blocks.
+---
+
+**In one sentence:** RMSNorm brings a list of numbers to one fixed scale before a block reads it, so the block
+sees the same kind of input at any depth of the model.
+
+## The problem it solves
+
+Every block of a [transformer](../transformer/) adds its answer on top of the
+[residual stream](../residual-stream/). Nothing is ever taken away, so the numbers in the stream keep growing
+from layer to layer. A block that had to read them raw would see quiet input in the first layer and loud input in
+the last, and its weights would have to work for both.
+
+## How it works
+
+1. Square the numbers, take their mean, take the square root. This is the root mean square, the "RMS": one number
+   that says how loud the list is.
+2. Divide every number by it. Now the list has loudness 1, whatever it was before.
+3. Multiply every number by its own learned weight, so the model can still make some positions matter more.
+
+There is no subtraction of the mean and no bias, which is what makes it simpler and cheaper than the older
+LayerNorm.
+
+## Where it sits: before the block
+
+Qwen3 uses the "pre-norm" layout. The block reads a normalized copy of the stream, and its answer is added to the
+original stream, which is left as it was:
+
+1. normalized copy → [attention](../attention/) → answer added to the stream
+2. normalized copy → [MLP](../mlp/) → answer added to the stream
+
+One more RMSNorm stands after the last layer, in front of the [logits](../logits/).
+
+## Real numbers
+
+In the demo story (words dragon, cookie, school, seed 1111) the loudness of the stream, averaged over all 161
+steps, grows more than five times on the way through the model:
+
+| Point in the stream | RMS |
+| --- | --- |
+| after the embedding | 0.09 |
+| after layer 1 | 0.20 |
+| after layer 2 | 0.34 |
+| after layer 3 | 0.52 |
+
+Each block still reads input of loudness 1, because RMSNorm stands in front of it.
+
+## Where it is in the studio
+
+In the Lab, point at an attention or MLP plate in the **Model** window. The line under the model lists what
+happens inside that plate, and RMSNorm is its first step.
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=60&q=8&mode=lab" target="_blank" rel="noopener">Open this step in the studio</a>
+
+## In micro-qwen3
+
+- Seven RMSNorms over the stream: two per layer and one before the output, each with 112 learned weights.
+- Two more per layer inside attention, for queries and keys: see [QK-norm](../qk-norm/).
+- The same placement as in Qwen3.
+
+## A bit of history
+
+RMSNorm was proposed by [Zhang and Sennrich in 2019](https://arxiv.org/abs/1910.07467) as a cheaper replacement
+for LayerNorm. Most current open language models use it.
+
+## Related
+
+- [Residual stream](../residual-stream/): what gets normalized.
+- [QK-norm](../qk-norm/): the same operation applied to queries and keys.
+- [Transformer](../transformer/): where the blocks sit.

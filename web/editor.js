@@ -620,6 +620,8 @@ const DOCS_HOME = `/${lang === 'en' ? '' : lang + '/'}docs/`;
 S.docs = new DocPane($('view-docs'), { t, home: DOCS_HOME, onStudio: (href) => openStudioLink(href) });
 if (S.split.isOpen(2)) S.docs.load(S.docs.last() || DOCS_HOME, { push: false });
 function openDoc(href) { S.split.open(2); S.docs.load(href); }
+// ссылки на статьи из 3D-вида (карточка шага) открываются так же: во вкладке Docs рядом, а не в новой вкладке браузера
+window.addEventListener('mq-open-doc', (e) => openDoc(e.detail));
 // ссылка «открыть этот шаг» из статьи: без перезагрузки страницы. Ползунки плавно едут к значениям ссылки
 // (чего в ссылке нет — к значениям по умолчанию, иначе шаг был бы другим), затем пересчёт с тем же seed (десятки мс)
 // и курсор на шаг. Если настройки уже те же — сразу на шаг, без пересчёта. Вкладка Docs остаётся рядом.

@@ -935,7 +935,7 @@ a.ab-link:hover { background: rgba(255, 255, 255, 0.16); }
 .ab-link small { font-size: var(--fs-1); color: var(--ink-3); }
 .ab-foot { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px !important; font-size: 12px; color: var(--ink-3); }
 /* тихая подпись на 3D-сцене — видна на каждом скриншоте, но не мешает */
-.sig { position: absolute; left: 12px; bottom: 6px; z-index: 5; pointer-events: none; font: 11px var(--ui); color: var(--ink-3); opacity: 0.55; letter-spacing: 0.01em; }
+.sig { position: absolute; left: 12px; top: 8px; z-index: 5; pointer-events: none; font: 11px var(--ui); color: var(--ink-3); opacity: 0.55; letter-spacing: 0.01em; }
 /* «другая история» — круглая стеклянная кнопка рядом с Generate */
 .order .reroll { width: var(--ctl-h) !important; height: var(--ctl-h) !important; flex: none; opacity: 0.85; }
 .order .reroll:hover { opacity: 1; }
@@ -1561,3 +1561,14 @@ body[data-mode="lab"] #top .tour-btn { display: inline-flex !important; }
 /* вторая строка линии счёта: выбранный кандидат под написанным словом */
 .v3-cap.v3-score.v3-alt.v3-run { color: var(--ink-2); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12); }
 .v3-cap.v3-score-what b.v3-alt { color: var(--ink-1); line-height: 21px; }
+/* формула слоя под моделью: операции Qwen3, по которым идёт поток */
+.v3-formula { position: absolute; left: 10px; bottom: 8px; pointer-events: auto; font: var(--fs-1)/18px var(--mono); color: var(--ink-3); }
+.v3-formula small { font: var(--fs-1)/18px var(--ui); }
+.v3-formula i { font-style: normal; opacity: 0.6; }
+.v3-formula .v3-f-layer { color: var(--ink-2); }
+.v3-formula a { color: var(--ink-2); cursor: pointer; border-radius: 4px; padding: 0 3px; }
+.v3-formula a:hover, .v3-formula a.hot { color: var(--ink-1); background: rgba(255, 255, 255, 0.12); }
+.v3-formula a.on { color: #ffe08a; background: rgba(242, 179, 61, 0.18); }
+.v3-info a.v3-info-doc { pointer-events: auto; }   /* вид — общий .gloss-more, как в подсказках терминов */
+.v3-narrow .v3-formula { display: none; }
+.v3-formula a { white-space: nowrap; display: inline-block; }

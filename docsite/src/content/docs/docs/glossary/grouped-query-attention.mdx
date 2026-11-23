@@ -1,0 +1,60 @@
+---
+title: Grouped-query attention (GQA)
+description: How Qwen3 lets several attention heads share one set of keys and values, what it saves in the KV cache, and the exact sizes in micro-qwen3.
+---
+
+**In one sentence:** in grouped-query attention several heads ask their own questions but share one set of keys
+and values, which makes the memory of past tokens smaller.
+
+## The problem it solves
+
+For every earlier [token](../token/) the model keeps its keys and values, so that it does not have to compute them
+again at each step. This store is the KV cache, and it grows with every token of the story. In ordinary attention
+each [head](../attention-head/) has its own keys and values, so the cache holds one set per head, per layer, per
+token. On a microcontroller, and on a large model with a long context, this is the memory that runs out first.
+
+## How it works
+
+Heads are put into groups. Every head still has its own query, its own way of asking. The keys and values are
+computed once per group, and the heads of a group read the same ones.
+
+Different queries over the same keys still give different attention weights, so the heads of a group can look at
+different tokens. What they share is the description of each past token, not the decision whom to look at.
+
+## The sizes in micro-qwen3
+
+| | Ordinary attention | micro-qwen3 |
+| --- | --- | --- |
+| Query heads | 4 | 4 |
+| Sets of keys and values | 4 | 2 |
+| Numbers kept per token, per layer | 256 + 256 | 128 + 128 |
+| Whole cache, 3 layers × 256 tokens | 393,216 numbers | 196,608 numbers |
+
+Heads 1 and 2 read the first set, heads 3 and 4 the second. Qwen3-0.6B has the same two-to-one ratio: 16 heads
+and 8 sets.
+
+## Where it is in the studio
+
+In the Lab, point at an attention plate in the **Model** window: the step "Q, K, V · GQA" in the line under the
+model is where queries, keys and values are made. The **Attention** window shows the cache filling up token by
+token.
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=60&q=8&mode=lab" target="_blank" rel="noopener">Open this step in the studio</a>
+
+## In micro-qwen3
+
+- 4 heads of 64 numbers, 2 key-value heads.
+- The cache is half the size it would be with ordinary attention.
+- The same scheme as in Qwen3, at a smaller scale.
+
+## A bit of history
+
+Grouped-query attention was described by [Ainslie and colleagues in 2023](https://arxiv.org/abs/2305.13245) as
+the middle ground between ordinary multi-head attention and multi-query attention, where all heads share a single
+set.
+
+## Related
+
+- [Attention](../attention/): queries, keys and values.
+- [Attention head](../attention-head/): what one head does.
+- [QK-norm](../qk-norm/): the next step after queries and keys are made.
