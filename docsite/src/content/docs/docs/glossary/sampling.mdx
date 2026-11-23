@@ -64,10 +64,10 @@ different story.
 
 ## In micro-qwen3
 
-The studio uses temperature 0.6, top-k 40 and [min-p](../min-p/) 0.02 by default. We measured temperature and top-k on 200 story orders: top-k barely
-matters, because after instruction tuning the real choice is among 3 to 5 tokens anyway, while temperature does
-matter, and 0.6 gives the best balance of fewer repeats and stories that end on their own (see
-[temperature](../temperature/)).
+The studio uses temperature 0.6, top-k 40 and [min-p](../min-p/) 0.02 by default. We measured temperature and
+top-k on 300 stories each, from orders the model had never seen: top-k barely matters from 20 up, because after
+instruction tuning the real choice is among 3 to 5 tokens anyway, while temperature does matter, and 0.6 is the
+highest one at which invented words stay rare (see [temperature](../temperature/)).
 
 ## A bit of history
 

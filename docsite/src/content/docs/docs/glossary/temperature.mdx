@@ -51,18 +51,25 @@ Then drag the temperature slider and watch the bars under "The model chose betwe
 
 ## In micro-qwen3
 
-We picked 0.6 by measuring 200 story orders of three words each:
+We picked 0.6 by measuring 300 stories at each temperature (100 orders of three words the model had never seen,
+3 seeds each), with the studio defaults: 8-bit weights, top-k 40, [min-p](../min-p/) 0.02 and the [repetition
+penalty](../repetition-penalty/) on:
 
-| Temperature | All three words used | Repeated 4-word phrases | Story ends on its own |
-| --- | --- | --- | --- |
-| 0.5 | 99.5% | 7.2% | 87.5% |
-| **0.6** | **100%** | **4.5%** | **87.0%** |
-| 0.7 | 98.0% | 4.0% | 82.0% |
-| 0.8 | 99.5% | 2.0% | 82.5% |
-| 1.0 | 99.0% | 0.7% | 81.5% |
+| Temperature | Requested words used | Stories with an invented word | Story ends on its own | Diversity |
+| --- | --- | --- | --- | --- |
+| 0.5 | 99.7% | 1.0% | 84% | 0.707 |
+| **0.6** | **99.8%** | **1.0%** | **85%** | **0.730** |
+| 0.7 | 99.6% | 4.0% | 86% | 0.757 |
+| 0.8 | 99.8% | 3.7% | 80% | 0.787 |
+| 1.0 | 99.9% | 13.7% | 77% | 0.833 |
 
-From 0.5 to 0.6 repetition drops by more than a third, while stories still end cleanly as often. Above 0.7 the
-model starts to make up words and finishes on its own less often.
+"Diversity" is the share of different four-word phrases across all 300 stories. 0.6 is the highest temperature
+at which invented words stay rare: one step up, at 0.7, four times as many stories have one, and at 1.0 it is
+every seventh story. Going down to 0.5 buys nothing and makes the stories more alike.
+
+Repetition used to be part of this choice: without the repetition penalty, 22% of stories loop at 0.5, 13% at 0.6
+and none at 1.0. With the penalty on, loops stay at 0 to 1% at every temperature, so the choice now rests on
+invented words and diversity.
 
 ## A bit of history
 

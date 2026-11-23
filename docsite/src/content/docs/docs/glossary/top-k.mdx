@@ -62,11 +62,25 @@ Drag top-k down to 1 and back up to 40, and watch the story switch between "very
 
 ## In micro-qwen3
 
-We measured top-k from 10 to 64 on 200 story orders, and it barely mattered: after [instruction
-tuning](../instruct/) the real choice at a step is among 3 to 5 tokens anyway, so the tail is almost empty.
-Temperature matters much more. Top-k 40 alone is a weak safety net, though: a draw from the tail is rare at each
-step but not over a whole story, and it is how invented words such as "Byican" begin. The studio adds
-[min-p](../min-p/) 0.02 after top-k, which removes the tail relative to the favourite.
+We measured top-k 10, 20, 40 and 64 on 300 stories each (100 orders of three words the model had never seen,
+3 seeds each), with the studio defaults: 8-bit weights, [temperature](../temperature/) 0.6, [min-p](../min-p/)
+0.02 and the [repetition penalty](../repetition-penalty/) on:
+
+| Top-k | Requested words used | Stories with an invented word | Story ends on its own | Diversity |
+| --- | --- | --- | --- | --- |
+| 10 | 99.7% | 3.3% | 82% | 0.731 |
+| 20 | 99.9% | 1.0% | 83% | 0.730 |
+| **40** | **99.8%** | **1.0%** | **85%** | **0.730** |
+| 64 | 99.8% | 1.0% | 84% | 0.729 |
+
+From 20 to 64 it barely matters: after [instruction tuning](../instruct/) the real choice at a step is among 3 to
+5 tokens anyway, and min-p already removes the tail that top-k would cut. At top-k 10 more stories had an invented
+word, 10 against 3 out of 300; that is too few stories to say that a tight top-k does harm, but it clearly does
+not help. Temperature matters much more.
+
+Top-k 40 alone is a weak safety net, though: a draw from the tail is rare at each step but not over a whole story,
+and it is how invented words such as "Byican" begin. Without min-p, 2.7% of stories have an invented word instead
+of 1.0%.
 
 ## A bit of history
 

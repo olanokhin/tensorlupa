@@ -46,6 +46,10 @@ How many of the requested words made it into the story, on test orders of three 
 The last row is a decoding rule on top of the model: the studio raises the scores of requested words that have
 not appeared yet, more and more while they wait. You can switch it off in the Lab and see the model on its own.
 
+These three numbers come from the time the rule was being built: 200 test orders, 4-bit weights, plain sampling.
+With today's studio defaults (8-bit weights, [repetition penalty](../repetition-penalty/), [min-p](../min-p/)) the
+last row is 99.8% on 300 stories from orders the model had never seen.
+
 ## Where it is in the studio
 
 ![Instruct mode: the mode switch, the words field and the story](../../../../assets/instruct-studio.webp)
