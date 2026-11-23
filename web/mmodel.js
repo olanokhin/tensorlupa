@@ -1,8 +1,11 @@
 // TensorLupa — Copyright 2026 Alex Anokhin — Apache License 2.0 (LICENSE, NOTICE)
-// Вкладка Model на телефоне: остаточный поток сверху вниз, без 3D. Те же числа, что в цепочке счёта над 3D-моделью
-// на большом экране (contrib.js): счёт слова после эмбеддинга, затем у каждого блока его вклад и счёт после него.
-// Строка блока раскрывается: шаги внутри блока (RMSNorm, GQA, QK-norm, RoPE…), пояснение и ссылка в Docs.
-// Внизу — что модель написала и между чем выбирала; нажатие на кандидата показывает его счёт вторым числом.
+// Вкладка Model на телефоне: модель одной строкой слева направо, без 3D. Сверху — что вошло и что модель написала;
+// под ними конвейер: эмбеддинг и три слоя, в каждом слое attention и MLP. Блок нарисован ступенькой: откуда и докуда
+// он сдвинул счёт написанного слова (янтарный — вверх, лиловый — вниз), так что строка показывает сразу и устройство
+// модели, и то, какой блок решил дело. Под ступеньками — счёт после каждого блока. Числа те же, что в цепочке счёта
+// над 3D-моделью на большом экране (contrib.js). Нажатие на блок раскрывает под строкой его шаги (RMSNorm, GQA,
+// QK-norm, RoPE…), у attention — вклад каждой головы, и ссылку в Docs.
+// Счёт других кандидатов здесь не показывается: на телефоне вторая строка чисел только шумит.
 import { t as tx } from './i18n.js';
 import { scoreChain, headPart } from './contrib.js';
 
@@ -16,10 +19,10 @@ const OPS = () => ({ embed: [tx('m.op.embed'), 'residual-stream'], norm: ['RMSNo
 const STEPS = { embed: ['embed'], attn: ['norm', 'gqa', 'qk', 'rope', 'attn', 'add'], mlp: ['norm', 'swiglu', 'add'], out: ['final'] };
 
 export class MModel {
-  // cb.track(tok | null) — следить за кандидатом; cb.head(layer, head) — выбрана голова; cb.doc(href) — открыть статью
+  // cb.head({layer, head} | null) — выбрана голова; cb.doc(href) — открыть статью
   constructor(host, engine, cb = {}) {
     this.host = host; this.e = engine; this.cb = cb; this.ops = OPS(); this.open = null; this.op = null; this.head = null; this.docs = new Set();
-    host.classList.add('mm');
+    host.classList.add('mp');
     fetch('/docs/pages.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.glossary) { this.docs = new Set(j.glossary); this.draw(); } }).catch(() => {});
     host.addEventListener('click', (e) => {
       const a = e.target.closest('a.gloss-more');
@@ -27,45 +30,48 @@ export class MModel {
       const op = e.target.closest('[data-op]'); if (op) { this.op = op.dataset.op; this.draw(); return; }
       const hd = e.target.closest('[data-head]'); if (hd) { const [l, h] = hd.dataset.head.split(':').map(Number);
         this.head = this.head && this.head.layer === l && this.head.head === h ? null : { layer: l, head: h }; this.cb.head?.(this.head); this.draw(); return; }
-      const tk = e.target.closest('[data-tok]'); if (tk) { const v = Number(tk.dataset.tok); this.cb.track?.(v === this.step.output ? null : v); return; }
-      const row = e.target.closest('[data-key]'); if (row) { this.open = this.open === row.dataset.key ? null : row.dataset.key; this.op = null; this.draw(); }
+      const col = e.target.closest('[data-key]'); if (col) { this.open = this.open === col.dataset.key ? null : col.dataset.key; this.op = null; this.draw(); this.host.querySelector('.mm-detail')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }   // на невысоком экране подробности ниже края окна
     });
   }
-  set(step, track = null) { this.step = step; this.track = track; this.draw(); }
+  set(step) { this.step = step; this.draw(); }
 
   draw() {
     const st = this.step; if (!st) return;
-    const I = this.e.info, tt = this.e.tokenText, tok = st.output, alt = this.track, q = (x) => `«${esc(show(tt[x]))}»`;
-    const a = scoreChain(this.e, st, tok), b = alt == null ? null : scoreChain(this.e, st, alt);
-    const num = (i, delta) => { const f = delta ? sign : fmt, cls = (v) => (delta ? (z(v) >= 0 ? ' pos' : ' neg') : '');
-      return `<span class="mm-n${cls(a[i].value)}">${f(a[i].value)}${b ? `<i class="${cls(b[i].value).trim()}">${f(b[i].value)}</i>` : ''}</span>`; };
-    const detail = (key, kind) => {
-      if (this.open !== key) return '';
-      const ids = STEPS[kind], cur = ids.includes(this.op) ? this.op : ids[0], slug = this.ops[cur][1], pre = window.MQ_PREFIX ? '/' + window.MQ_PREFIX : '/';
-      const text = tx('m.op.' + cur + '.t', { d: I.dim, n: I.inter, h: I.heads, kv: I.kvHeads, v: I.vocab });
-      return `<div class="mm-detail">` + (ids.length > 1 ? `<div class="mm-ops">${ids.map((id) => `<button data-op="${id}" class="${id === cur ? 'on' : ''}">${esc(this.ops[id][0])}</button>`).join('<i>→</i>')}</div>` : '') +
-        `<b>${esc(tx('m.op.' + cur + '.h'))}</b><p>${esc(text)}</p>` +
+    const I = this.e.info, tt = this.e.tokenText, tok = st.output, c = scoreChain(this.e, st, tok);
+    // блоки по порядку: эмбеддинг, затем attention и MLP каждого слоя. from/to — счёт слова до и после блока
+    const cols = [{ key: 'embed', kind: 'embed', layer: -1, from: 0, to: c[0].value, name: tx('mob.emb') }];
+    for (let l = 0; l < I.layers; l++) { const i = 1 + 4 * l;
+      cols.push({ key: 'attn:' + l, kind: 'attn', layer: l, from: c[i - 1].value, to: c[i + 1].value, name: tx('m.score.attn') });
+      cols.push({ key: 'mlp:' + l, kind: 'mlp', layer: l, from: c[i + 1].value, to: c[i + 3].value, name: 'MLP' }); }
+    let lo = 0, hi = 0; for (const x of cols) { lo = Math.min(lo, x.to); hi = Math.max(hi, x.to); }
+    const span = Math.max(1e-6, hi - lo), y = (v) => 100 * (hi - v) / span;       // % от верха поля ступенек
+    const col = (x) => { const up = z(x.to - x.from) >= 0, top = y(Math.max(x.from, x.to)), h = 100 * Math.abs(x.to - x.from) / span;
+      return `<div class="mp-col${this.open === x.key ? ' on' : ''}" data-key="${x.key}" role="button" tabindex="0">` +
+        `<span class="mp-plot"><i class="mp-zero" style="top:${y(0).toFixed(2)}%"></i>` +
+        `<i class="mp-bar ${up ? 'pos' : 'neg'}" style="top:${top.toFixed(2)}%;height:max(3px,${h.toFixed(2)}%)"></i>` +
+        `<b class="mp-d ${up ? 'pos' : 'neg'}" style="${up ? `bottom:${(100 - top).toFixed(2)}%` : `top:${(top + h).toFixed(2)}%`}">${x.kind === 'embed' ? fmt(x.to) : sign(x.to - x.from)}</b></span>` +
+        `<span class="mp-name">${esc(x.name)}</span><span class="mp-run">${fmt(x.to)}</span></div>`; };   // div, а не button: общие стили кнопок задают им высоту
+    const group = (l) => `<div class="mp-layer"><small>${esc(tx('m.layer', { n: l + 1 }))}</small><div class="mp-pair">${cols.filter((x) => x.layer === l).map(col).join('')}</div></div>`;
+    const top = st.topk.slice().sort((a, b) => b.p - a.p), win = top.find((x) => x.tok === tok) || { p: 0 };
+    const pc = (p) => (p > 0 && p < 0.005 ? '<1' : (100 * p).toFixed(0)) + '%', pill = (t) => `<span class="tokpill">${esc(show(tt[t]))}</span>`;
+    let h = `<div class="mp-io"><span class="mp-in"><small>${esc(tx('mob.in'))}</small>${pill(st.input)}</span><i class="mp-arrow"></i>` +
+      `<span class="mp-out${this.open === 'out' ? ' on' : ''}" data-key="out" role="button" tabindex="0"><small>${esc(tx(st.kind === 'prompt' ? 'mob.outPrompt' : st.forced >= 0 ? 'mob.outForced' : 'mob.out'))}</small><span class="tokpill won">${esc(show(tt[tok]))}</span><em>${pc(win.p)}</em></span></div>` +
+      `<div class="mp-pipe"><div class="mp-layer mp-emb"><small>&nbsp;</small><div class="mp-pair">${col(cols[0])}</div></div>${Array.from({ length: I.layers }, (_, l) => group(l)).join('')}</div>` +
+      `<div class="mp-cap">${esc(tx('mob.scoreOf'))} ${pill(tok)}</div>`;
+    // подробности выбранного блока
+    // выход — тоже блок конвейера: последняя норма и сравнение потока со словарём
+    const cur = this.open === 'out' ? { key: 'out', kind: 'out' } : cols.find((x) => x.key === this.open);
+    if (!cur) h += `<p class="mp-hint">${esc(tx('mob.model.hint'))}</p>`;
+    else {
+      const ids = STEPS[cur.kind], op = ids.includes(this.op) ? this.op : ids[0], slug = this.ops[op][1], pre = window.MQ_PREFIX ? '/' + window.MQ_PREFIX : '/';
+      const title = cur.kind === 'embed' ? tx('m.op.embed.h') : cur.kind === 'out' ? tx('m.op.final.h') : `${cur.kind === 'attn' ? 'attention' : 'MLP'} · ${tx('m.layer', { n: cur.layer + 1 })}`;
+      h += `<div class="mm-detail"><div class="mp-dt">${esc(title)}</div>` +
+        (cur.kind === 'attn' ? `<div class="mm-heads">${Array.from({ length: I.heads }, (_, k) => { const v = headPart(this.e, st, cur.layer, k, tok);
+          return `<button data-head="${cur.layer}:${k}" class="${this.head && this.head.layer === cur.layer && this.head.head === k ? 'on' : ''}"><small>${esc(tx('m.head'))} ${k + 1}</small><b class="${z(v) >= 0 ? 'pos' : 'neg'}">${sign(v)}</b></button>`; }).join('')}</div>` : '') +
+        (ids.length > 1 ? `<div class="mm-ops">${ids.map((id) => `<button data-op="${id}" class="${id === op ? 'on' : ''}">${esc(this.ops[id][0])}</button>`).join('<i>→</i>')}</div>` : '') +
+        (ids.length > 1 ? `<b>${esc(tx('m.op.' + op + '.h'))}</b>` : '') + `<p>${esc(tx('m.op.' + op + '.t', { d: I.dim, n: I.inter, h: I.heads, kv: I.kvHeads, v: I.vocab }))}</p>` +
         (this.docs.has(slug) ? `<a class="gloss-more" href="${pre}docs/glossary/${slug}/" target="_blank" rel="noopener">${esc(tx('gl.more'))}</a>` : '') + '</div>';
-    };
-    const row = (key, kind, name, iDelta, iRun) => `<button class="mm-row${this.open === key ? ' on' : ''}" data-key="${key}"><span class="mm-name">${esc(name)}</span>` +
-      (iDelta == null ? '<span class="mm-n"></span>' : num(iDelta, true)) + num(iRun, false) + '</button>';
-    let h = `<div class="mm-head"><span>${esc(tx('m.score.what'))}</span><b>${q(tok)}</b>${alt == null ? '' : `<b class="alt">${q(alt)}</b>`}</div>` +
-      `<div class="mm-io"><small>${esc(tx('m.io.in'))}</small><span class="tokpill">${esc(show(tt[st.input]))}</span></div>` +
-      row('embed', 'embed', tx('m.embedding'), null, 0) + detail('embed', 'embed');
-    for (let l = 0; l < I.layers; l++) {
-      const i = 1 + 4 * l;
-      h += `<div class="mm-layer">${esc(tx('m.layer', { n: l + 1 }))}</div>` + row('attn:' + l, 'attn', 'attention', i, i + 1) +
-        `<div class="mm-heads">${Array.from({ length: I.heads }, (_, k) => { const v = headPart(this.e, st, l, k, alt == null ? tok : alt);
-          return `<button data-head="${l}:${k}" class="${this.head && this.head.layer === l && this.head.head === k ? 'on' : ''}"><small>${esc(tx('m.head'))} ${k + 1}</small><b class="${z(v) >= 0 ? 'pos' : 'neg'}">${sign(v)}</b></button>`; }).join('')}</div>` +
-        detail('attn:' + l, 'attn') + row('mlp:' + l, 'mlp', 'MLP', i + 2, i + 3) + detail('mlp:' + l, 'mlp');
     }
-    // выход: написанное слово и те, между которыми модель выбирала
-    const top = st.topk.slice().sort((x, y) => y.p - x.p), win = top.find((c) => c.tok === tok) || { tok, p: 0 }, rest = top.filter((c) => c.tok !== tok && c.p > 0).slice(0, 4);
-    const pc = (p) => (p > 0 && p < 0.005 ? '<1' : (100 * p).toFixed(0)) + '%';
-    const cand = (c, won) => `<button data-tok="${c.tok}" class="${(alt == null ? tok : alt) === c.tok ? 'on' : ''}${won ? ' won' : ''}"><em>${esc(show(tt[c.tok]))}</em><i>${pc(c.p)}</i></button>`;
-    h += `<button class="mm-row mm-last${this.open === 'out' ? ' on' : ''}" data-key="out"><span class="mm-name">${esc(tx('m.op.final.h'))}</span><span class="mm-n"></span>${num(a.length - 1, false)}</button>` + detail('out', 'out') +
-      `<div class="mm-out"><small>${esc(tx(st.forced >= 0 ? 'm.io.forced' : 'm.io.out'))}</small>${cand(win, true)}` +
-      (rest.length ? `<small>${esc(tx('m.io.rest'))}</small>${rest.map((c) => cand(c, false)).join('')}<small class="mm-pick">${esc(tx(alt == null ? 'mob.pick' : 'mob.back'))}</small>` : '') + '</div>';
     this.host.innerHTML = h;
   }
 }

@@ -357,7 +357,7 @@ function openStudioLink(href) {
 }
 function renderTab(step) {
   if (S.tab === 'logits') renderLogits(step);
-  if (S.tab === 'model') { S.mmodel.head = S.head; S.mmodel.set(step, S.track); }
+  if (S.tab === 'model') { S.mmodel.head = S.head; S.mmodel.set(step); }
   if (S.tab === 'attn') S.mattn.set(S.run.steps, S.cur, S.head, S.track, S.pos);
   tint();
 }
@@ -459,7 +459,6 @@ async function boot() {
   } catch (e) { $('m-status').textContent = t('status.fail', { msg: e.message }); $('m-status').classList.add('fail'); return; }
   $('m-status').hidden = true;
   S.mmodel = new MModel(document.querySelector('[data-pane=model]'), S.engine, {
-    track: (tok) => { S.track = tok; renderTab(S.run.steps[S.cur]); },
     head: (hd) => { S.head = hd; tint(); },
     doc: (href) => openDoc(href) });
   S.mattn = new MAttn(document.querySelector('[data-pane=attn]'), S.engine, {

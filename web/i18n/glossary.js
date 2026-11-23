@@ -50,7 +50,7 @@
     { id: 'model', term: 'transformer', group: 'calque', slug: 'transformer',
       en: { tip: 'A transformer: each token becomes a list of numbers, passes through three layers of attention and MLP, and comes out as a score for every next token.' },
       ru: { word: 'трансформер', tip: 'Каждый токен превращается в список чисел, проходит три слоя attention и MLP и на выходе даёт оценку каждому следующему токену.' } },
-    { id: 'embedding', term: 'embedding', group: 'calque', slug: 'residual-stream',
+    { id: 'embedding', term: 'embedding', group: 'calque', short: 'emb', slug: 'residual-stream',
       en: { tip: 'The embedding turns a token into a list of 112 numbers, the starting point of its trip through the layers.' },
       ru: { word: 'эмбеддинг', tip: 'Превращает токен в список из 112 чисел. С него начинается путь токена через слои.' } },
     { id: 'residualStream', term: 'residual stream', group: 'translate', slug: 'residual-stream',

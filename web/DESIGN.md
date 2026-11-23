@@ -167,9 +167,12 @@ loaded there at all.
   slides that scroll sideways: Prompt, Sampling, Constraints, Replay speed.
 - **Touch sizes:** anything a finger hits is at least 40px high (`--m-tap`); slider knobs are 22px. Text fields
   use 16px type, otherwise iOS zooms the page on focus.
-- **Model without 3D:** the residual stream is a column, read top to bottom. A row is a block: its name, what it
-  added to the score, the score after it. These are the numbers of the score line above the 3D model, from the same
-  code (`contrib.js`). A row opens into the steps inside the block and the link to Docs.
+- **Model without 3D:** one line, left to right. On top, the token the model read and the token it wrote. Under
+  them the pipeline: the embedding and three layers, attention and MLP in each. A block is drawn as a step: from
+  which score to which it moved the written word (amber up, lilac down), so the line shows both how the model is
+  built and which block decided the step. The numbers are those of the score line above the 3D model, from the same
+  code (`contrib.js`). A tap on a block opens its inner steps, the heads of attention and the link to Docs under
+  the pipeline. Scores of other candidates are not shown here: on a phone a second row of numbers is noise.
 - **Attention:** tapping a strip picks a head; sliding along a strip only previews tokens, because a finger cannot
   hit one of 130 columns. A token is picked exactly from the "Looks at" list under the strips.
 - **Shared code:** defaults, experiment links, tested seeds and the run counter live in `core.js`; score

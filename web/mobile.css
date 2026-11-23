@@ -78,78 +78,58 @@ html.m #app { display: none; }
 .m-pane .ls-row.out .tokpill { opacity: 0.5; }
 .m-more { display: block; width: 100%; height: var(--ctl-h); margin-top: var(--s2); font: var(--ctl-font) !important; color: var(--ink-2) !important; }
 
-/* Model: остаточный поток сверху вниз. Строка блока: название, его вклад, счёт после него */
-.mm { font: var(--fs-4) var(--ui); color: var(--ink-2); }
-.mm-head { display: flex; align-items: baseline; justify-content: flex-end; gap: var(--s2); font-size: var(--fs-2); color: var(--ink-3); }
-.mm-head b { font: 600 var(--fs-4) var(--mono); color: #ffe08a; }
-.mm-head b.alt, .mm-n i { color: var(--ink-2); }
-.mm-io { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); height: 30px; }
-.mm-io small, .mm-out small { font-size: var(--fs-1); color: var(--ink-3); }
-.mm-layer { margin-top: var(--s2); padding-top: var(--s2); border-top: 1px solid rgba(255, 255, 255, 0.08); font: var(--fs-1) var(--ui); color: var(--ink-3); }
-.mm-row { display: grid; grid-template-columns: minmax(0, 1fr) 56px 56px; align-items: center; width: 100%; min-height: var(--m-tap); padding: 0 var(--s2) !important; margin: 2px 0;
-  text-align: left; font: 500 var(--fs-4) var(--ui) !important; color: var(--ink-1) !important; }
-.mm-row.on { box-shadow: var(--btn-shadow), 0 0 0 1.5px rgba(242, 179, 61, 0.7) !important; }
-.mm-n { display: flex; flex-direction: column; align-items: flex-end; font: var(--fs-4) var(--mono); color: var(--ink-1); }
-.mm-n i { font-style: normal; font-size: var(--fs-2); }
-.mm .pos { color: #f2b33d; } .mm .neg { color: #c9b8ff; }
-.mm-n i.pos { color: rgba(242, 179, 61, 0.7); } .mm-n i.neg { color: rgba(201, 184, 255, 0.7); }
+/* Model: конвейер слева направо. Сверху вход и выход, под ними эмбеддинг и три слоя; блок — ступенька счёта */
+.mp, .mm { font: var(--fs-4) var(--ui); color: var(--ink-2); }
+.mp .pos { color: #f2b33d; } .mp .neg { color: #c9b8ff; }
+.mp-io { display: flex; align-items: flex-end; gap: var(--s2); }
+.mp-in, .mp-out { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mp-out { align-items: flex-end; }
+.mp-io small { font-size: var(--fs-1); color: var(--ink-3); white-space: nowrap; }
+.mp-io .tokpill { font-size: var(--fs-5); max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-out .tokpill { flex: none; }
+.mp-out { cursor: pointer; border-radius: var(--r-chip); -webkit-tap-highlight-color: transparent; outline: none; }
+.mp-out.on .tokpill.won { box-shadow: 0 0 0 2px rgba(242, 179, 61, 0.75), 0 0 0 4px rgba(242, 179, 61, 0.2); }
+.mp-io .tokpill.won { color: #1a1406; background: var(--chosen); font-weight: 600; }
+.mp-out { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; column-gap: var(--s2); }
+.mp-out small { flex: 1 1 100%; text-align: right; }
+.mp-out em { font: normal var(--fs-4) var(--mono); color: var(--ink-1); align-self: center; }
+.mp-arrow { flex: 1 1 0; min-width: 20px; height: 1px; margin-bottom: 11px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.35)); position: relative; }
+.mp-arrow::after { content: ""; position: absolute; right: 0; top: -3px; border: solid rgba(255, 255, 255, 0.45); border-width: 0 1.5px 1.5px 0; padding: 2.5px; transform: rotate(-45deg); }
+.mp-pipe { display: flex; gap: var(--gap); margin-top: var(--s3); }
+.mp-layer { flex: 2 1 0; min-width: 0; padding: var(--s1) 3px 3px; border-radius: var(--r-control); background: rgba(255, 255, 255, 0.035); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.mp-layer.mp-emb { flex: 1 1 0; background: none; box-shadow: none; }
+.mp-layer small { display: block; text-align: center; font: var(--fs-2) var(--ui); color: var(--ink-3); white-space: nowrap; }
+.mp-pair { display: flex; gap: 3px; margin-top: 2px; }
+.mp-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 2px; padding: 3px 0 4px; border-radius: 7px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; outline: none; }
+.mp-col.on { background: rgba(242, 179, 61, 0.10); box-shadow: inset 0 0 0 1.5px rgba(242, 179, 61, 0.75); }
+.mp-col:focus-visible { box-shadow: inset 0 0 0 1.5px rgba(236, 238, 242, 0.6); }
+.mp-plot { position: relative; display: block; height: 132px; margin: 18px 0 20px; }
+.mp-zero { position: absolute; left: -2px; right: -2px; height: 1px; background: rgba(255, 255, 255, 0.16); }
+.mp-bar { position: absolute; left: 22%; right: 22%; border-radius: 3px; }
+.mp-bar.pos { background: linear-gradient(180deg, #ffd98a, #f2b33d); box-shadow: 0 0 8px rgba(242, 179, 61, 0.35); }
+.mp-bar.neg { background: linear-gradient(180deg, #a98cf0, #c9b8ff); }
+.mp-d { position: absolute; left: -6px; right: -6px; text-align: center; font: 500 var(--fs-2) var(--mono); line-height: 14px; white-space: nowrap; }
+.mp-d.pos { margin-bottom: 3px; } .mp-d.neg { margin-top: 5px; }   /* подпись не ложится на ступеньку, даже когда та высотой в три пикселя */
+.mp-name { font: var(--fs-2) var(--ui); color: var(--ink-2); text-align: center; white-space: nowrap; }
+.mp-run { font: var(--fs-4) var(--mono); color: var(--ink-1); text-align: center; white-space: nowrap; }
+.mp-cap { margin-top: var(--s2); font-size: var(--fs-1); color: var(--ink-3); }
+.mp-cap .tokpill { font-size: var(--fs-2); }
+.mp-hint { margin: var(--s3) 0 0; color: var(--ink-3); }
+.mp-dt { font: 600 var(--fs-4) var(--ui); color: var(--ink-1); margin-bottom: var(--s2); }
+.mm-detail .pos { color: #f2b33d; } .mm-detail .neg { color: #c9b8ff; }
 .mm-heads { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); margin: var(--s1) 0 var(--s2); }
 .mm-heads button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; height: var(--m-tap); padding: 0 !important; }
 .mm-heads small { font: var(--fs-1) var(--ui); color: var(--ink-3); }
 .mm-heads b { font: 500 var(--fs-2) var(--mono); }
 .mm-heads button.on { box-shadow: var(--btn-shadow), 0 0 0 1.5px rgba(242, 179, 61, 0.7) !important; }
-.mm-detail { margin: var(--s1) 0 var(--s2); padding: var(--s3); border-radius: var(--r-control); background: var(--field-bg); box-shadow: var(--field-shadow); }
+.mm-detail { margin: var(--s3) 0 0; padding: var(--s3); border-radius: var(--r-control); background: var(--field-bg); box-shadow: var(--field-shadow); }
 .mm-detail b { display: block; font: 600 var(--fs-4) var(--ui); color: var(--ink-1); }
 .mm-detail p { margin: var(--s1) 0 0; font-size: var(--fs-4); line-height: 1.45; color: var(--ink-2); }
 .mm-ops { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1); margin-bottom: var(--s3); }
 .mm-ops i { font-style: normal; color: var(--ink-3); }
 .mm-ops button { height: 28px; padding: 0 var(--s2) !important; font: var(--fs-2) var(--ui) !important; color: var(--ink-2) !important; border-radius: var(--r-chip) !important; }
 .mm-ops button.on { color: #ffe08a !important; box-shadow: 0 0 0 1.5px rgba(242, 179, 61, 0.7) !important; }
-.mm-last { margin-top: var(--s3); }
-.mm-out { display: flex; flex-direction: column; gap: 2px; margin-top: var(--s2); }
-.mm-out button { display: flex; justify-content: space-between; align-items: center; height: 34px; padding: 0 var(--s3) !important; font: var(--fs-4) var(--mono) !important; color: var(--ink-2) !important;
-  background: transparent !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-.mm-out button::before { display: none !important; }
-.mm-out button em, .mm-out button i { font-style: normal; }
-.mm-out button i { color: var(--ink-3); }
-.mm-out button.won { font-weight: 600 !important; color: #ffe08a !important; }
-.mm-out button.on { background: rgba(242, 179, 61, 0.16) !important; color: #ffe08a !important; }
-.mm-pick { margin-top: var(--s1); }
-
-/* Attention: 12 полос под палец. Пары голов с общими ключами и значениями (GQA) стоят вплотную, с лиловой меткой слева */
-.ma { font: var(--fs-4) var(--ui); color: var(--ink-2); }
-.ma-axis { display: flex; justify-content: space-between; gap: var(--s2); font-size: var(--fs-1); color: var(--ink-3); }
-.ma-axis b { font: 600 var(--fs-2) var(--mono); color: #ffe08a; }
-.ma-strips { position: relative; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
-.ma-layer { margin-top: var(--s2); font: var(--fs-1) var(--ui); color: var(--ink-3); }
-.ma-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: var(--s1); width: 100%; height: 30px; padding: 0 var(--s1) 0 var(--s2) !important; margin-top: 2px;
-  border-radius: var(--r-chip) !important; background: transparent !important; box-shadow: inset 2px 0 0 rgba(169, 140, 240, 0.55) !important;
-  -webkit-backdrop-filter: none !important; backdrop-filter: none !important; touch-action: pan-y; }
-.ma-row::before { display: none !important; }
-.ma-row:active { transform: none; }
-.ma-row.pair-a { margin-top: var(--s2); }
-.ma-layer + .ma-row.pair-a { margin-top: var(--s1); }
-.ma-row small { font: var(--fs-1) var(--mono); color: var(--ink-3); text-align: left; }
-.ma-row canvas { display: block; width: 100%; height: 26px; pointer-events: none; }
-.ma-row.on { background: rgba(255, 255, 255, 0.07) !important; box-shadow: inset 2px 0 0 rgba(169, 140, 240, 0.55), 0 0 0 1.5px rgba(236, 238, 242, 0.75) !important; }
-.ma-row.on small { color: var(--ink-1); }
-.ma-row.dim canvas { opacity: 0.45; }
-.ma-bubble { position: absolute; z-index: 3; padding: 2px var(--s2); border-radius: var(--r-chip); background: rgba(20, 22, 26, 0.96); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 6px 16px rgba(0, 0, 0, 0.5);
-  font: var(--fs-2) var(--mono); color: var(--ink-1); white-space: nowrap; pointer-events: none; }
-.ma-bubble b { color: #ffe08a; font-weight: 600; }
-.ma-gqa { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); margin-top: var(--s3); font-size: var(--fs-1); color: var(--ink-3); }
-.ma-gqa i { width: 2px; height: 14px; border-radius: 1px; background: rgba(169, 140, 240, 0.8); }
-.ma-gqa .gloss-more { margin-top: 0; }
-.ma-card { margin-top: var(--s3); padding: var(--s3); border-radius: var(--r-control); background: var(--field-bg); box-shadow: var(--field-shadow); }
-.ma-card > b { display: block; font: 600 var(--fs-4) var(--ui); color: var(--ink-1); }
-.ma-card p { margin: var(--s1) 0 0; line-height: 1.45; }
-.ma-card .ma-hint { margin: 0; color: var(--ink-3); }
-.ma-card .pos { color: #f2b33d; } .ma-card .neg { color: #c9b8ff; }
-.ma-tok { font: normal var(--fs-4) var(--mono); color: var(--ink-1); }
-.ma-top { display: flex; flex-wrap: wrap; gap: var(--gap); margin: var(--s2) 0; }
-.ma-top button { display: flex; align-items: center; gap: var(--s2); height: 34px; padding: 0 var(--s3) !important; font: var(--fs-4) var(--mono) !important; color: var(--ink-1) !important; }
-.ma-top button em, .ma-top button i { font-style: normal; } .ma-top button i { color: var(--ink-3); }
-.ma-top button.on { box-shadow: var(--btn-shadow), 0 0 0 1.5px #f2b33d !important; }
 
 /* плеер со шторкой: закреплён внизу, шторка растёт из него вверх */
 .m-dock { position: absolute; left: calc(var(--gap) + env(safe-area-inset-left)); right: calc(var(--gap) + env(safe-area-inset-right)); bottom: 0; z-index: 20;
