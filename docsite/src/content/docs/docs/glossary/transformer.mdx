@@ -34,31 +34,32 @@ You can decode the stream in the middle of the model as if it were the end. This
 | Read the stream after | Top candidates |
 | --- | --- |
 | embedding | time 100% |
-| layer 1 | time 29%, owed 2.9%, ered 1.8% |
-| layer 2 | **,** 54.2%, **there** 39.2% |
-| layer 3 (the output) | **,** 71.9%, **there** 27.8% |
+| layer 1 | time 16.3%, waited 2.9%, wait 2.8% |
+| layer 2 | **,** 59.1%, **there** 35.4% |
+| layer 3 (the output) | **,** 88.1%, **there** 11.7% |
 
-Right after the embedding the stream only "knows" the word it is: time. After the first layer it is still mostly
-about that word. The second layer brings in the context, and the two real candidates appear: a comma or "there".
-The third layer sharpens the choice. In the story the draw landed on "there".
+Right after the embedding the stream only "knows" the word it is: time. After the first layer it is still about
+that word, but unsure: "time" keeps only 16.3%. The second layer brings in the context, and the two real candidates
+appear: a comma or "there". The third layer sharpens the choice. In the story the model wrote the comma.
 
 Layers do not always build the guess gradually. After *"Once upon"* the stream after layer 2 points to "night"
-14% and "bed" 11%, and only the third layer settles on "a" with 100%.
+17.6%, "a" 8.8% and "moment" 6.0%, and only the third layer settles on "a" with 99.9%.
 
 ## Where it is in the studio
 
-![The Model panel: the token enters on the left, passes three layers and leaves as a prediction on the right](../../../../assets/transformer-studio.webp)
+![The Model panel: the score line above the 3D model, the token entering on the left, three layers of plates and the prediction with its alternatives on the right](../../../../assets/transformer-studio.webp)
 
 The **Model** panel draws the whole pipeline in 3D. The token enters on the left as the embedding plate, passes
-the plates of three layers, and the prediction leaves on the right. In the Lab
+the plates of three layers, and the prediction leaves on the right. The line above the model keeps the score of
+the written token: it reads "score, +attention, score, +MLP, score" for each layer. In the Lab
 you can click any plate to see its values and what the model would say at that point.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=32" target="_blank" rel="noopener">Open this step in the studio</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=32&q=8" target="_blank" rel="noopener">Open this step in the studio</a>
 
 Rotate the model with the mouse, then switch to the Lab and click the plates after each layer to follow the guess
-from "time" to "there".
+from "time" to the comma.
 
 ## In micro-qwen3
 

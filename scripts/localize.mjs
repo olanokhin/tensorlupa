@@ -9,6 +9,7 @@ const root = new URL('..', import.meta.url).pathname;
 const out = process.argv[2] || 'dist';
 const ctx = { window: {} };
 for (const l of ['en', 'ru']) vm.runInNewContext(readFileSync(`${root}web/i18n/${l}.js`, 'utf8'), ctx);
+vm.runInNewContext(readFileSync(`${root}web/i18n/glossary.js`, 'utf8'), ctx);   // подсказки терминов собираются из глоссария
 const D = ctx.window.MQ_DICTS, LANGS = ['en', 'ru'], SITE = 'https://tensorlupa.com/';
 const LOCALE = { en: 'en_US', ru: 'ru_RU' };
 // страница → путь на сайте и ключи заголовка/описания

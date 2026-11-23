@@ -1,0 +1,41 @@
+---
+title: "Terms at a glance"
+description: "Every term of the studio in one table: what it means in one sentence and where to read more."
+---
+
+The studio uses the terms you will meet in papers, code and documentation. This page lists them with one sentence each. Point at an underlined term in the studio to see the same sentence there.
+
+| Term | In one sentence |
+| --- | --- |
+| **language model** | A language model predicts the next piece of text. It reads what is written so far, scores every possible next token, picks one, adds it and repeats. [article](../glossary/language-model/) |
+| **token** | A token is a piece of text the model reads and writes: a whole word, part of a word or a sign. micro-qwen3 knows 4,096 of them. [article](../glossary/token/) |
+| **prompt** | The prompt is everything the model reads before it answers: here, your request wrapped in chat markers. The completion is what it writes after. [article](../glossary/prompt/) |
+| **special token** | A special token is a reserved marker, not text: `<\|im_start\|>` and `<\|im_end\|>` open and close a turn of the chat, `<\|endoftext\|>` ends a text. The model ends a story by writing `<\|im_end\|>` itself. [article](../glossary/special-tokens/) |
+| **Instruct** | Instruct: the model follows a request written in the chat format, here a story with your words. [article](../glossary/instruct/) |
+| **Completion** | Completion: the model simply continues the text you started, without any request. [article](../glossary/completion/) |
+| **transformer** | A transformer: each token becomes a list of numbers, passes through three layers of attention and MLP, and comes out as a score for every next token. [article](../glossary/transformer/) |
+| **embedding** | The embedding turns a token into a list of 112 numbers, the starting point of its trip through the layers. [article](../glossary/residual-stream/) |
+| **residual stream** | The residual stream is the running list of numbers for a token. Every layer reads it and adds its own contribution on top. [article](../glossary/residual-stream/) |
+| **attention** | Attention lets each token look back at earlier tokens and take what it needs from them to predict the next one. [article](../glossary/attention/) |
+| **attention head** | An attention head is one independent way of looking back. Each layer has four heads, and each learns to notice different things. [article](../glossary/attention-head/) |
+| **attention weights** | Attention weights: what share of its attention a head gives to each earlier token. [article](../glossary/attention-head/) |
+| **value-weighted** | Weight × how much information the head actually takes from that token. Looking is not the same as taking. [article](../glossary/attention-head/) |
+| **KV cache** | The KV cache keeps the key and the value of every earlier token, so they are computed once and not at every step. [article](../glossary/grouped-query-attention/) |
+| **GQA** | Grouped-query attention: several heads ask their own questions but share one set of keys and values, so the KV cache is smaller. [article](../glossary/grouped-query-attention/) |
+| **QK-norm** | QK-norm brings queries and keys to one scale before they are compared, so attention scores stay in a steady range. [article](../glossary/qk-norm/) |
+| **RoPE** | RoPE tells attention about word order: queries and keys are rotated by an angle that depends on the position. [article](../glossary/rope/) |
+| **RMSNorm** | RMSNorm brings the stream to one scale before a block reads it, so the block sees the same kind of input at any depth. [article](../glossary/rmsnorm/) |
+| **MLP** | The MLP is the second half of each layer: 336 neurons per layer that react to patterns and push certain next words up or down. [article](../glossary/mlp/) |
+| **SwiGLU** | SwiGLU is how the MLP is built: the input is expanded twice, as a signal and as a gate, and the gate decides how much of each signal passes. [article](../glossary/swiglu/) |
+| **logit lens** | Logit lens: decode the stream in the middle of the model as if it were the end, to see what it would say at this point. [article](../glossary/logit-lens/) |
+| **logits** | Logits are the model's raw scores for all 4,096 tokens. Softmax turns them into probabilities that add up to 100%. [article](../glossary/logits/) |
+| **sampling** | Sampling is how one token is chosen from the probabilities: a weighted random draw, shaped by temperature and top-k. [article](../glossary/sampling/) |
+| **temperature** | How bold the choice is. Low temperature almost always takes the most likely token; high gives more surprising words and more mistakes. [article](../glossary/temperature/) |
+| **top-k** | Top-k: the model draws only from the K most likely tokens; everything else is ruled out. [article](../glossary/top-k/) |
+| **min-p** | Min-p: the model never draws a token that is more than 1/min-p times less likely than the favourite. At 0.02 that rules out tokens 50 times less likely: rare slips that break words. [article](../glossary/min-p/) |
+| **seed** | Seed: the number that fixes the random draws. Same seed and same settings give exactly the same story. [article](../glossary/seed/) |
+| **entropy** | How spread out the choice is, in bits: 0 means completely sure, higher means more options compete. [article](../glossary/entropy/) |
+| **max new tokens** | The longest answer the model may write, in tokens. [article](../glossary/max-new-tokens/) |
+| **repetition penalty** | Repetition penalty: lowers the score of a token that would repeat a four-token phrase already written in this story, unless the phrase is common in children’s stories (“Once upon a time”). Uses statistics of the training corpus. [article](../glossary/repetition-penalty/) |
+| **logit bias** | Logit bias: a bonus added to a token's score before the choice, here for keywords not used yet. [article](../glossary/logit-bias/) |
+| **constrained decoding (FSM)** | Constrained decoding: once a keyword is started, a small finite-state machine (FSM) makes the model finish spelling it. [article](../glossary/fsm/) |

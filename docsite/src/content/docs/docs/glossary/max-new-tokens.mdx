@@ -17,42 +17,42 @@ the 29-token prompt of a three-word order, that leaves room for about 226 tokens
 
 ## A real story, full and cut
 
-The demo story (seed 2779, words dragon, cookie, school) ends on its own after 121 tokens, well under the default
+The demo story (seed 1111, words dragon, cookie, school) ends on its own after 133 tokens, well under the default
 limit of 200:
 
-> Once upon a time there was a little girl named Lily. [...] Lily was very happy and gave the dragon a cookie. The
-> dragon was happy to have a friend like Lily. They played together all day and had lots of fun.
+> Once upon a time, there was a little girl named Lily. [...] The dragon was happy and thanked Lily. Lily and the
+> dragon continued to play and eat, and the dragon was safe. They were happy and played together all day. The end.
 
-The same story with max new tokens set to 60 stops mid-sentence:
+The same story with max new tokens set to 30 stops mid-sentence:
 
-> Once upon a time there was a little girl named Lily. She loved to play with her toys and read books. One day,
-> she went to school and saw a big dragon in her classroom. The dragon was scared, but Lily wanted to be brave. She
-> ran to the dragon and said,
+> Once upon a time, there was a little girl named Lily. She loved to play with her toys and eat cookies. One day,
+> she went to
 
 Every token up to the cut is exactly the same: the limit does not change any choice, it only stops the loop
-earlier. And because the story was cut before "cookie" came up, only two of the three words made it in.
+earlier. And because the story was cut before "school" and "dragon" came up, only one of the three words made it
+in.
 
 ## Where it is in the studio
 
-![The max new tokens slider in the Sampling card](../../../../assets/max-new-tokens-studio.webp)
+![The max new tokens slider set to 30 in the Sampling card, with the story cut after "she went to"](../../../../assets/max-new-tokens-studio.webp)
 
 The **max new tokens** slider is in the **Sampling** card: from 20 to 220 in steps of 10, default 200. Moving it
 reruns the story with the same [seed](../seed/), so you can watch exactly where the cut falls.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&n=60&s=87" target="_blank" rel="noopener">Open the story cut at 60 tokens</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&n=30&s=57&q=8" target="_blank" rel="noopener">Open the story cut at 30 tokens</a>
 
 Then drag the slider up and watch the same story continue past the cut, until it ends by itself.
 
 ## In micro-qwen3
 
-With the studio's default settings, about 87% of three-word stories end on their own before the limit (measured
-on 200 orders at [temperature](../temperature/) 0.6). The rest are often stuck in a [loop](../repetition-penalty/)
-and would go on and on; for those, max new tokens is what ends the story.
+With the studio's default settings, about 85% of three-word stories end on their own before the limit (measured
+on 300 stories from 100 different orders). The rest are still writing when the limit comes; for those, max new
+tokens is what ends the story.
 
 ## Related
 
 - [Special tokens](../special-tokens/): `<|im_end|>`, the token the model writes when it decides the story is over.
-- [Repetition penalty](../repetition-penalty/): the stories that do not end on their own are often stuck in a loop.
+- [Repetition penalty](../repetition-penalty/): without it, the stories that do not end on their own are often stuck in a loop.
 - [Sampling](../sampling/): the limit stops the loop of choices, it does not change any single choice.

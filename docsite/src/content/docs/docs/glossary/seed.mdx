@@ -22,15 +22,15 @@ those settings.
 
 ## A real example
 
-The same order (*dragon, cookie, school*), temperature 0.6, top-k 40, only the seed changes:
+The same order (*dragon, cookie, school*), temperature 0.6, top-k 40, min-p 0.02, only the seed changes:
 
 | Seed | How the story starts |
 | --- | --- |
-| **2779** | Once upon a time there was a little girl named Lily. She loved to play with her toys and read books. One day, she went to school… |
-| 147 | Once upon a time, there was a little girl named Lily. She lived in a small house with her mom and dad. One day, Lily's mom asked her to help… |
-| 42 | Once upon a time, there was a little girl named Lily. She loved to play with her toys and her favorite cookie. One day, she was playing with… |
+| **1111** | Once upon a time, there was a little girl named Lily. She loved to play with her toys and eat cookies. One day, she went to school and saw a dragon… |
+| 147 | Once upon a time, there was a little girl named Lily. She loved to read books and learn new things. One day, she went to school and saw a big dragon on the ground… |
+| 42 | Once upon a time, there was a little girl named Lily. She loved to play with her toys and read books. One day, Lily's mom told her they were going to a school… |
 
-Running seed 2779 a second time gives the first story again, character for character. The openings look alike
+Running seed 1111 a second time gives the first story again, character for character. The openings look alike
 because the model is very sure about the first words (see [language model](../language-model/)); the stories part
 ways at the first steps where the draw has real options.
 
@@ -44,13 +44,13 @@ ways at the first steps where the draw has real options.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=147" target="_blank" rel="noopener">Open seed 147 in the studio</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=147&q=8" target="_blank" rel="noopener">Open seed 147 in the studio</a>
 
 Then change the seed by one and watch a new story appear, or roll the dice a few times.
 
 ## In micro-qwen3
 
-The demo uses seed 2779. We picked it by generating the demo order with 3,000 seeds, keeping the stories that use
+The demo uses seed 1111. We picked it by generating the demo order with 1,500 seeds, keeping the stories that use
 all three words, end on their own and barely repeat, and then reading the best of them. The studio and the ESP32
 firmware use the same small xorshift generator, so a seed gives the same draws in both.
 

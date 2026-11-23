@@ -31,23 +31,24 @@ Two rules keep this simple:
 
 ## A real step
 
-The demo story so far: *"...she went to school and saw a big dragon in her classroom. The dragon"*. The model is
+The demo story so far: *"...she went to school and saw a dragon. The dragon"*. The model is
 about to write "was". This is where its attention went, averaged over all heads of all three layers:
 
 | Earlier token | Weight |
 | --- | --- |
 | "." (end of the previous sentence) | 18% |
-| "The" | 18% |
+| "The" | 17% |
 | "dragon" (the current token itself) | 12% |
-| "dragon" (in "a big dragon") | 5% |
+| "saw" | 7% |
+| "dragon" (in "saw a dragon") | 6% |
 | "dragon" (in the request: "Use the words: dragon") | 3% |
 
 On average, attention stays close: the current sentence and the word just before. But one head in the third layer
-behaves very differently. It puts 37% of its attention on the word "dragon" in the request, 54 tokens back in
-the prompt, and another 11% on "a big dragon". Its job looks like keeping track of what the story is about.
+behaves very differently. It puts 36% of its attention on the word "dragon" in the request, 50 tokens back in
+the prompt, and another 10% on "saw a dragon". Its job looks like keeping track of what the story is about.
 
-The same thing happens with names. When the story mentions "Lily" for the second time, a head in the first layer
-spends 14% of its attention on the first "Lily", dozens of tokens earlier.
+The same head does it with names. When the story is about to write "Lily" again, after "shiny, and", it spends 71%
+of its attention on the first "Lily", 32 tokens earlier.
 
 ## Weights and contribution
 
@@ -80,7 +81,7 @@ that token now. The line under the strips lists the steps inside a head.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=70" target="_blank" rel="noopener">Open this step in the studio</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=66&q=8&mode=lab" target="_blank" rel="noopener">Open this step in the studio</a>
 
 Click the strips one by one to find the head that looks back at "dragon" in the request. Then step forward and
 watch the highlight move.

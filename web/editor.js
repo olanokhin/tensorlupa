@@ -70,6 +70,9 @@ const LINK = readLink();
 // experiments/ngram: зацикленных историй 9–16% → 1–2%, историй с обломками слов не больше, у 4 бит — вдвое меньше)
 if (!LINK) P.loopPenalty = DEF.loopPenalty;
 const DEMO_SEED = { 8: 1111, 4: 3 };
+// То же для режима Completion с началом по умолчанию «Once upon a time»: перебор 1500 seed на каждую версию весов
+// (история закончилась сама, без повторов трёх слов подряд и одинаковых предложений), лучшие прочитаны глазами.
+const COMPLETION_SEED = { 8: 1246, 4: 633 };
 if (!LINK) P.seed = DEMO_SEED[S.bits];
 
 // Гайд · Лаб: Гайд — главное простыми словами (простые логиты, одна карточка «что произошло», только сэмплинг,
@@ -670,6 +673,9 @@ function bindUI() {
   $('mode').addEventListener('change', () => {
     const order = $('mode').value === 'order';
     $('words').hidden = !order; $('prompt').hidden = order;
+    // пока seed не трогали, у каждого режима свой проверенный: история по умолчанию хорошая в обоих
+    const from = order ? COMPLETION_SEED : DEMO_SEED, to = order ? DEMO_SEED : COMPLETION_SEED;
+    if (P.seed === from[S.bits]) { P.seed = to[S.bits]; S.pane.refresh(); }
   });
   $('t-range').addEventListener('input', (e) => { stop(); setCur(Number(e.target.value)); });
   $('t-prev').addEventListener('click', () => { stop(); setCur(S.cur - 1); });

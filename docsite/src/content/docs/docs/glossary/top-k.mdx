@@ -23,28 +23,29 @@ who takes part.
 
 ## A real step
 
-The demo story at *"She loved to play with her toys and"* (seed 2779, temperature 0.6). These are the chances over
-the whole vocabulary, before any cut:
+The demo story at *"The dragon was"* (seed 1111, temperature 0.6). These are the chances over the whole
+vocabulary, before any cut:
 
 | Top-k | Share of the chance inside | Ruled out |
 | --- | --- | --- |
-| 1 | 28.6% (only "her") | 71.4% |
-| 5 | 89.0% | 11.0% |
-| 10 | 95.1% | 4.9% |
-| **40** (default) | **98.9%** | **1.1%** |
-| 64 | 99.4% | 0.6% |
+| 1 | 41.6% (only "very") | 58.4% |
+| 5 | 89.7% | 10.3% |
+| 10 | 93.7% | 6.3% |
+| **40** (default) | **98.2%** | **1.8%** |
+| 64 | 98.9% | 1.1% |
 
-With top-k 40 the 40 kept tokens are scaled up from 98.9% to 100%, which is why the studio shows "her" at 29% and
-not 28.6%.
+With top-k 40 the 40 kept tokens are scaled up from 98.2% to 100%, and [min-p](../min-p/) 0.02, which the studio
+applies after top-k, drops the weakest of them too. That is why the studio shows "very" at 45.6% and not 41.6%.
 
-The cut changes the draw and so the story. With the same seed:
+The cut changes the draw and so the story. With the same seed and the other settings at their defaults:
 
-- **top-k 1:** *"…with her toys and run around outside."* (always the favourite)
-- **top-k 5:** *"…with her toys and run around in the park…"*
-- **top-k 40 and top-k 64:** *"…with her toys and read books."* (the same story both times)
+- **top-k 1:** *"…The dragon was very big and had a long tail."* (always the favourite)
+- **top-k 5:** *"…The dragon was big and shiny, and Lily wanted to be friends with it. When she got to school…"*
+- **top-k 40 and top-k 64:** *"…The dragon was big and shiny, and Lily wanted to be friends with it. The dragon was
+  scared and didn't know what to do."* (the same story both times)
 
-Across the whole demo story, the tokens outside the top 40 held on average only 0.07% of the chance, and outside
-the top 5 about 1.5%. Only one of the 121 drawn tokens came from beyond the top 5.
+Across the whole demo story, the tokens outside the top 40 held on average only 0.14% of the chance, and outside
+the top 5 about 3.4%. Only 3 of the 133 drawn tokens came from beyond the top 5.
 
 ## Where it is in the studio
 
@@ -55,9 +56,9 @@ default is 40. In the Lab, the logits strip greys out the candidates that fall o
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=48" target="_blank" rel="noopener">Open this step in the studio</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=67&q=8" target="_blank" rel="noopener">Open this step in the studio</a>
 
-Drag top-k down to 1 and back up to 40, and watch the story switch between "run around outside" and "read books".
+Drag top-k down to 1 and back up to 40, and watch the story switch between "very big and had a long tail" and "big and shiny".
 
 ## In micro-qwen3
 

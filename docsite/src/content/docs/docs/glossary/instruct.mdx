@@ -11,8 +11,11 @@ what you ask instead of just continuing your text.
 A [base model](../completion/) continues text. Ask it "Write a short story. Use the words: dragon, cookie,
 school." without any chat markers, and it treats your request as the start of some text:
 
-> *Write a short story. Use the words: dragon, cookie, school.* The teacher said, "Sometimes, people, and a little
-> sigh." The teacher smiled and said, "That's a good idea, but you can try to make your school...
+> *Write a short story. Use the words: dragon, cookie, school.* It is a big bear who is very friendly. Do you want
+> to play with me?" The man smiled and said, "Yes, let's play together." They played together every day and had
+> lots of fun...
+
+No dragon, no cookie, no school: the request was just the first line of a text to continue.
 
 Instruction tuning fixes that. The model is trained on many pairs of a request and a good answer, wrapped in chat
 markers (see [prompt](../prompt/)). It learns that after `<|im_start|>assistant` comes an answer that does what
@@ -52,9 +55,9 @@ prompt for you; you can see it at the top of **Prompt & completion**.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=28" target="_blank" rel="noopener">Open an instruct story in the studio</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=28&q=8" target="_blank" rel="noopener">Open an instruct story in the studio</a>
 
-<a class="try-link" href="/studio?p=Write%20a%20short%20story.%20Use%20the%20words%3A%20dragon%2C%20cookie%2C%20school.&seed=1&s=20" target="_blank" rel="noopener">Open the same request in completion mode</a>
+<a class="try-link" href="/studio?p=Write%20a%20short%20story.%20Use%20the%20words%3A%20dragon%2C%20cookie%2C%20school.&seed=1231&s=17&q=8" target="_blank" rel="noopener">Open the same request in completion mode</a>
 
 The first link wraps the request in chat markers; the second sends it as plain text. Same model, same words, very
 different stories.

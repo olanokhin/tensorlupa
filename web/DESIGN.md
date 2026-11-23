@@ -98,6 +98,24 @@ Dropdown menus are separate glass tiles on the top level of the page. The entran
 never on their container: while a container is translucent or scaled, the tiles inside cannot blur the page behind
 them, and the blur would pop in at the end.
 
+## Terms
+
+Every term has one source: `web/i18n/glossary.js`. Read it before writing any label, tooltip or article.
+
+- **In labels** a term is written the way a reader will meet it in papers, code and documentation. Most stay in
+  English in every language (attention, top-k, logit bias, RMSNorm); some have an established word (token, logits);
+  some are translated (residual stream). The file says which, and how the term is shortened where space is tight.
+- **The translation and a one-sentence explanation** are never written by hand next to a label. They come from the
+  glossary: in the tooltip of an underlined term, and on the terms page of Docs.
+- **Tooltips have one form and one order.** English: the explanation, which starts with the term. Other languages:
+  the English term first, then the word in the reader's language, then the explanation, whatever the label says:
+  "Attention · внимание. …", "Token · токен. …", "Residual stream · остаточный поток. …".
+- **Do not add `gl.<term>` keys to the dictionaries** for terms: add the term to the glossary. Dictionary `gl.` keys
+  are only for explanations of controls that are not terms (replay speed, autoplay).
+- **`node scripts/glossary.mjs`** builds `web/i18n/GLOSSARY.md` and the terms page, and fails if an underlined term
+  has no entry, a language is not filled in, or a label uses a form the glossary forbids. It runs on every deploy.
+- **A new language** is a dictionary `web/i18n/<code>.js` plus `word` and `tip` for every term in the glossary.
+
 ## Links to Docs
 
 Every place in the studio that points to a Docs article does it the same way: a glossary tooltip, the card of a

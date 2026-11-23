@@ -43,28 +43,29 @@ Everything else, punctuation, spaces and new words, stays free. The machine only
 ## A real step: writing "luxury"
 
 The order "play, luxury, shiny", seed 2. The story so far: *"Once upon a time, there was a little girl named Lily.
-She loved to play with her"*. The model wanted "toys" (88.8%); "luxury" starts with the piece " l", which had
-2.4%.
+She loved"*. The model wanted " to" (55%); "luxury" starts with the piece " l", which had 1.7%.
 
 | Piece | What happened |
 | --- | --- |
-| ` l` | logit bias +4.08 raised it from 2.4% to 95.6%, and the draw picked it |
+| ` l` | logit bias +2.30 raised it from 1.7% to 44%, and the draw picked it |
 | `u` | first piece written: +4 extra from the machine on top of the logit bias |
 | `x` | two pieces written: set by the machine, no draw |
 | `u` | set by the machine |
 | `ry` | set by the machine, the word is complete |
-| ` toy` | "luxury" is finished; only `s`, `es`, `ed`, `d` and `ing` could have continued it; the model wrote " toy" |
+| ` things` | "luxury" is finished; only `ing` could have continued it as letters; the model wrote " things" |
 
-The result: *"She loved to play with her luxury toy."* The model chose the word; the machine only made sure it
-came out whole.
+The result: *"She loved luxury things."* The model chose the word; the machine only made sure it came out whole.
+Here the model was sure of every piece anyway (99.8% to 100%), so the machine changed no letter. Its effect is a
+guarantee, and a small side effect: a forced piece uses no random draw. With the machine off, the same seed gives
+*"She loved luxury and play with her toys."*
 
 In the demo story with dragon, cookie and school, every requested word is a single token, so nothing is ever
-forced. The machine still works after each word: after "dragon" only `es`, `ed`, `ing`, `ned` and `ning` may follow
-as letters.
+forced. The machine still works after each word: after "dragon" only `ed` and `ing` may follow as letters, after
+"school" only `s`, `ed` and `ing`.
 
 ## Where it is in the studio
 
-![The story with a forced piece and its chance of 100%](../../../../assets/fsm-studio.webp)
+![The Lab at the forced "x" of "luxury": the Model window says the output was set by the spelling rule at 100%, and the Logits strip says the piece was set by the FSM](../../../../assets/fsm-studio.webp)
 
 - In **Logits**, a forced piece shows 100%, and the line above the strip says the piece was set by the FSM, with
   what the model would have picked on its own.
@@ -72,9 +73,9 @@ as letters.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=play,luxury,shiny&seed=2&s=53&mode=lab" target="_blank" rel="noopener">Open the forced "x" of "luxury"</a>
+<a class="try-link" href="/studio?w=play,luxury,shiny&seed=2&s=49&q=8&mode=lab" target="_blank" rel="noopener">Open the forced "x" of "luxury"</a>
 
-<a class="try-link" href="/studio?w=play,luxury,shiny&seed=2&fsm=0&mode=lab" target="_blank" rel="noopener">The same order without the FSM</a>
+<a class="try-link" href="/studio?w=play,luxury,shiny&seed=2&fsm=0&q=8&mode=lab" target="_blank" rel="noopener">The same order without the FSM</a>
 
 ## In micro-qwen3
 

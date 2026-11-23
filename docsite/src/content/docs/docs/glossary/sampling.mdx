@@ -15,7 +15,7 @@ those chances into one choice:
 2. Draw a random number between 0 and 1.
 3. The token whose stretch the number lands in is the next token.
 
-A token with 29% wins 29 draws out of 100, a token with 7% wins 7. Most of the time the favourite wins, but not
+A token with 46% wins 46 draws out of 100, a token with 8% wins 8. Most of the time the favourite wins, but not
 always, and that is what makes stories different from each other.
 
 The random numbers come from a [seed](../seed/). The same seed and the same settings give the same draws, so the
@@ -27,43 +27,44 @@ themselves. Sampling keeps some surprise in the text.
 
 ## A real draw
 
-The demo story at the moment *"She loved to play with her toys and"* (seed 2779, temperature 0.6, top-k 40). The
+The demo story at the moment *"The dragon was"* (seed 1111, temperature 0.6, top-k 40, min-p 0.02). The
 candidates and the stretch each one takes:
 
 | Token | Chance | Stretch of the line |
 | --- | --- | --- |
-| her | 29.0% | 0 to 29.0 |
-| run | 25.9% | 29.0 to 54.9 |
-| **read** | **24.2%** | **54.9 to 79.0** |
-| sing | 7.3% | 79.0 to 86.3 |
-| eat | 3.7% | 86.3 to 90.0 |
+| very | 45.6% | 0 to 45.6 |
+| **big** | **39.0%** | **45.6 to 84.6** |
+| scared | 7.9% | 84.6 to 92.5 |
+| a | 3.6% | 92.5 to 96.1 |
+| not | 2.1% | 96.1 to 98.2 |
 
-The random number for this step was **0.609**, so it landed at 60.9% of the line, inside the stretch of "read".
-The model wrote "read" although "her" was more likely, and the story went on with "read books".
+The random number for this step was **0.523**, so it landed at 52.3% of the line, inside the stretch of "big".
+The model wrote "big" although "very" was more likely, and the story went on with "big and shiny".
 
-The same order with greedy decoding (top-k 1) writes one fixed story that starts almost the same way but continues
-*"with her toys and run around outside"*, because at every step it takes the favourite of that moment.
+The same order with greedy decoding (top-k 1) writes one fixed story that starts exactly the same way and then
+takes "very" at this step: *"The dragon was very big and had a long tail"*. At every step it takes the favourite
+of that moment.
 
 ## Where it is in the studio
 
 ![The Sampling card and the candidates for the current step](../../../../assets/sampling-studio.webp)
 
-- The **Sampling** card holds the settings that shape the draw: temperature, top-k, seed and the repetition
-  penalty.
+- The **Sampling** card holds the settings that shape the draw: temperature, top-k, min-p, seed and the
+  repetition penalty.
 - **Logits** shows the candidates of the current step, with the chosen one highlighted.
 - In the Lab, the step inspector shows **sample draw**: where the random number landed in the probability mass,
-  for example "at 60.9% of mass".
+  for example "at 52.3% of mass".
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=48" target="_blank" rel="noopener">Open this step in the studio</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=67&q=8" target="_blank" rel="noopener">Open this step in the studio</a>
 
 Switch to the Lab to see the sample draw, then roll the dice for a new seed and watch the same order turn into a
 different story.
 
 ## In micro-qwen3
 
-The studio uses temperature 0.6 and top-k 40 by default. We measured both on 200 story orders: top-k barely
+The studio uses temperature 0.6, top-k 40 and [min-p](../min-p/) 0.02 by default. We measured temperature and top-k on 200 story orders: top-k barely
 matters, because after instruction tuning the real choice is among 3 to 5 tokens anyway, while temperature does
 matter, and 0.6 gives the best balance of fewer repeats and stories that end on their own (see
 [temperature](../temperature/)).
@@ -79,6 +80,7 @@ introduced by [Holtzman and colleagues in 2019](https://arxiv.org/abs/1904.09751
 
 - [Temperature](../temperature/): how bold the draw is.
 - [Top-k](../top-k/): how many candidates take part at all.
+- [Min-p](../min-p/): rules out candidates far less likely than the favourite.
 - [Seed](../seed/): which random numbers are drawn.
 - [Repetition penalty](../repetition-penalty/): lowers the chances of tokens that would repeat a phrase.
 - [Logit bias](../logit-bias/): raises the chances of your requested words.

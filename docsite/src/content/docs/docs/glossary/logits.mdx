@@ -21,29 +21,29 @@ vocabulary of 4,096 tokens can end up with most of the chance on a handful of th
 
 ## A real step
 
-The story so far: *"Once upon a time there was a little girl named Lily. She loved to play with her toys and"*.
+The story so far: *"Once upon a time, there was a little girl named Lily. She loved to play with her toys and"*.
 These are the model's own logits for the top candidates, and what they become:
 
-| Token | Logit | Chance at temperature 1 | Chance at the default 0.6, top-k 40 |
+| Token | Logit | Chance at temperature 1 | Chance with the studio defaults (temperature 0.6, top-k 40, min-p 0.02) |
 | --- | --- | --- | --- |
-| her | 7.81 | 14.8% | 29.0% |
-| run | 7.74 | 13.8% | 25.9% |
-| **read** | 7.70 | 13.2% | **24.2%** |
-| sing | 6.98 | 6.4% | 7.3% |
-| eat | 6.58 | 4.3% | 3.7% |
+| **eat** | 8.51 | 21.5% | **47.1%** |
+| read | 8.30 | 17.5% | 33.2% |
+| run | 7.56 | 8.4% | 9.8% |
+| her | 7.28 | 6.4% | 6.1% |
+| sing | 6.48 | 2.8% | 1.6% |
 
-"her" and "read" differ by only 0.11 in logits, so their chances are close. "sing" is 0.8 lower and already gets
-about half as much. Across the whole vocabulary the logits at this step go from about -9 to 7.8; the lowest token
-is millions of times less likely than the favourite.
+"eat" and "read" differ by only 0.21 in logits, so their chances are close. "sing" is 2.0 lower than "eat" and
+gets about an eighth as much. Across the whole vocabulary the logits at this step go from about -9.1 to 8.5; the
+lowest token is tens of millions of times less likely than the favourite.
 
 How concentrated the chances are, out of 4,096 tokens:
 
 | | Tokens holding 50% | 90% | 99% |
 | --- | --- | --- | --- |
-| raw logits, temperature 1 | 5 | 156 | 1,265 |
-| as the studio uses them, temperature 0.6 | 2 | 6 | 45 |
+| raw logits, temperature 1 | 4 | 110 | 1,078 |
+| as the studio uses them, temperature 0.6 | 2 | 3 | 6 |
 
-The model drew **read**, the third option, and the story went on with "read books".
+The model drew **eat**, the favourite, and the story went on with "eat cookies".
 
 ## What happens to the logits before the choice
 
@@ -51,32 +51,32 @@ The studio does not always use the model's logits as they are. At every step of 
 
 1. **Raw logits** come out of the model.
 2. **[Logit bias](../logit-bias/)** adds a bonus to requested words that have not appeared yet. At this step
-   "dragon", "cookie" and "school" each got +2.40; they were still far below "her", so the bonus did not change
+   "dragon", "cookie" and "school" each got +2.42; they were still far below "eat", so the bonus did not change
    the pick.
 3. **[Constrained decoding](../fsm/)** blocks pieces that would break a requested word into junk; blocked tokens
    get a logit of minus infinity, so their chance is exactly 0.
 4. **[Repetition penalty](../repetition-penalty/)** lowers the score of tokens that would repeat a phrase already
-   in the story.
+   in the story. At this step it had nothing to lower.
 5. **[Top-k](../top-k/)** keeps only the k highest logits (40 by default).
 6. **[Temperature](../temperature/)** divides the logits, then softmax turns them into chances.
-7. **[Min-p](../min-p/)** rules out tokens far less likely than the favourite (0.02 by default).
+7. **[Min-p](../min-p/)** rules out tokens far less likely than the favourite (0.02 by default). At this step it left 7 of the 40 candidates.
 8. **[Sampling](../sampling/)** draws one token.
 
 ## Where it is in the studio
 
 ![The Logits panel: the candidates the model chose between, with their chances](../../../../assets/logits-studio.webp)
 
-- In **Guide**, the **Logits** panel lists the five favourites under "The model chose between", with their
-  chances; the chosen one is lit up.
+- In **Guide**, the **Logits** panel lists the five favourites under "The model chose between these tokens", with
+  their chances; the chosen one is lit up.
 - In **Lab**, the same panel shows a strip of the 64 best candidates plus one bar for all the rest, on a log scale.
   The chosen token is bright, the top-k candidates are dimmer, tokens outside top-k are barely visible. A white tick
   marks the chance a token had before logit bias. Hover over a bar to see its logit and bonus.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=48&mode=lab" target="_blank" rel="noopener">Open this step in the Lab</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=49&q=8&mode=lab" target="_blank" rel="noopener">Open this step in the Lab</a>
 
-Hover over the bars for "her", "run" and "read", then move the temperature slider and watch the strip sharpen and
+Hover over the bars for "eat", "read" and "run", then move the temperature slider and watch the strip sharpen and
 flatten.
 
 ## In micro-qwen3

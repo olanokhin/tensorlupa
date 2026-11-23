@@ -23,17 +23,17 @@ Averaged over every step of the demo story, the 12 heads behave very differently
 
 | Head (as the studio numbers them) | What it does most | Average weight |
 | --- | --- | --- |
-| Layer 1, head 1 | looks at the current token itself | 33% on itself |
-| Layer 2, head 3 | looks at the token just before | 34% on the previous token |
-| Layer 2, head 4 | looks at the token just before | 32% on the previous token |
-| Layer 3, head 4 | looks back at the requested words in the [prompt](../prompt/) | 19% on "dragon", "cookie" and "school" |
+| Layer 1, head 1 | looks at the current token itself | 35% on itself |
+| Layer 2, head 3 | looks at the token just before | 30% on the previous token |
+| Layer 2, head 4 | looks at the token just before | 35% on the previous token |
+| Layer 3, head 4 | looks back at the requested words in the [prompt](../prompt/) | 16% on "dragon", "cookie" and "school" |
 
-The last one is the most interesting. The other 11 heads give the three requested words 0% to 6% of their
-attention on average; layer 3, head 4 gives them 19%, even though they sit dozens of tokens back. When the model
-writes "was" after "The dragon", this head puts 37% of its weight on "dragon" in the request, 54 tokens earlier.
+The last one is the most interesting. The other 11 heads give the three requested words under 5% of their
+attention on average; layer 3, head 4 gives them 16%, even though they sit dozens of tokens back. When the model
+writes "was" after "The dragon", this head puts 36% of its weight on "dragon" in the request, 50 tokens earlier.
 
 A previous-token head can also be very sure of itself: at the step "...play with her toys and", layer 2,
-head 4 puts 85% of its weight on "toys", the token right before.
+head 4 puts 81% of its weight on "toys", the token right before.
 
 ## Where it looks, and what it takes
 
@@ -48,10 +48,10 @@ Usually the two agree. When they don't, it tells you something. Two real cases f
 
 | Step | Head | Token | Weight | Value-weighted |
 | --- | --- | --- | --- | --- |
-| writing "was" after "The dragon" | layer 3, head 4 | "dragon" in the request | 37% | 49% |
-| writing "read" after "her toys and" | layer 3, head 4 | "school" in the request | 21% | 31% |
-| same step | layer 3, head 4 | "and", the current token | 17% | 11% |
-| later in the story | layer 3, head 4 | a full stop "." | 51% | 37% |
+| writing "was" after "The dragon" | layer 3, head 4 | "dragon" in the request | 36% | 51% |
+| writing "eat" after "her toys and" | layer 3, head 4 | "school" in the request | 24% | 33% |
+| same step | layer 3, head 4 | "and", the current token | 8% | 4% |
+| writing "you" after "But" | layer 3, head 4 | a full stop "." | 31% | 23% |
 
 So the request words carry more than their weight suggests, and the full stop, a common place for a head to
 "rest" its attention, carries less. Reading weights alone would understate how much the request steers this head.
@@ -72,20 +72,24 @@ normalises queries and keys before they are compared, which keeps the scores in 
 
 ## Where it is in the studio
 
-![One head selected in the Attention panel, and the weight and value-weighted table in the inspector](../../../../assets/attention-head-studio.webp)
+![Layer 3, head 4 selected in the Attention panel, with its card under the strips and the weight and value-weighted table in the inspector](../../../../assets/attention-head-studio.webp)
 
 - In the **Attention** panel, click one strip to select a
   single head. The story is then highlighted by that head only. Click it again to go back to all heads.
 - The switch at the top of the panel chooses between **weights** and **value-weighted**.
+- Under the strips a card describes the selected head: what it looks at and how much it added to the score of the
+  written word.
 - In the Lab, the inspector shows a table for the selected head: the tokens it looks at most, with both numbers
   side by side.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=70&mode=lab" target="_blank" rel="noopener">Open this step in the Lab</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=66&q=8&mode=lab" target="_blank" rel="noopener">Open this step in the Lab</a>
 
-Select layer 3, head 4 and compare its two columns in the inspector. Then step to the previous token and select
-layer 2, head 3 to watch a previous-token head at work.
+Select layer 3, head 4 and compare its two columns in the inspector. Then open the step after "her toys and" and
+select layer 2, head 4 to watch a previous-token head at work.
+
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=49&q=8&mode=lab" target="_blank" rel="noopener">Open the "her toys and" step in the Lab</a>
 
 ## In micro-qwen3
 

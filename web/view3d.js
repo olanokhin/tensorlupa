@@ -787,8 +787,11 @@ export class View3D {
   // блок выхода: написанный токен крупно, остальные кандидаты — строкой; любой можно щёлкнуть, и сцена покажет его путь
   renderOut() {
     const st = this.step, top = this.outTop || [], esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    const win = top.find((c) => c.tok === st.output) || { tok: st.output, p: 0 }, rest = top.filter((c) => c.tok !== st.output).slice(0, 4);
-    const row = (c, written) => `<a data-tok="${c.tok}" class="${this.tok === c.tok ? 'on' : ''}${written ? ' won' : ''}"><em>${esc(show(this.e.tokenText[c.tok]))}</em><i>${(100 * c.p).toFixed(0)}%</i></a>`;
+    // шанс написанного токена берём из полного списка шага: в коротком списке сцены его может не быть (выпал редкий
+    // вариант), и тогда рядом с написанным словом стояло «0%»
+    const full = st.topk ? Array.from(st.topk).find((c) => c.tok === st.output) : null;
+    const win = top.find((c) => c.tok === st.output) || { tok: st.output, p: full ? full.p : 0 }, rest = top.filter((c) => c.tok !== st.output).slice(0, 4);
+    const row = (c, written) => `<a data-tok="${c.tok}" class="${this.tok === c.tok ? 'on' : ''}${written ? ' won' : ''}"><em>${esc(show(this.e.tokenText[c.tok]))}</em><i>${c.p > 0 && c.p < 0.005 ? '<1' : (100 * c.p).toFixed(0)}%</i></a>`;
     this.outCap.innerHTML = `<small>${esc(tx(st.forced >= 0 ? 'm.io.forced' : 'm.io.out'))}</small>` + row(win, true) +
       (rest.length ? `<small>${esc(tx('m.io.rest'))}</small>` + rest.map((c) => row(c, false)).join('') : '');
   }

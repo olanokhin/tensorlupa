@@ -22,51 +22,53 @@ After the last layer the lens and the model agree exactly: the lens after layer 
 
 ## A real step: the answer appears in the last layer
 
-The demo story has just written *"…she went to school and saw a big dragon in her classroom. The"*. Here is what
+The demo story has just written *"…she went to school and saw a dragon. The"*. Here is what
 the stream would say at each point:
 
 | Point in the stream | Top guesses |
 | --- | --- |
-| right after the embedding | The 99.9% |
-| after layer 1 | end 26.6%, The 18.1%, other 12.5% |
-| after layer 2 | end 43.9%, sun 27.6%, other 4.5% |
-| after layer 3 | **dragon 96.6%**, princess 0.6%, knight 0.4% |
+| right after the embedding | The 99.8% |
+| after layer 1 | end 26.3%, other 18.0%, The 16.1% |
+| after layer 2 | sun 31.8%, end 30.9%, big 7.2% |
+| after layer 3 | **dragon 97.7%**, princess 0.2%, knight 0.2% |
 
 For two layers the stream holds the most common continuations of "The" in children's stories: "The end", "The
 sun". Only the third layer brings in the context, a dragon was just mentioned, and the answer jumps to "dragon"
-at 96.6%. The model wrote "dragon".
+at 97.7%. The model wrote "dragon".
 
 ## A second step: what the lens cannot see
 
-A few tokens earlier the story reached *"…she went to school and saw a big"*. The lens after layer 3 gives bear
-10.1%, a comma 9.5%, tree 8.3%, and "dragon" only 7.8%. Yet the model wrote "dragon" with 97.6%.
+Three tokens earlier the story reached *"…she went to school and saw a"*. The lens after layer 3 gives big
+68.1%, cookie 2.2%, little 1.3%, and "dragon" only 0.3%. Yet the model wrote "dragon": in the final candidates it
+had 78% against 22% for "big".
 
 The difference is [logit bias](../logit-bias/). "dragon" was a requested word not used yet, so the studio added
-4.16 to its score after the model's own output. The lens shows the model alone, before any bias, before
+6.18 to its score after the model's own output. The lens shows the model alone, before any bias, before
 [temperature](../temperature/) and [top-k](../top-k/), at temperature 1. Comparing the lens after the last layer
 with the final candidates shows exactly how much of a choice came from the model and how much from the rules
 around it.
 
 ## Where it is in the studio
 
-![A residual stream plate selected in the 3D model view, with the logit lens in the plate inspector](../../../../assets/logit-lens-studio.webp)
+![The Model panel with the residual stream plate after layer 2 selected, and the card with its logit lens: sun 32%, end 31%, big 7%](../../../../assets/logit-lens-studio.webp)
 
-In **Lab**, click a glass plate of the residual stream in the 3D **Model** view. The plate inspector shows
-"logit lens: what the model would say if it stopped here" with the top guesses at that point. Click the plates
+In **Lab**, click a glass plate of the residual stream in the 3D **Model** view. The info card in the Model
+panel and the inspector on the right show "logit lens: what the model would say if it stopped here" with the top
+guesses at that point. Click the plates
 one after another to watch the guess form layer by layer, and compare them with the **Logits** panel.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=69&mode=lab" target="_blank" rel="noopener">Open the "The dragon" step in the Lab</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=65&q=8&mode=lab" target="_blank" rel="noopener">Open the "The dragon" step in the Lab</a>
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=62&mode=lab" target="_blank" rel="noopener">Open the "a big dragon" step</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=62&q=8&mode=lab" target="_blank" rel="noopener">Open the "saw a" step</a>
 
 In each, click the plates after layer 1, 2 and 3 and compare the lens with the final candidates.
 
 ## In micro-qwen3
 
 - 3 layers, so the lens has four points to read: after the embedding and after each layer.
-- Right after the embedding the lens mostly reads the current token back ("The" 99.9%), because the stream has
+- Right after the embedding the lens mostly reads the current token back ("The" 99.8%), because the stream has
   not yet seen anything else.
 - In a small model the middle layers often guess common phrases first, and the last layer fixes them with the
   context. Large models show the same pattern over dozens of layers.

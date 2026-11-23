@@ -23,33 +23,33 @@ to go different ways.
 ## Which chances the studio measures
 
 The studio computes entropy over the same chances the draw uses: the final [logits](../logits/) after
-[logit bias](../logit-bias/) and [constrained decoding](../fsm/), cut to the [top-k](../top-k/) candidates and
-divided by the [temperature](../temperature/). So when you move the temperature slider, the entropy moves too.
+[logit bias](../logit-bias/) and [constrained decoding](../fsm/), divided by the [temperature](../temperature/)
+and cut by [top-k](../top-k/) and [min-p](../min-p/). So when you move the temperature slider, the entropy moves too.
 With top-k 40 the largest possible value is about 5.3 bits (40 equal candidates).
 
 ## A real story, step by step
 
-These numbers come from the demo story (words dragon, cookie, school, seed 2779, temperature 0.6, top-k 40),
-121 tokens of answer:
+These numbers come from the demo story (words dragon, cookie, school, seed 1111, temperature 0.6, top-k 40,
+min-p 0.02), 133 tokens of answer:
 
 | | Value |
 | --- | --- |
-| average over the story | 0.78 bits |
-| steps under 1 bit (the studio says "very sure") | 77 of 121 |
-| steps from 1 to 3 bits ("fairly sure") | 44 of 121 |
-| steps of 3 bits or more ("unsure") | 0 |
-| steps with almost exactly 0 bits | 16 |
+| average over the story | 0.83 bits |
+| steps under 1 bit (the studio says "very sure") | 83 of 133 |
+| steps from 1 to 3 bits ("fairly sure") | 48 of 133 |
+| steps of 3 bits or more ("unsure") | 2 |
+| steps with almost exactly 0 bits | 48 |
 
-The least certain step comes after *"…but Lily wanted to be brave. She"*:
+The least certain step comes after *"…The dragon was scared and didn't know what to do. Lily"*:
 
 | Candidate | Chance |
 | --- | --- |
-| asked | 36.7% |
-| went | 30.7% |
-| took | 7.8% |
-| tried | 5.8% |
+| tried | 24.6% |
+| 's | 12.6% |
+| thought | 10.5% |
+| wanted | 10.4% |
 
-Entropy here is 2.82 bits, and the draw picked "ran", a candidate further down the list. The most certain steps
+Entropy here is 3.42 bits, and the draw picked "looked", a candidate far down the list. The most certain steps
 are the fixed phrases: after *"Once upon a"* the model gives "time" 100%, 0 bits.
 
 Most of a story is the model being very sure, with a few real choices in between. Those few steps decide which
@@ -67,7 +67,7 @@ story you get.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=81" target="_blank" rel="noopener">Open the least certain step</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=93&q=8" target="_blank" rel="noopener">Open the least certain step</a>
 
 Then step back and forth with the arrow keys and watch "How sure it was" change. Move the temperature slider on a
 hesitant step to see the entropy rise and fall.
@@ -75,8 +75,8 @@ hesitant step to see the entropy rise and fall.
 ## In micro-qwen3
 
 - The same model scores are much flatter before temperature and top-k: over all 4,096 tokens at temperature 1, the
-  average entropy of this story is 2.09 bits instead of 0.78. Temperature 0.6 and top-k 40 cut away most of the
-  long tail.
+  average entropy of this story is 2.31 bits instead of 0.83. Temperature 0.6, top-k 40 and min-p 0.02 cut away
+  most of the long tail.
 - The largest possible entropy over the whole vocabulary is 12 bits (4,096 equal tokens). A trained model is never
   close to that.
 

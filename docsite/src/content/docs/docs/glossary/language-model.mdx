@@ -20,31 +20,33 @@ memory between stories, just "what comes next?" asked again and again.
 
 ## A real start of a story
 
-These are the first steps micro-qwen3 took when it wrote the demo story, with the three favourites at each step:
+These are some of the first steps micro-qwen3 took when it wrote the demo story, with the favourites at each step:
 
-| Written so far | Top three candidates | Drawn |
+| Written so far | Top candidates | Drawn |
 | --- | --- | --- |
-| *(start of the answer)* | Once 98.6%, One 1.0%, Lily 0.2% | Once |
-| Once | upon 97.4%, there 2.6% | upon |
-| Once upon a time | **,** 82.9%, **there** 17.1% | **there** |
-| Once upon a time there was a | little 60.5%, boy 19.0%, school 7.4% | little |
+| *(start of the answer)* | Once 100% | Once |
+| Once upon a time | **,** 96.6%, there 3.4% | **,** |
+| Once upon a time, there was a | little 81.2%, big 9.9%, boy 6.1% | little |
+| Once upon a time, there was a little | girl 69.4%, boy 30.6% | girl |
 
 Two things are worth noticing. Most steps are nearly certain: after "Once upon a" the model gives "time" 100%.
-And at the third row the model did not take its favourite: a comma had 83%, but the draw landed on "there", and
-the story went on from there. That is how the same model can write many different stories.
+And now and then the model does not take its favourite. Later in the story, after "The dragon was big and
+shiny", a period had 78.0%, but the draw landed on a comma, which had 16.0%, and the sentence went on: ", and
+Lily wanted to be friends with it." That is how the same model can write many different stories.
 
 ## Where it is in the studio
 
-![The story, the candidates for the current step and the player in the studio](../../../../assets/language-model-studio.webp)
+![The Model window with the candidates for the current step, the story and the player in the studio](../../../../assets/language-model-studio.webp)
 
 - **Prompt & completion** shows the text. The highlighted token is the current step.
-- **Logits** shows what the model chose between at this step.
+- **Model** shows, at the right of the plates, the token the model wrote at this step and the candidates it chose
+  between, with their chances. **Logits** shows the score of every token in the vocabulary.
 - **The player** at the bottom moves one token back or forward. Every step is recorded, so you can go back to any
   moment of the story.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=32" target="_blank" rel="noopener">Open this step in the studio</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=70&q=8" target="_blank" rel="noopener">Open the step where the draw missed the favourite</a>
 
 Then press the arrow keys or the player buttons and watch the candidates change from token to token.
 

@@ -47,35 +47,36 @@ the last line is the answer.
 ## The model decides when the story ends
 
 Nobody tells micro-qwen3 how long the story should be. It writes `<|im_end|>` itself, as one more choice among
-the candidates. This is the last step of the demo story, right after *"They played together all day and had lots
-of fun."*:
+the candidates. Near the end of the demo story, right after *"They were happy and played together all day."*,
+it was one of four close options:
 
 | Candidate | Chance |
 | --- | --- |
-| `<\|im_end\|>` | **84.9%** |
-| The | 8.6% |
-| And | 4.7% |
-| From | 0.9% |
+| The | **43.9%** |
+| Lily | 15.1% |
+| From | 14.5% |
+| `<\|im_end\|>` | 11.7% |
 
-The draw picked `<|im_end|>`, and the engine stopped: as soon as any special token is drawn, the answer is over.
-Earlier in this story `<|im_end|>` never had more than 5%, so the model really waited for a natural ending.
+The draw picked "The", and the story ended with *"The end."* Right after that the chance of `<|im_end|>` was
+100%, the draw picked it, and the engine stopped: as soon as any special token is drawn, the answer is over.
+Before that, `<|im_end|>` never had more than 12% in this story, so the model really waited for a natural ending.
 
-It does not always get there. At the default [temperature](../temperature/) of 0.6, 87% of stories end on their
+It does not always get there. At the default [temperature](../temperature/) of 0.6, about 85% of stories (300 stories from 100 different orders) end on their
 own. The rest are cut by [max new tokens](../max-new-tokens/), a safety limit on the length of the answer.
 
 ## Where it is in the studio
 
-![Special tokens in the Prompt & completion panel, and the model choosing the end of the story](../../../../assets/special-tokens-studio.webp)
+![The Model window with the model writing the end-of-turn token at 100%, and the end of the story in Prompt & completion](../../../../assets/special-tokens-studio.webp)
 
 In **Prompt & completion** the special tokens are shown as small grey markers: around your request at the top,
-and at the very end of the answer. The **Logits** panel shows `<|im_end|>` like any other candidate when the
-model considers stopping.
+and at the very end of the answer. The **Model** window and the **Logits** panel show `<|im_end|>` like any other
+candidate when the model considers stopping.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=148" target="_blank" rel="noopener">Open the last step of the story</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=160&q=8" target="_blank" rel="noopener">Open the last step of the story</a>
 
-Then step back a few tokens and watch the chance of `<|im_end|>` rise as the story comes to its last sentence.
+Then step back a few tokens: at the step after "all day." the chance of `<|im_end|>` is 11.7%, and after "The end." it jumps to 100%.
 
 ## In micro-qwen3
 

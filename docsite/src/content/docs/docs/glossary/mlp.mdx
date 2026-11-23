@@ -26,33 +26,34 @@ if it were the end of the model and see which tokens it favours.
 
 ## A real step
 
-The demo story has just written *"One day, she went to"*, and the next token will be "school". These are the
+The demo story has just written *"One day, she went to"*, and the next token will be "school". These are some of the
 strongest neurons of two layers at that step, with the three tokens each one pushes up:
 
 | Layer | Neuron | Firing | Pushes toward |
 | --- | --- | --- | --- |
-| 2 | 118 | +1.29 | see, know, the |
-| 2 | 273 | +0.49 | Mommy, call |
-| 3 | 178 | +1.46 | at, 's, op |
-| 3 | 311 | −0.45 | *(away from)* decided, promise, set |
-| 3 | 134 | +0.39 | run, ce, would |
+| 2 | 118 | +1.48 | see, the, day |
+| 2 | 213 | +0.41 | way, ve, find |
+| 3 | 178 | +1.64 | 's, at, op |
+| 3 | 135 | −0.85 | *(away from)* way, ", sit |
+| 3 | 317 | +0.66 | day, the, rain |
 
-Two things stand out. Only a small part of each layer is busy: 30 of 336 neurons in layer 2 and 59 in layer 3
-fire at more than a tenth of the strongest one. And many neurons push word pieces like "at", "op" or "ce" rather
+Two things stand out. Only a small part of each layer is busy: 25 of 336 neurons in layer 2 and 56 in layer 3
+fire at more than a tenth of the strongest one. And many neurons push word pieces like "'s", "op" or "ve" rather
 than whole words. In a model this small, one neuron rarely means one clear idea; the meaning comes from many of
 them adding up together with attention.
 
 ## Where it is in the studio
 
-![An MLP plate selected in the 3D model view, with its strongest neurons in the inspector](../../../../assets/mlp-studio.webp)
+![The MLP plate of layer 3 selected in the Model panel, with the line of steps under the model and the strongest neurons in the inspector card](../../../../assets/mlp-studio.webp)
 
 Switch to **Lab** and click an MLP plate in the 3D **Model** view, the plate after the attention heads of a
-layer. The inspector shows how many neurons are active and lists the strongest ones, each with its firing value
-and the tokens it pushes toward.
+layer. The line under the model lists the steps inside the plate (RMSNorm, SwiGLU, back into the stream), and the
+score line above it shows how much the MLP added to the written word. The inspector shows how many neurons are
+active and lists the strongest ones, each with its firing value and the tokens it pushes toward.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=57&mode=lab" target="_blank" rel="noopener">Open this step in the studio</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=58&q=8&mode=lab" target="_blank" rel="noopener">Open this step in the studio</a>
 
 Click the MLP plate of layer 3, then step one token forward or back and watch different neurons take over.
 

@@ -47,20 +47,20 @@ it is started, [constrained decoding](../fsm/) takes over and makes sure it is f
 
 ## Real steps: the bonus grows as the story goes on
 
-The demo story (seed 2779, words dragon, cookie, school). Chances are at temperature 0.6 with top-k 40, before and
-after the bonus:
+The demo story (seed 1111, words dragon, cookie, school). The model wrote "cookies" by itself, so one word was used
+when the two steps below came. Chances are at temperature 0.6, before and after the bonus:
 
 | Story so far | Bonus | Before | After |
 | --- | --- | --- | --- |
-| ...One day, she went to | +2.58 | "the" 42.9%, "her" 30.4%, **"school" 24.6%** | **"school" 96.0%** |
-| ...she went to school and saw a big | +4.16 | "bear" 22.3%, "," 20.2%, "tree" 16.1%, **"dragon" 14.3%** | **"dragon" 97.6%** |
-| ...Lily was very happy and gave the dragon a | +9.66 | "big" 90.4%, "hug" 6.0%, ..., **"cookie" 0.45%** | **"cookie" 100%** |
+| ...she went to | +4.28 | "the" 95.6%, "her" 2.9%, "a" 1.1%, ..., **"school" 0.2%** | **"school" 71%** |
+| ...she went to school and saw a | +6.18 | "big" 98.7%, "cookie" 0.3%, ..., **"dragon" under 0.1%** | **"dragon" 78%** |
 
-The third row shows why the bonus grows. Sixty tokens after "dragon", the model was about to give the dragon "a big
-hug". "cookie" had less than half a percent. By then the waiting bonus had grown to +9.66, three times the base
-because two words were already used, and "a cookie" won.
+The second row shows why the bonus grows. After "school" two words were used, so the base bonus tripled
+(2 · 3 = 6) instead of doubling (2 · 2 = 4) as in the first row. The model was about to write "a big" with 98.7%.
+"dragon" had less than a tenth of a percent. With +6.18 it got 78%, and "dragon" won.
 
-Without the push the story would have been fine, just without a cookie. The bonus does not write the story; it
+Without the push the story would have been fine, just without a school. Set strength to 0 and the same order
+goes "...she went to the park with her mom", and "school" never comes. The bonus does not write the story; it
 changes which of the model's own options wins.
 
 ## Fewer than three words
@@ -72,9 +72,9 @@ natural the text is.
 
 ## Where it is in the studio
 
-![The Logits strip with white ticks for chances before the bonus, and the Keywords card](../../../../assets/logit-bias-studio.webp)
+![The Lab at the step where "school" is written: the Logits strip with white ticks for chances before the bonus, and the Constraints card with the logit bias sliders](../../../../assets/logit-bias-studio.webp)
 
-- **Guide:** the card "What just happened" lists the bonus at each step, for example "dragon +4.2".
+- **Guide:** the card "What just happened" shows the effect of the bonus at a step, for example "school 0.2% → 71%".
 - **Lab:** the **Constraints** card has the three sliders: **logit bias: strength**, **ramp τ** and **cascade
   offset**. In the Logits strip a white tick shows each token's chance before the bonus, and the **Keywords** card
   shows which words are still waiting.
@@ -82,9 +82,9 @@ natural the text is.
 
 ## Try it
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&s=124&mode=lab" target="_blank" rel="noopener">Open the "cookie" step in the Lab</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&s=58&q=8&mode=lab" target="_blank" rel="noopener">Open the "school" step in the Lab</a>
 
-<a class="try-link" href="/studio?w=dragon,cookie,school&seed=2779&wb=0&mode=lab" target="_blank" rel="noopener">The same order without the bonus</a>
+<a class="try-link" href="/studio?w=dragon,cookie,school&seed=1111&wb=0&q=8&mode=lab" target="_blank" rel="noopener">The same order without the bonus</a>
 
 ## In micro-qwen3
 

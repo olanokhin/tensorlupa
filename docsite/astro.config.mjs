@@ -19,7 +19,7 @@ export default defineConfig({
       components: { SocialIcons: './src/components/HeaderLinks.astro', SiteTitle: './src/components/SiteTitle.astro' },
       disable404Route: true,   // страница 404 — общая для сайта (web/404.html)
       sidebar: [
-        { label: 'Start here', translations: { ru: 'С чего начать' }, items: [{ slug: 'docs', label: 'About the docs', translations: { ru: 'О документации' } }] },
+        { label: 'Start here', translations: { ru: 'С чего начать' }, items: [{ slug: 'docs', label: 'About the docs', translations: { ru: 'О документации' } }, { slug: 'docs/terms' }] },
         // адреса страниц плоские и стабильные (/docs/glossary/<термин>/ — на них ссылаются подсказки студии),
         // а меню делится на «Основы» (порядок обучения) и «Настройки»
         { label: 'The model', translations: { ru: 'Модель' }, items: [{ slug: 'docs/model/how-it-was-made' }] },

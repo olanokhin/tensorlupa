@@ -16,7 +16,7 @@ a tiny model rarely recovers from such a slip: it glues the odd piece into a wor
 
 Words shoot, zigzag, mighty, seed 7001, min-p off. At step 81 the model has written *"As he was shooting, he saw a
 big zigzag on the ground."* and is sure what comes next: " He" 91.8%, " It" 4.8%, " The" 3.1%. The draw lands on
-" B", a token with 0.003%, about 30,000 times less likely than " He". The model has to make a word out of it and
+" B", a token with 0.003%, about 35,000 times less likely than " He". The model has to make a word out of it and
 writes *"Byican said, …"*.
 
 <a class="try-link" href="/studio?w=shoot,zigzag,mighty&seed=7001&mp=0&s=81&q=8" target="_blank" rel="noopener">Open the slip at step 81 (min-p off)</a>
@@ -64,7 +64,7 @@ the favourite is often the repeat. With the penalty on, loops stay at 1 to 2%.
 
 ## Where it is in the studio
 
-![The min-p slider in the Sampling card and the candidates it rules out on the logits strip](../../../../assets/min-p-studio.webp)
+![The Lab with the min-p slider at 0.02 in the Sampling card, and the Logits strip with the candidates it rules out greyed out](../../../../assets/min-p-studio.webp)
 
 The **min-p** slider is the third one in the **Sampling** card, under top-k. It goes from 0 (off) to 0.2; the
 default is 0.02. In the Lab, the logits strip greys out the candidates it rules out; their chance is 0.

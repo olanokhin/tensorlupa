@@ -6,6 +6,7 @@ set -e
 cd "$(dirname "$0")/.."
 rm -rf dist && mkdir dist
 rsync -a --exclude '.*' --exclude '*.md' --exclude 'engine/test_*.mjs' web/ dist/
+node scripts/glossary.mjs   # таблица терминов и страница-словарик Docs из web/i18n/glossary.js; при расхождениях выкатка останавливается
 (cd docsite && ./node_modules/.bin/astro build --silent) && node scripts/pending-links.mjs docsite/dist && cp -R docsite/dist/. dist/   # Docs: /docs/… и /ru/docs/…
 node scripts/localize.mjs dist   # страницы на каждом языке (/, /studio, /ru/, /ru/studio) с текстами в HTML
 ${WRANGLER:-wrangler} deploy
