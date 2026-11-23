@@ -4,6 +4,9 @@
 html.m, html.m body { height: 100%; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
 html.m { --m-play: 52px; --m-grab: 22px; --m-tap: 40px; --row: 30px; }
 html.m #app { display: none; }
+/* touch-action: manipulation — быстрые нажатия подряд (шаг вперёд, шаг вперёд) не считаются двойным нажатием и не
+   приближают страницу; щипок для увеличения остаётся */
+:where(#m, #m *) { touch-action: manipulation; }   /* :where — без веса: полосы, крючок и шкала шагов задают своё */
 #m { position: fixed; inset: 0; display: flex; flex-direction: column; gap: var(--gap); height: 100dvh;
   padding: calc(var(--gap) + env(safe-area-inset-top)) calc(var(--gap) + env(safe-area-inset-right)) 0 calc(var(--gap) + env(safe-area-inset-left)); }
 
@@ -206,7 +209,7 @@ html.m #app { display: none; }
 
 /* строка плеера */
 .m-play { display: flex; align-items: center; gap: var(--gap); height: var(--m-play); padding: 0 var(--pad) var(--s2); }
-.m-play button { flex: none; width: var(--m-tap); height: var(--m-tap); padding: 0 !important; display: grid; place-items: center; }
+.m-play button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; flex: none; width: var(--m-tap); height: var(--m-tap); padding: 0 !important; display: grid; place-items: center; }
 .m-play button svg { width: 16px; height: 16px; fill: currentColor; }
 .m-seek { position: relative; flex: 1 1 0; min-width: 0; height: var(--m-tap); touch-action: none; cursor: pointer; --f: 0; outline: none; -webkit-tap-highlight-color: transparent; }
 .m-seek::before { content: ""; position: absolute; left: 11px; right: 11px; top: 50%; height: 2px; margin-top: -1px; border-radius: 1px; background: rgba(187, 188, 196, 0.14); }

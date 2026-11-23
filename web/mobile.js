@@ -425,8 +425,15 @@ function langMenu() {
 function bind() {
   $('m-gen').addEventListener('click', () => generate());
   $('m-play').addEventListener('click', () => (S.timer ? stop() : play()));
-  $('m-prev').addEventListener('click', () => { stop(); setCur(S.cur - 1); });
-  $('m-next').addEventListener('click', () => { stop(); setCur(S.cur + 1); });
+  // шаг назад и вперёд: нажатие — один токен; если держать — токены бегут, пока палец на кнопке
+  for (const [id, d] of [['m-prev', -1], ['m-next', 1]]) {
+    const b = $(id); let hold = 0, rep = 0, held = false;
+    const end = () => { clearTimeout(hold); clearInterval(rep); hold = rep = 0; };
+    b.addEventListener('pointerdown', () => { held = false; end(); hold = setTimeout(() => { held = true; stop(); rep = setInterval(() => setCur(S.cur + d), 70); }, 380); });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, end);
+    b.addEventListener('click', () => { if (held) { held = false; return; } stop(); setCur(S.cur + d); });
+    b.addEventListener('contextmenu', (e) => e.preventDefault());      // долгое нажатие не должно открывать меню
+  }
   // полоса шагов: нажать или вести пальцем; ручка ходит между краями с отступом в половину своей ширины
   const sk = $('m-seek'); let seeking = false;
   const seek = (e) => { if (!S.run) return; const r = sk.getBoundingClientRect(), pad = 11, f = Math.max(0, Math.min(1, (e.clientX - r.left - pad) / Math.max(1, r.width - 2 * pad)));
