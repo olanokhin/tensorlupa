@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { setBackdrop } from './backdrop.js';
 import { t as tx } from './i18n.js';
+import { partLogit, headPart } from './contrib.js';
 
 // палитра из двух комплементарных цветов: жёлтый (плюс, путь к выбранному токену) — сиреневый (минус, attention)
 const POS = new THREE.Color(0xf2b33d), NEG = new THREE.Color(0xa98cf0), DIM = new THREE.Color(0x4b4f56);
@@ -519,16 +520,9 @@ export class View3D {
   // Сколько очков вектор v (часть остаточного потока) добавил логиту токена tok на этом шаге. Финальная норма делит
   // весь поток на его rms, поэтому вклад части — её проекция через норму и словарь в масштабе фактического потока.
   // Вклады эмбеддинга, внимания и MLP всех слоёв в сумме дают логит модели (проверено: расхождение в сотых).
-  partLogit(v, tok) {
-    const { layers: L, dim: d } = this.e.info, xf = this.step.resid.subarray(L * d, (L + 1) * d), rms = (a) => { let q = 0; for (const x of a) q += x * x; return Math.sqrt(q / a.length); };
-    const rv = rms(v); return rv < 1e-9 ? 0 : this.e.lens(v)[tok] * rv / rms(xf);
-  }
+  partLogit(v, tok) { return partLogit(this.e, this.step, v, tok); }
   // вклад головы h слоя l в логит отслеживаемого токена: её выход через W_o, прочитанный логит-линзой
-  headPart(l, h) {
-    const { dim: d, heads: H, headDim: hd } = this.e.info, Wo = this.e.weights(l, 'o'), ho = this.step.headOut, v = new Float32Array(d);
-    for (let i = 0; i < d; i++) { let y = 0; const row = i * H * hd + h * hd; for (let j = 0; j < hd; j++) y += Wo[row + j] * ho[(l * H + h) * hd + j]; v[i] = y; }
-    return this.partLogit(v, this.tok);
-  }
+  headPart(l, h) { return headPart(this.e, this.step, l, h, this.tok); }
   // вклад каждого нейрона слоя l в логит написанного токена (кэш: считается один раз на шаг и слой)
   neuronParts(l) {
     const key = this.step.pos + ':' + l + ':' + this.tok;

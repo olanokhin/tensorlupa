@@ -150,3 +150,38 @@ Deliberate exceptions:
 
 - Dragged pieces (cards, bottom panels, windows) follow the pointer, and the others slide aside in about 200 to 340 ms.
 - Text that changes on a new step fades in once, and not during fast playback.
+
+## Phone
+
+A narrow screen gets its own layout of the same studio (`mobile.js`, `mobile.css`, rules under `html.m`): the same
+model, the same experiment links and the same numbers, in one column for a thumb. `studio.html` chooses the layout by
+width (under 760px, or a touch screen under 520px high for a phone on its side). The 3D view and three.js are not
+loaded there at all.
+
+- **Order, top to bottom:** top bar, story, tabs, the window of the chosen tab, player. The story is above the
+  tabs because a word in it chooses the step that every tab shows.
+- **Four tabs:** Model, Logits, Attention, Docs, as one segmented control in a field. On a big screen these are
+  separate windows; on a phone only one is visible.
+- **Player:** always pinned to the bottom. Settings are a sheet that grows out of the player by its grabber (tap, or
+  swipe up and down). It covers at most half the screen, so the story stays visible and rewrites live. Its cards are
+  slides that scroll sideways: Prompt, Sampling, Constraints, Replay speed.
+- **Touch sizes:** anything a finger hits is at least 40px high (`--m-tap`); slider knobs are 22px. Text fields
+  use 16px type, otherwise iOS zooms the page on focus.
+- **Model without 3D:** the residual stream is a column, read top to bottom. A row is a block: its name, what it
+  added to the score, the score after it. These are the numbers of the score line above the 3D model, from the same
+  code (`contrib.js`). A row opens into the steps inside the block and the link to Docs.
+- **Attention:** tapping a strip picks a head; sliding along a strip only previews tokens, because a finger cannot
+  hit one of 130 columns. A token is picked exactly from the "Looks at" list under the strips.
+- **Shared code:** defaults, experiment links, tested seeds and the run counter live in `core.js`; score
+  contributions in `contrib.js`. Both layouts import them, so a change of a default or of the math reaches both.
+- **Terms:** an underlined term shows its glossary tooltip on tap (on a big screen, on hover), with the same
+  "Read more in Docs" link, which opens the Docs tab. A tap anywhere else closes it. A term inside the label of a
+  switch shows the tooltip and does not flip the switch.
+- **Share:** the button in the top bar hands the experiment link to the phone's own share sheet. Without one the
+  link is copied; where copying is not allowed either (a page not on https), the link is shown for copying by hand.
+- **Speed:** a story is computed in portions. If it is not done in 150 ms, the device is slow: the story is then
+  written on screen token by token, settings rerun it when a slider is released, and the tab is not recomputed
+  on every token during playback. Measure speed on a phone only over https: over plain http from a local network
+  an iPhone runs the page 50 to 70 times slower.
+- Tokens, glass, buttons, sliders, token pills, links to Docs and the glossary rules are the same as on a big
+  screen. Do not restyle them for the phone; only sizes change.

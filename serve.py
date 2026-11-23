@@ -69,5 +69,8 @@ if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
     web = Path(__file__).resolve().parent / "web"
     handler = functools.partial(NoCache, directory=str(web))
-    print(f"редактор: http://127.0.0.1:{port}")
-    http.server.ThreadingHTTPServer(("127.0.0.1", port), handler).serve_forever()
+    # второй аргумент — адрес: по умолчанию только этот компьютер; 0.0.0.0 открывает сервер устройствам той же
+    # сети (посмотреть студию с телефона по Wi-Fi): python3 serve.py 8766 0.0.0.0
+    host = sys.argv[2] if len(sys.argv) > 2 else "127.0.0.1"
+    print(f"редактор: http://{host}:{port}")
+    http.server.ThreadingHTTPServer((host, port), handler).serve_forever()

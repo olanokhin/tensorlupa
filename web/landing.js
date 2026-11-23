@@ -54,17 +54,6 @@ if (matchMedia('(hover: none)').matches) $('trace-hint').textContent = t('land.t
 const film = $('film');
 new IntersectionObserver(([e]) => { if (e.isIntersecting) { film.preload = 'auto'; film.play().catch(() => {}); } else film.pause(); }, { threshold: 0.35 }).observe(film);
 
-// ---------------------------------------------------------------- телефон: ссылка для компьютера
-const url = location.origin + location.pathname.replace(/[^/]*$/, '');
-document.querySelector('.phone-url').textContent = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
-$('copy').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText(url); $('copy').textContent = t('land.copied'); } catch { /* без буфера — адрес виден на экране */ }
-});
-if (navigator.share) {
-  $('share').hidden = false;
-  $('share').addEventListener('click', () => navigator.share({ title: 'TensorLupa', text: t('land.h1'), url }).catch(() => {}));
-}
-
 // ---------------------------------------------------------------- язык: глобус и список языков (тот же перечень, что в студии)
 // Выбор ведёт на эту же страницу в другом языке: / ↔ /ru/. Новый язык — словарь в i18n/ и строка в LANGS (i18n.js).
 import { LANGS, langUrl } from './i18n.js';

@@ -1,4 +1,5 @@
 import { t as tx } from './i18n.js';
+import { headPart } from './contrib.js';
 // Внимание на текущем шаге: 12 полос, по одной на голову (3 слоя × 4 головы). В полосе слева направо все прошлые
 // токены; высота и яркость столбика — вес внимания текущего токена на этот прошлый. Справа — слова, на которые голова
 // смотрит сильнее всего. Щелчок по полосе выбирает голову для подсветки истории.
@@ -152,13 +153,7 @@ export class AttentionView {
 
   // вклад головы в счёт слова (то же разложение, что линия счёта в окне «Модель»): часть потока, которую голова
   // добавила через W_o, читается логит-линзой. Сумма четырёх голов слоя равна числу «вним. +x» в «Модели».
-  headScore(l, h, tok) {
-    const { layers: L, heads: H, headDim: hd, dim: d } = this.info, st = this.steps[this.cur], Wo = this.engine.weights(l, 'o'), v = new Float32Array(d);
-    const ho = st.headOut.subarray((l * H + h) * hd, (l * H + h + 1) * hd);
-    for (let i = 0; i < d; i++) { let y = 0; const row = i * H * hd + h * hd; for (let j = 0; j < hd; j++) y += Wo[row + j] * ho[j]; v[i] = y; }
-    const rms = (a) => { let q = 0; for (const x of a) q += x * x; return Math.sqrt(q / a.length); }, rv = rms(v);
-    return rv < 1e-9 ? 0 : this.engine.lens(v)[tok] * rv / rms(st.resid.subarray(L * d, (L + 1) * d));
-  }
+  headScore(l, h, tok) { return headPart(this.engine, this.steps[this.cur], l, h, tok); }
 
   tok(t) { const s = this.engine ? this.engine.tokenText[this.steps[t].input] : ''; return String(s).replace(/ /g, '·').replace(/\n/g, '⏎'); }
 

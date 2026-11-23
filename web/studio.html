@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <base href="/">
 <title>TensorLupa studio: watch a language model think</title>
 <meta name="author" content="Alex Anokhin">
@@ -22,10 +22,13 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="media/apple-touch-icon.png">
 <script>
-// студия — для большого экрана; с телефона ведём на главную, там объяснение и ссылка для компьютера
-if (matchMedia('(max-width: 699px)').matches) location.replace((/^\/ru(\/|$)/.test(location.pathname) ? '/ru/' : '/') + '?from=studio');
+// Узкий экран (телефон) получает свою раскладку: mobile.js и правила html.m из mobile.css. Широкий — редактор editor.js.
+// Телефон на боку шире 759, но по высоте тот же телефон: его узнаём по пальцу вместо мыши и малой высоте.
+window.MQ_MOBILE = matchMedia('(max-width: 759px), (pointer: coarse) and (max-height: 520px)').matches;
+if (window.MQ_MOBILE) document.documentElement.classList.add('m');
 </script>
 <link rel="stylesheet" href="editor.css">
+<link rel="stylesheet" href="mobile.css">
 <script src="i18n/en.js"></script>
 <script src="i18n/ru.js"></script>
 <script src="i18n/glossary.js"></script>
@@ -138,6 +141,6 @@ if (matchMedia('(max-width: 699px)').matches) location.replace((/^\/ru(\/|$)/.te
 })();
 </script>
 <!-- не рисовать страницу, пока главный модуль не построил каркас (Chrome; в Safari раскладку по умолчанию задаёт CSS) -->
-<script type="module" src="editor.js" blocking="render"></script>
+<script>document.write('<script type="module" src="' + (window.MQ_MOBILE ? 'mobile.js' : 'editor.js') + '" blocking="render"><\/script>');</script>
 </body>
 </html>

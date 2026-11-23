@@ -357,8 +357,7 @@
   'land.lede': 'TensorLupa runs a real language model in your browser and shows every step of its work: which words it weighed, which one it picked, and where it was looking.',
   'land.open': 'Open the studio',
   'land.free': 'Free and open source. Runs in your browser, nothing to install.',
-  'land.phone': 'The studio needs a bigger screen. Open this page on a computer with this link:',
-  'land.copy': 'Copy link', 'land.copied': 'Link copied', 'land.share': 'Send to my computer',
+
   'land.trace.cap': 'This sentence was written by the model, one token at a time.',
   'land.trace.chose': 'The model chose between',
   'land.trace.hint': 'Point at any token to see what it chose between.',
@@ -479,4 +478,17 @@
   'land.expect.h': 'What to expect',
   'land.expect': 'micro‑qwen3 is tiny: about 560 times smaller than the smallest Qwen3. It writes short children’s stories in English, and sometimes they are clumsy. But it is built the way large models are built, with tokens, attention, layers and sampling with temperature, and it is small enough to see all of it at once.',
   'land.by': 'TensorLupa by Alex Anokhin. Open source under Apache 2.0.',
+  // студия на телефоне (mobile.js)
+  'mob.empty': 'Press Generate, and the model will write a story here.',
+  'mob.settings': 'Settings',
+  'mob.step': 'Step',
+  'mob.slide.prompt': 'Prompt',
+  'mob.weights': 'weights',
+  'mob.bits': '{n}-bit',
+  'mob.more': 'Show 16',
+  'mob.less': 'Show 8',
+  'mob.pick': 'Tap a word to see its score.',
+  'mob.back': 'Tap the written word to return.',
+  'mob.attn.hint': 'Tap a strip to pick a head: the story is tinted with its weights. Slide along a strip to see the tokens.',
+  'mob.writing': 'the model is writing…',
 };

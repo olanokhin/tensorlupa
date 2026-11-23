@@ -14,6 +14,7 @@ import { LogitStrip, show } from './logits.js';
 import { AttentionView } from './attention.js';
 import { ModelView } from './modelview.js';
 import { GrowthChart } from './growth.js';
+import { DEF, QK, linkDefaults, DEMO_SEED, COMPLETION_SEED, MODELS, parseWords, PICKS_ALL, countRun, softmaxT, DOC_SLUG } from './core.js';
 
 const $ = (id) => document.getElementById(id);
 const P = {
@@ -27,14 +28,6 @@ const P = {
 const S = { engine: null, run: null, cur: 0, timer: null, items: [] };
 let engineReady; S.ready = new Promise((r) => { engineReady = r; });   // модель загружена и интерфейс привязан
 
-// ссылка на эксперимент: слова (или текст), seed, шаг и настройки, отличные от умолчаний, — в адресе страницы.
-// Прогон детерминирован, поэтому по ссылке у получателя ровно та же история и тот же шаг.
-const DEF = { temperature: 0.6, topK: 40, minP: 0.02, wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, loopPenalty: true, maxNew: 200 };
-const QK = { temperature: 't', topK: 'k', minP: 'mp', wbBase: 'wb', wbTau: 'tau', wbStart: 'cs', fsm: 'fsm', loopPenalty: 'rp', maxNew: 'n' };
-// Ссылка без q — из времён одной 4-битной версии без штрафа и min-p (ими записаны примеры в Docs): для неё
-// умолчания тех времён, чтобы история осталась прежней. Новые ссылки всегда пишут q.
-const legacyLink = (q) => q.has('seed') && !q.has('q');
-function linkDefaults(q) { return legacyLink(q) ? { ...DEF, loopPenalty: false, minP: 0 } : DEF; }
 function readLink() {
   const q = new URLSearchParams(location.search);
   if (q.has('q') && !q.has('seed')) S.bits = q.get('q') === '4' ? 4 : 8;   // «открыть 4-битную версию» с лендинга
@@ -69,10 +62,6 @@ const LINK = readLink();
 // штраф за повторы с учётом корпуса и min-p 0.02 включены по умолчанию у обеих версий (замер в micro-qwen3,
 // experiments/ngram: зацикленных историй 9–16% → 1–2%, историй с обломками слов не больше, у 4 бит — вдвое меньше)
 if (!LINK) P.loopPenalty = DEF.loopPenalty;
-const DEMO_SEED = { 8: 1111, 4: 3 };
-// То же для режима Completion с началом по умолчанию «Once upon a time»: перебор 1500 seed на каждую версию весов
-// (история закончилась сама, без повторов трёх слов подряд и одинаковых предложений), лучшие прочитаны глазами.
-const COMPLETION_SEED = { 8: 1246, 4: 633 };
 if (!LINK) P.seed = DEMO_SEED[S.bits];
 
 // Гайд · Лаб: Гайд — главное простыми словами (простые логиты, одна карточка «что произошло», только сэмплинг,
@@ -92,13 +81,6 @@ function setMode(m, persist = true) {
   requestAnimationFrame(() => { if (S.strip) S.strip.draw(); });
 }
 // модели студии: пока одна; новые добавляются сюда и появляются в меню модели
-// одна модель, две версии весов: 8 бит — по умолчанию, качество как у полных весов; 4 бит (W4R) — сжатая, как на плате
-// ESP32. Выбор версии хранится в браузере и попадает в ссылку на эксперимент (q=8 / q=4): получатель увидит ту же
-// историю. Старые ссылки без q сделаны на 4-битной версии — она для них и остаётся
-const MODELS = [
-  { id: 'micro-qwen3', bits: 8, file: 'model-8bit.bin', params: 1056656 },
-  { id: 'micro-qwen3', bits: 4, file: 'model.bin', params: 1056656 },
-];
 const MODEL = () => MODELS.find((m) => m.bits === S.bits) || MODELS[0];
 const ICON_PLAY = '<svg viewBox="0 0 16 16"><path d="M5 3.1v9.8a.7.7 0 0 0 1.06.6l7.7-4.9a.7.7 0 0 0 0-1.2l-7.7-4.9A.7.7 0 0 0 5 3.1z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 16 16"><rect x="4" y="3" width="2.8" height="10" rx="0.9"/><rect x="9.2" y="3" width="2.8" height="10" rx="0.9"/></svg>';
@@ -192,15 +174,6 @@ function live(key) {
   live.raf = requestAnimationFrame(() => { live.raf = 0; generate({ live: true }); });
 }
 
-// Ключевые слова: движок понимает до трёх английских слов (a–z, дефис, апостроф, до 23 букв), разделители — пробел
-// или запятая. Лишние и неанглийские слова не уходят ни в движок, ни в промпт (иначе модель просят то, что не подталкивают),
-// а под полем появляется тихая подсказка.
-const WORD_RE = /^[a-z][a-z'-]{0,22}$/i;
-function parseWords(raw) {
-  const all = raw.split(/[ ,]+/).filter(Boolean);
-  const ok = all.filter((w) => WORD_RE.test(w)).map((w) => w.toLowerCase());
-  return { words: ok.slice(0, 3), foreign: ok.length < all.length, extra: ok.length > 3 };
-}
 function wordsHint(key, field = 'words') {
   let h = document.getElementById('words-hint');
   if (!key) { h?.remove(); return; }
@@ -211,14 +184,6 @@ function wordsHint(key, field = 'words') {
   clearTimeout(wordsHint.tm); wordsHint.tm = setTimeout(() => h.remove(), 5000);
 }
 
-// Проверенные заказы: слова + seed, отобранные перебором 600 seed на комбинацию и чтением историй
-// (все слова на месте, история закончилась сама, мало повторов). Клик — вписать и сгенерировать.
-// готовые заказы: лучший seed для каждой версии весов — [слова, seed для 4 бит, seed для 8 бит]
-// (подобраны под штраф с учётом корпуса и min-p 0.02: перебор 1500 seed, все слова, конец сам, без повторов и обломков)
-const PICKS_ALL = [
-  ['dragon, cookie, school', 3, 1111], ['share, toy, kind', 147, 1238], ['find, treasure, brave', 319, 705],
-  ['run, dog, fast', 1158, 1339], ['fly, kite, red', 670, 1409], ['play, ball, happy', 273, 711], ['robot, moon', 1002, 474],
-];
 const PICKS = PICKS_ALL.map(([ws, s4, s8]) => [ws, S.bits === 4 ? s4 : s8]);
 function picksMenu() {
   const w = $('words'), box = document.createElement('div');
@@ -249,16 +214,6 @@ function picksMenu() {
   addEventListener('resize', () => { if (!box.hidden) place(); });
 }
 
-// Счётчик прогонов на главной: после каждой готовой истории — анонимный «+1» на наш же сервер (tensorlupa.com/api/run).
-// Отправляется только случайный номер браузера (localStorage), без текста и слов. Пересчёты от ползунков не считаются —
-// иначе одно движение дало бы сотню «прогонов». На локальном сервере разработки не отправляется.
-function countRun() {
-  if (/^(127\.0\.0\.1|localhost|\[::1\])$/.test(location.hostname)) return;
-  let id = null;
-  try { id = localStorage.getItem('mq.uid'); if (!id) { id = crypto.randomUUID().replace(/-/g, ''); localStorage.setItem('mq.uid', id); } }
-  catch { id = (countRun.tmp ||= crypto.randomUUID().replace(/-/g, '')); }   // без хранилища — номер только на эту загрузку
-  fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }), keepalive: true }).catch(() => {});
-}
 
 // newSeed — «другая история»; live — пересчёт после изменения настройки (без анимации, на том же шаге)
 function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
@@ -403,14 +358,6 @@ function play() {
 function stop() { if (S.timer) clearInterval(S.timer); S.timer = null; $('t-play').innerHTML = ICON_PLAY; $('gen').classList.remove('busy'); genSpeed(); }
 
 // ---------------------------------------------------------------- инспектор шага
-// вероятности из логитов при температуре T (по всему словарю, как полоса логитов в Лабе)
-function softmaxT(l, T) {
-  let m = -Infinity; for (const x of l) if (x > m) m = x;
-  const p = new Float64Array(l.length); let z = 0;
-  for (let i = 0; i < l.length; i++) { const e = l[i] <= -1e29 ? 0 : Math.exp((l[i] - m) / T); p[i] = e; z += e; }
-  for (let i = 0; i < l.length; i++) p[i] /= z;
-  return p;
-}
 // Гайд: «модель выбирала между» — пять кандидатов с процентами вместо полосы из 64 столбиков
 function renderSimpleLogits(s) {
   const box = $('logits-simple'); if (S.mode !== 'guide') return;
@@ -765,16 +712,6 @@ function offerTour() {
 }
 
 // глоссарий: у терминов пунктирное подчёркивание, при наведении — стеклянная подсказка в одно предложение
-// термин подсказки → страница Docs (/docs/glossary/<slug>/). Какие страницы уже написаны, студия узнаёт из
-// /docs/pages.json (его пишет сборка Docs); у остальных терминов — только подсказка, без ссылки.
-const DOC_SLUG = {
-  languageModel: 'language-model', token: 'token', prompt: 'prompt', specialTokens: 'special-tokens', mode: 'instruct', model: 'transformer',
-  embedding: 'residual-stream', residualStream: 'residual-stream', attention: 'attention', head: 'attention-head',
-  weights: 'attention-head', valueWeighted: 'attention-head', mlp: 'mlp', logits: 'logits', logitLens: 'logit-lens',
-  sampling: 'sampling', sampleDraw: 'sampling', pOut: 'sampling', temperature: 'temperature', topK: 'top-k', minP: 'min-p', seed: 'seed',
-  maxNew: 'max-new-tokens', loopPenalty: 'repetition-penalty', wbBase: 'logit-bias', wbTau: 'logit-bias',
-  wbStart: 'logit-bias', logitBias: 'logit-bias', keywords: 'logit-bias', fsm: 'fsm', entropy: 'entropy',
-};
 let DOCS = new Set();
 fetch('/docs/pages.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.glossary) DOCS = new Set(j.glossary); }).catch(() => {});
 let hintSeen = false;

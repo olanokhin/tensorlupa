@@ -1,0 +1,27 @@
+<!-- Замер скорости на устройстве: цикл JavaScript, загрузка движка, пять прогонов модели, logit lens.
+     Положить в web/ как _bench.html, открыть /_bench.html, после замера удалить: в web/ он попадёт в выкладку.
+     Важно: по http с адреса локальной сети iPhone выполняет страницу без ускорения (в 50–70 раз медленнее),
+     по https — нормально. Скорость на телефоне мерить только по https. -->
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bench</title><body style="font:16px/1.5 ui-monospace,monospace;background:#16181c;color:#eceef2;padding:16px">
+<pre id="o">running…</pre>
+<script type="module">
+import { loadEngine, Engine, Corpus } from './engine/engine.js';
+const o = document.getElementById('o'), L = []; const say = (s) => { L.push(s); o.textContent = L.join('\n'); };
+const tick = () => new Promise((r) => setTimeout(r, 30));
+try {
+  let t;
+  // обычная функция, вызванная несколько раз: так браузеру проще всего её ускорить, если он это умеет
+  function loop(n) { let x = 0; for (let i = 0; i < n; i++) x += Math.sqrt(i) * 1.0001; return x; }
+  for (let k = 1; k <= 4; k++) { t = performance.now(); loop(1e7); say('JS function 1e7, call ' + k + ': ' + (performance.now() - t).toFixed(0) + ' ms'); await tick(); }
+  t = performance.now(); const buf = new Uint8Array(await (await fetch('model-8bit.bin')).arrayBuffer()); say('fetch model: ' + (performance.now() - t).toFixed(0) + ' ms');
+  t = performance.now(); const e = await loadEngine(buf); say('load engine: ' + (performance.now() - t).toFixed(0) + ' ms'); await tick();
+  const run = (name, set) => { e.settings({ temperature: 0.6, topK: 40, seed: 1111, wbBase: 2, wbTau: 100, wbStart: 0.5, fsm: true, corpusPenalty: false, minP: 0.02, maxNew: 200, ...set });
+    const t0 = performance.now(), r = e.run(Engine.orderPrompt('dragon, cookie, school'), 'dragon, cookie, school'); say(name + ': ' + (performance.now() - t0).toFixed(0) + ' ms, ' + r.steps.length + ' steps'); };
+  run('run 1, no penalty', {}); await tick(); run('run 2, no penalty', {}); await tick(); run('run 3, no penalty', {}); await tick();
+  e.corpus = new Corpus(new Uint8Array(await (await fetch('corpus-4grams.bin')).arrayBuffer()));
+  run('run 4, penalty', { corpusPenalty: true }); await tick(); run('run 5, penalty', { corpusPenalty: true });
+  t = performance.now(); const st = e.run(Engine.orderPrompt('dragon'), 'dragon').steps[20]; const v = st.resid.subarray(0, e.info.dim); for (let i = 0; i < 200; i++) e.lens(v); say('lens x200: ' + (performance.now() - t).toFixed(0) + ' ms (includes one run)');
+  say('secure context: ' + isSecureContext + ', wasm simd-free build');
+} catch (err) { say('ERROR: ' + err.message); }
+</script>
