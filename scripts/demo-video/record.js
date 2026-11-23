@@ -8,7 +8,7 @@
 //   4. в конец истории и ползунок temperature: 0.60 → 1.25 → 0.30 → 0.60, история переписывается на глазах.
 async (page) => {
   const URL = 'http://127.0.0.1:8765/studio?w=dragon,cookie,school&seed=1111&q=8&mode=lab';
-  const DIR = '.playwright-mcp/demo-take3', FPS = 30;      // DIR — пустая папка для кадров
+  const DIR = '.playwright-mcp/demo-take4', FPS = 30;      // DIR — пустая папка для кадров
   const ctx = await page.context().browser().newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   await p.goto('http://127.0.0.1:8765/'); await p.evaluate(() => { localStorage.clear(); localStorage.setItem('mq.tour.seen', '1'); localStorage.setItem('mq.hint.seen', '1'); });
@@ -33,8 +33,12 @@ async (page) => {
     c.style.cssText = 'position:fixed;left:0;top:0;width:22px;height:22px;z-index:99999;pointer-events:none;transform:translate(-100px,-100px)';
     c.innerHTML = '<svg viewBox="0 0 22 22" width="22" height="22"><path d="M3 2l15 7.5-6.2 1.9L9.6 18z" fill="#fff" stroke="#111" stroke-width="1.3" stroke-linejoin="round"/></svg>';
     document.body.appendChild(c);
-    addEventListener('mousemove', (e) => { c.style.transform = `translate(${e.clientX - 3}px,${e.clientY - 2}px)`; }, true);
-    addEventListener('mousedown', () => { c.style.scale = '0.8'; }, true); addEventListener('mouseup', () => { c.style.scale = '1'; }, true);
+    // Сжатие при нажатии пишем в тот же transform после сдвига и вокруг острия стрелки. Отдельное свойство scale сжимало
+    // бы и сам сдвиг: на время нажатия курсор уезжал влево и вверх от места, где он на самом деле.
+    let cx = -100, cy = -100, k = 1; c.style.transformOrigin = '3px 2px';
+    const put = () => { c.style.transform = `translate(${cx - 3}px,${cy - 2}px) scale(${k})`; };
+    addEventListener('mousemove', (e) => { cx = e.clientX; cy = e.clientY; put(); }, true);
+    addEventListener('mousedown', () => { k = 0.8; put(); }, true); addEventListener('mouseup', () => { k = 1; put(); }, true);
   });
   let n = 0, mx = 720, my = 450; const t0 = Date.now();
   const tick = async (k = 1) => { for (let i = 0; i < k; i++) { await p.clock.runFor(1000 / FPS); await p.screenshot({ path: `${DIR}/f_${String(n++).padStart(5, '0')}.jpg`, type: 'jpeg', quality: 92 }); } };
