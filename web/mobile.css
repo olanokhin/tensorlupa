@@ -131,6 +131,41 @@ html.m #app { display: none; }
 .mm-ops button { height: 28px; padding: 0 var(--s2) !important; font: var(--fs-2) var(--ui) !important; color: var(--ink-2) !important; border-radius: var(--r-chip) !important; }
 .mm-ops button.on { color: #ffe08a !important; box-shadow: 0 0 0 1.5px rgba(242, 179, 61, 0.7) !important; }
 
+/* Attention: 12 полос под палец. Пары голов с общими ключами и значениями (GQA) стоят вплотную, с лиловой меткой слева */
+.ma { font: var(--fs-4) var(--ui); color: var(--ink-2); }
+.ma-axis { display: flex; justify-content: space-between; gap: var(--s2); font-size: var(--fs-1); color: var(--ink-3); }
+.ma-axis b { font: 600 var(--fs-2) var(--mono); color: #ffe08a; }
+.ma-strips { position: relative; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
+.ma-layer { margin-top: var(--s2); font: var(--fs-1) var(--ui); color: var(--ink-3); }
+.ma-row { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: var(--s1); width: 100%; height: 30px; padding: 0 var(--s1) 0 var(--s2) !important; margin-top: 2px;
+  border-radius: var(--r-chip) !important; background: transparent !important; box-shadow: inset 2px 0 0 rgba(169, 140, 240, 0.55) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important; touch-action: pan-y; }
+.ma-row::before { display: none !important; }
+.ma-row:active { transform: none; }
+.ma-row.pair-a { margin-top: var(--s2); }
+.ma-layer + .ma-row.pair-a { margin-top: var(--s1); }
+.ma-row small { font: var(--fs-1) var(--mono); color: var(--ink-3); text-align: left; }
+.ma-row canvas { display: block; width: 100%; height: 26px; pointer-events: none; }
+.ma-row.on { background: rgba(255, 255, 255, 0.07) !important; box-shadow: inset 2px 0 0 rgba(169, 140, 240, 0.55), 0 0 0 1.5px rgba(236, 238, 242, 0.75) !important; }
+.ma-row.on small { color: var(--ink-1); }
+.ma-row.dim canvas { opacity: 0.45; }
+.ma-bubble { position: absolute; z-index: 3; padding: 2px var(--s2); border-radius: var(--r-chip); background: rgba(20, 22, 26, 0.96); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 6px 16px rgba(0, 0, 0, 0.5);
+  font: var(--fs-2) var(--mono); color: var(--ink-1); white-space: nowrap; pointer-events: none; }
+.ma-bubble b { color: #ffe08a; font-weight: 600; }
+.ma-gqa { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); margin-top: var(--s3); font-size: var(--fs-1); color: var(--ink-3); }
+.ma-gqa i { width: 2px; height: 14px; border-radius: 1px; background: rgba(169, 140, 240, 0.8); }
+.ma-gqa .gloss-more { margin-top: 0; }
+.ma-card { margin-top: var(--s3); padding: var(--s3); border-radius: var(--r-control); background: var(--field-bg); box-shadow: var(--field-shadow); }
+.ma-card > b { display: block; font: 600 var(--fs-4) var(--ui); color: var(--ink-1); }
+.ma-card p { margin: var(--s1) 0 0; line-height: 1.45; }
+.ma-card .ma-hint { margin: 0; color: var(--ink-3); }
+.ma-card .pos { color: #f2b33d; } .ma-card .neg { color: #c9b8ff; }
+.ma-tok { font: normal var(--fs-4) var(--mono); color: var(--ink-1); }
+.ma-top { display: flex; flex-wrap: wrap; gap: var(--gap); margin: var(--s2) 0; }
+.ma-top button { display: flex; align-items: center; gap: var(--s2); height: 34px; padding: 0 var(--s3) !important; font: var(--fs-4) var(--mono) !important; color: var(--ink-1) !important; }
+.ma-top button em, .ma-top button i { font-style: normal; } .ma-top button i { color: var(--ink-3); }
+.ma-top button.on { box-shadow: var(--btn-shadow), 0 0 0 1.5px #f2b33d !important; }
+
 /* плеер со шторкой: закреплён внизу, шторка растёт из него вверх */
 .m-dock { position: absolute; left: calc(var(--gap) + env(safe-area-inset-left)); right: calc(var(--gap) + env(safe-area-inset-right)); bottom: 0; z-index: 20;
   border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding-bottom: env(safe-area-inset-bottom);
