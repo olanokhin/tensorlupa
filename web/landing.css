@@ -108,7 +108,9 @@ h3 { font-size: 18px; margin-bottom: 8px; }
 .chain-steps p { font-size: 15px; }
 
 /* ---------------------------------------------------------------- ожидания и низ */
-.expect p { margin-top: 16px; color: var(--ink-2); max-width: 40em; font-size: 18px; }
+.expect p, .repro p { margin-top: 16px; color: var(--ink-2); max-width: 40em; font-size: 18px; }
+.repro { display: flex; flex-direction: column; align-items: flex-start; }
+.repro .btn-small { margin-top: 20px; white-space: nowrap; }
 .cta-end { margin-top: 32px; }
 .foot { max-width: var(--wrap); margin: 0 auto; padding: 40px 24px 56px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px;
   font-size: 14px; color: var(--ink-3); border-top: 1px solid rgba(255, 255, 255, 0.07); }
