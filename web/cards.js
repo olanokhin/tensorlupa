@@ -24,7 +24,7 @@ export class Deck {
   }
 
   make(key, title, fixed) {
-    const el = document.createElement('section'); el.className = 'card';
+    const el = document.createElement('section'); el.className = 'card'; el.dataset.key = key;
     const head = document.createElement('header'); head.className = 'card-h';
     const t = document.createElement('span'); t.className = 'card-t'; t.textContent = title;
     const chev = document.createElement('span'); chev.className = 'card-chev';
@@ -76,6 +76,13 @@ export class Deck {
     this.dyn = dyn;
     this.cards = this.ordered();
     for (const c of dyn) c.el.classList.toggle('lead', c.key === this.lead);
+    // Высота ведущей карточки не скачет от шага к шагу: под неё на весь прогон держится место по самому длинному
+    // тексту (measureLead). Иначе при проигрывании она 24 раза в секунду меняла высоту и трясла все карточки под собой.
+    // Если текст всё же оказался длиннее (сменилась ширина колонки, пересчёт от ползунка), место только растёт.
+    for (const c of lead) {
+      c.body.style.minHeight = this.leadMin ? this.leadMin + 'px' : '';
+      if (this.leadMin && c.body.scrollHeight > this.leadMin) { this.leadMin = c.body.scrollHeight; c.body.style.minHeight = this.leadMin + 'px'; }
+    }
     // новый шаг — текст ведущей карточки мягко проявляется; при быстром проигрывании (чаще ~3 раз в секунду) — нет
     for (const c of lead) {
       const now = performance.now(), html = c.body.innerHTML;
@@ -86,6 +93,24 @@ export class Deck {
     // отпусканием мыши срывает щелчок (во время генерации карточки обновляются 24 раза в секунду)
     this.placeDom();
     this.layout();
+  }
+
+  // Место под ведущую карточку на весь прогон: htmls — её HTML для каждого шага (как для sync). Тексты по очереди
+  // ставятся в саму карточку и меряются; берётся наибольшая высота. После вызова нужен обычный sync текущего шага.
+  measureLead(htmls) {
+    this.leadMin = 0;
+    if (!this.lead || !htmls.length) return;
+    this.sync(htmls[0]);
+    const c = this.cards.find((x) => !x.fixed && x.key === this.lead); if (!c) return;
+    const keyOf = (t) => t.replace(/\d+/g, '#').split(/[·:]/)[0].trim().toLowerCase(), tpl = document.createElement('template');
+    let max = 0; c.body.style.minHeight = '';
+    for (const html of new Set(htmls)) {
+      tpl.innerHTML = html; const nodes = []; let on = false;
+      for (const n of [...tpl.content.childNodes]) { if (n.nodeName === 'H4') on = keyOf(n.textContent) === this.lead; else if (on) nodes.push(n); }
+      c.body.replaceChildren(...nodes);
+      max = Math.max(max, c.body.scrollHeight);
+    }
+    this.leadMin = max; c.prevHtml = undefined;
   }
 
   placeDom() {

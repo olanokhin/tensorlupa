@@ -77,6 +77,7 @@ function setMode(m, persist = true) {
     if (S.amode !== 'look') { S.amode = 'look'; S.attn.mode = 'look'; setPair('amode-pair', 'look'); }
   }
   if (S.stage) S.stage.layout();
+  if (S.run && S.deck) { if (m === 'guide') S.deck.measureLead(S.run.steps.map(guideCard)); else S.deck.leadMin = 0; }
   if (S.run) { setCur(S.cur); writeLink(); }
   requestAnimationFrame(() => { if (S.strip) S.strip.draw(); });
 }
@@ -257,6 +258,10 @@ function generate({ newSeed = false, live: isLive = false, atStep = -1 } = {}) {
   if (S.booted && !isLive) { ri.classList.remove('fresh'); void ri.offsetWidth; ri.classList.add('fresh'); }   // не при загрузке и не на живом пересчёте
   buildStory();
   S.stage?.layout();   // высота панели истории — по новому тексту
+  // Гайд: место под карточку «что произошло» сразу на весь прогон, по самому длинному её тексту, иначе при
+  // проигрывании она меняет высоту на каждом токене и трясёт карточки под собой. На живом пересчёте от ползунка не
+  // перемеряем (это 160 раскладок на каждое движение): там место только растёт.
+  if (S.mode === 'guide' && !isLive) S.deck.measureLead(S.run.steps.map(guideCard));
   if (!isLive) countRun();
   const firstGen = Math.max(0, S.run.nPrompt - 1);
   $('t-range').max = S.run.steps.length - 1;
@@ -659,6 +664,14 @@ shareMenu();
 bindPair('mode-pair', (m) => setMode(m));
 glossary();
 
+// Вернуть окна по местам: вкладки и граница между окнами, порядок и свёрнутость нижних панелей и карточек справа.
+// Всё это хранится в браузере; проще и надёжнее всего стереть записи и открыть ту же страницу заново — адрес уже
+// содержит слова, seed и шаг, так что история останется той же.
+function resetLayout() {
+  try { for (const k of ['mq.split2', 'mq.stage.order', 'mq.stage.closed', 'mq.cards.closed', 'mq.cards.order.guide', 'mq.cards.order.lab']) localStorage.removeItem(k); }
+  catch { /* без хранилища раскладка и так по умолчанию */ }
+  clearTimeout(setCur.lt); writeLink(); location.reload();
+}
 // тур по Гайду: глубины 1–3. Перед шагом — нужная панель раскрыта и есть история на понятном шаге.
 function openFold(stageKey, deckKey) {
   if (stageKey && S.stage.closed.delete(stageKey)) S.stage.layout();
@@ -683,16 +696,54 @@ async function runTour() {
     }
     return S.cur;
   };
+  // Шаг «расставьте по-своему» показывает делом: окна на секунду складываются во вкладки (или встают рядом), нижние
+  // панели меняются местами, и всё возвращается. Раскладка человека при этом не запоминается заново и после шага
+  // восстанавливается в точности.
+  const demo = { timers: [], snap: null };
+  const demoStart = () => {
+    const sp = S.split, st = S.stage;
+    demo.snap = { groups: sp.groups.map((g) => [...g]), active: [...sp.active], folds: [...st.folds] };
+    const setSplit = (groups, active) => { sp.groups = groups.map((g) => [...g]); sp.active = [...active]; sp.apply(false); };
+    const setFolds = (folds) => { st.folds = [...folds]; st.el.classList.add('anim'); clearTimeout(st.animT); st.animT = setTimeout(() => st.el.classList.remove('anim'), 420); st.layout(); };
+    const two = demo.snap.groups.length === 2, vis = demo.snap.active[0];
+    const other = two ? [[...demo.snap.groups[0], ...demo.snap.groups[1]]] : null;
+    // одно окно с вкладками можно развести на два, только если хватает ширины
+    const apart = !two && demo.snap.groups[0].length > 1 && sp.roomForTwo()
+      ? [demo.snap.groups[0].filter((k) => k !== vis), [vis]] : null;
+    const cycle = () => {
+      const T = (ms, fn) => demo.timers.push(setTimeout(fn, ms));
+      if (other) T(500, () => setSplit(other, [vis]));
+      else if (apart) T(500, () => setSplit(apart, [apart[0][0], vis]));
+      T(1900, () => setSplit(demo.snap.groups, demo.snap.active));
+      T(3000, () => setFolds([...demo.snap.folds].reverse()));
+      T(4400, () => setFolds(demo.snap.folds));
+      T(6200, cycle);
+    };
+    cycle();
+  };
+  const demoStop = () => {
+    demo.timers.forEach(clearTimeout); demo.timers = [];
+    if (!demo.snap) return;
+    const sp = S.split, st = S.stage;
+    sp.groups = demo.snap.groups.map((g) => [...g]); sp.active = [...demo.snap.active]; sp.apply(false);
+    st.folds = [...demo.snap.folds]; st.layout(); demo.snap = null;
+  };
   startTour([
     { key: 'tour.what', anchor: '#gen', before: ready },
-    { key: 'tour.hover', anchor: ['#logits-simple .ls-title [data-term]', '#story .vp-title [data-term]'] },
     { key: 'tour.story', anchor: '#story', before: () => openFold('story') },
     { key: 'tour.logits', anchor: '#logits', before: () => { openFold('logits'); setCur(notFavourite()); } },
     // температура: подсвечены и ползунок, и история; стоим на первом токене ответа — контекст (промпт) не меняется,
     // и видно, как температура сплющивает и заостряет одно и то же распределение
-    { key: 'tour.temp', anchor: ['#side .card', '#story', '#logits'], before: () => { openFold('story'); openFold('logits'); openFold(null, 'sampling'); setCur(firstGen()); } },
+    // карточку настроек ищем по её ключу, а не «первую в колонке»: карточки можно переставлять
+    { key: 'tour.temp', anchor: ['#side .card[data-key="sampling"]', '#story', '#logits'], before: () => { openFold('story'); openFold('logits'); openFold(null, 'sampling');
+      document.querySelector('#side .card[data-key="sampling"]')?.scrollIntoView({ block: 'nearest' }); setCur(firstGen()); } },
+    // сначала путь токена целиком, потом одна его часть
+    { key: 'tour.model', anchor: '#view-model', before: () => { S.split?.show(0); setCur(notFavourite()); } },
     { key: 'tour.attn', anchor: '#view-attn', before: () => S.split?.show(1) },
-    { key: 'tour.model', anchor: '#view-model', before: () => S.split?.show(0) },
+    // подчёркнутые термины: обе панели раскрыты, иначе термин свёрнутой панели подсветился бы на пустом месте
+    { key: 'tour.hover', anchor: ['#logits-simple .ls-title [data-term]', '#story .vp-title [data-term]'], before: () => { openFold('logits'); openFold('story'); } },
+    { key: 'tour.layout', anchor: '#stage', live: true, before: () => { openFold('logits'); openFold('story'); demoStart(); }, leave: demoStop,
+      place: (w) => ({ x: innerWidth - w - 16, y: 84 }) },
     { key: 'tour.end', actions: [
       { label: t('tour.act.words'), fn: () => { const w = $('words'); w.focus(); w.select(); } },
       { label: t('tour.act.dice'), fn: () => generate({ newSeed: true }) },
@@ -872,9 +923,11 @@ function aboutMenu() {
     `<div class="cc-mod info-card"><div class="ic-title">${t('about.links')}</div><div class="ab-links">${links}</div></div>` +
     `<div class="cc-mod info-card ab-foot"><span>${t('about.by')}</span><span>${t('about.free')}</span></div>`;
   const tb = document.createElement('button'); tb.className = 'cc-mod lang-item about-tour'; tb.textContent = t('tour.start');
-  pop.appendChild(tb);
+  const rb = document.createElement('button'); rb.className = 'cc-mod lang-item about-tour'; rb.textContent = t('layout.reset'); rb.title = t('layout.reset.title');
+  pop.append(tb, rb);
   const m = popover(btn, pop);
   tb.addEventListener('click', () => { m.open(false); runTour(); });
+  rb.addEventListener('click', () => { m.open(false); resetLayout(); });
 }
 
 boot();

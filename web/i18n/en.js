@@ -346,9 +346,9 @@
   'tour.temp.title': 'Try it: temperature',
   'tour.temp.body': 'Drag the temperature slider. We are on the first word of the answer, so the context stays the same: watch the five bars sharpen at low temperature and flatten at high, while the story rewrites itself with the same seed.',
   'tour.attn.title': 'Where the model looks',
-  'tour.attn.body': 'Attention shows which earlier tokens the model looked at while choosing this one. The story is highlighted the same way: the brighter, the more attention.',
+  'tour.attn.body': 'Twelve strips, one per attention head: three layers with four heads each. A bar shows how much the current token looks at one earlier token. Click a strip to pick a head: the story is tinted with its weights, the brighter, the more attention.',
   'tour.model.title': 'Through the layers',
-  'tour.model.body': 'The token enters on the left and passes through three layers, each a few glass plates of numbers. On the right comes the prediction. Click a plate to see what is inside. In Lab mode you will find every number and setting.',
+  'tour.model.body': 'The token enters on the left, passes three layers and comes out on the right as a prediction. The line of numbers above is the score of the written word: every block adds to it or takes away. Click a plate to see the steps inside it.',
 
   // главная страница (лендинг)
   'land.title': 'TensorLupa: a magnifying glass for neural networks',
@@ -496,4 +496,8 @@
   'mob.scoreOf': 'Steps: how each block moved the score of',
   'mob.model.hint': 'Tap a block to see what happens inside it.',
   'mob.outPrompt': 'next in the prompt',
+  'layout.reset': 'Reset window layout',
+  'layout.reset.title': 'Put all windows, panels and cards back where they were at the start',
+  'tour.layout.title': 'Arrange it your way',
+  'tour.layout.body': 'Everything here moves. Drag a tab to put windows side by side or to stack them as tabs. Drag a panel or a card by its title to change the order, and click the title to fold it. To put everything back, open About and choose Reset window layout.',
 };
