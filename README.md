@@ -4,7 +4,7 @@
 the story it writes token by token, the candidates it chose between, where its attention looks, and what flows
 through each layer. Scrub back to any token, move a slider and the story rewrites itself on the spot.
 
-**[Open TensorLupa →](https://tensorlupa.com)** · desktop browser · nothing to install
+**[Open TensorLupa →](https://tensorlupa.com)** · in a browser tab, on a computer or a phone · nothing to install
 
 ![TensorLupa: the model writes a story, a losing candidate is compared with the winner, one attention head is picked, and the temperature slider rewrites the story](docs/demo.gif)
 
