@@ -861,7 +861,7 @@ function aboutMenu() {
   // ссылки: только рабочие адреса — пунктов «скоро» нет (новый адрес — одна строка здесь)
   const LINKS = [
     { name: 'Docs', url: `/${lang === 'en' ? '' : lang + '/'}docs/` },
-    { name: 'GitHub', url: 'https://github.com/olanokhin/tensorlupa' }, { name: 'Hugging Face', url: 'https://huggingface.co/olanokhin' },
+    { name: 'GitHub', url: 'https://github.com/olanokhin/tensorlupa' }, { name: 'Hugging Face', url: 'https://huggingface.co/olanokhin/micro-qwen3' },
     { name: 'LinkedIn', url: 'https://www.linkedin.com/in/olanokhin/' }, { name: t('about.site'), url: 'https://olanokhin.com' },
   ];
   const links = LINKS.map((l) => l.url
