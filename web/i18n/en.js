@@ -470,7 +470,7 @@
   'flash.7.then': 'Type up to three words, for example dragon, cookie, school, and the board writes a story with them, token by token. While you are on its network there is no internet: the model runs on the board itself.',
   'flash.more.h': 'Other ways',
   'flash.more.cli': 'From a terminal, in any browser and on any system, with the file from the release:',
-  'flash.more.rel': 'Release v1.0: the firmware file',
+  'flash.more.rel': 'Release v1.1: the firmware file',
   'flash.more.repo': 'Source code, training and how it was made',
   'land.ver.6.flash': 'Flash a board from the browser',
   'meta.flash.title': 'Flash micro-qwen3 onto an ESP32-S3 from your browser',

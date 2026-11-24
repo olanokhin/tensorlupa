@@ -1,5 +1,5 @@
 // Страница прошивки: меню языка (как на главной). Сама прошивка — кнопка ESP Web Tools (vendor/esp-web-tools):
-// она открывает системное окно выбора порта и пишет firmware/micro-qwen3-esp32s3-v1.0.bin по Web Serial.
+// она открывает системное окно выбора порта и пишет firmware/micro-qwen3-esp32s3-v1.1.bin по Web Serial.
 import { LANGS, langUrl } from './i18n.js';
 const $ = (id) => document.getElementById(id), L = window.MQ_LANG || 'en';
 const btn = $('lang'), menu = $('lang-menu');
