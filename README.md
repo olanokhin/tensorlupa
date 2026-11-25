@@ -16,7 +16,7 @@ inference engine in C, compiled to WebAssembly with tracing turned on. What you 
 code, recording every number of every step.
 
 The studio runs the model with 8-bit weights, as precise as the original. The same model also comes in a 4-bit
-version, made with quantization-aware training for an ESP32-S3 microcontroller, where it writes about 74 tokens
+version, made with quantization-aware training for an ESP32-S3 microcontroller, where it writes about 72 tokens
 per second. You can open either version in the studio. How every size and setting was chosen, with the branches
 that lost: [How micro-qwen3 was made](https://tensorlupa.com/docs/model/how-it-was-made/).
 

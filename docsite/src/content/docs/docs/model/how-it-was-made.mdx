@@ -273,5 +273,12 @@ candidates and computes them exactly. It kept every one of 200 stories, but on t
 4,096 rows, choosing the 256 best and the lack of fast memory for both the codes and the KV cache cost more than
 it saved.
 
+The web page adds its own cost. Every Wi-Fi packet wakes the network code on the other core, and both cores share
+the memory bus: one packet per token, the board wrote 67 tokens per second on the page against 75 over the console.
+Sending the story in batches every 50 ms brought the page to 72. Moving the Wi-Fi code from internal RAM to flash,
+to free room for the KV cache, made it worse (64): the code then runs through the same bus as the weights.
+What did fit the whole KV cache into fast memory was the order of start-up: the model loads first and takes one
+unbroken piece, and Wi-Fi takes what is left.
+
 
 </div>
