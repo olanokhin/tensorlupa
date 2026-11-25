@@ -924,6 +924,7 @@ button.primary:hover .gen-star::after, button.primary.busy .gen-star::after { op
 .info-card ul { margin: 0; padding-left: 16px; }
 .info-card li { margin: 2px 0; }
 .info-card li::marker { color: var(--ink-3); }
+.info-card:active { transform: none; }   /* карточка со справкой не кнопка: при нажатии она сжималась, и ссылка внизу уезжала из-под курсора */
 .ic-title { font: 600 12.5px var(--ui); color: var(--ink-1); margin-bottom: 6px; }
 .ab-head .ab-name { font: 650 17px var(--ui); color: var(--ink-1); letter-spacing: -0.01em; }
 .ab-head .ab-tag { font: 12.5px var(--ui); color: var(--ink-3); margin: 2px 0 8px; }

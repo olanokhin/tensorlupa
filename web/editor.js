@@ -15,6 +15,7 @@ import { AttentionView } from './attention.js';
 import { ModelView } from './modelview.js';
 import { GrowthChart } from './growth.js';
 import { DEF, QK, linkDefaults, DEMO_SEED, COMPLETION_SEED, MODELS, parseWords, PICKS_ALL, countRun, softmaxT, DOC_SLUG } from './core.js';
+import { readHeader, localMeta, localActive, setLocalActive, saveLocal, readLocal } from './localmodel.js';
 
 const $ = (id) => document.getElementById(id);
 const P = {
@@ -32,14 +33,16 @@ function readLink() {
   const q = new URLSearchParams(location.search);
   if (q.has('q') && !q.has('seed')) S.bits = q.get('q') === '4' ? 4 : 8;   // «открыть 4-битную версию» с лендинга
   if (!q.has('seed')) return null;
-  const D = linkDefaults(q);
+  S.local = S.local && q.get('m') === 'local';   // ссылка без m=local — на опубликованную модель
+  // у своей модели штраф за повторы по умолчанию выключен (DEF_P), ссылка хранит отличия от этих умолчаний
+  const D = S.local ? { ...linkDefaults(q), loopPenalty: false } : linkDefaults(q);
   for (const [key, short] of Object.entries(QK)) {
     if (!q.has(short)) { P[key] = D[key]; continue; }
     const v = q.get(short);
     P[key] = typeof DEF[key] === 'boolean' ? v === '1' : Number(v);
   }
   P.seed = Math.max(1, Math.min(99999, Number(q.get('seed')) || 1));
-  S.bits = q.get('q') === '8' ? 8 : 4;   // ссылка без q — со времён, когда в студии была только 4-битная версия
+  S.bits = S.local ? localMeta().bits : q.get('q') === '8' ? 8 : 4;   // ссылка без q — со времён, когда в студии была только 4-битная версия
   if (q.get('mode') === 'lab' || q.get('mode') === 'guide') { S.mode = q.get('mode'); S.modeFromLink = true; }   // только на эту загрузку
   if (q.has('p')) { $('mode').value = 'continue'; $('prompt').value = q.get('p'); $('words').hidden = true; $('prompt').hidden = false; }
   else if (q.has('w')) $('words').value = q.get('w');
@@ -50,18 +53,25 @@ function writeLink() {
   const q = new URLSearchParams();
   if ($('mode').value === 'continue') q.set('p', $('prompt').value); else q.set('w', $('words').value.split(/[ ,]+/).filter(Boolean).join(','));
   q.set('seed', P.seed);
-  for (const [key, short] of Object.entries(QK)) if (P[key] !== DEF[key]) q.set(short, typeof DEF[key] === 'boolean' ? (P[key] ? 1 : 0) : P[key]);
+  const D = DEF_P();
+  for (const [key, short] of Object.entries(QK)) if (P[key] !== D[key]) q.set(short, typeof DEF[key] === 'boolean' ? (P[key] ? 1 : 0) : P[key]);
   q.set('s', S.cur);
   q.set('q', S.bits);
+  if (S.local) q.set('m', 'local');   // своя модель: ссылка откроет её только в этом браузере
   if (S.mode === 'lab') q.set('mode', 'lab');
   history.replaceState(null, '', location.pathname + '?' + q.toString().replace(/%2C/g, ','));   // путь явно: на странице есть <base href="/">
 }
 try { S.mode = localStorage.getItem('mq.mode') || 'guide'; } catch { S.mode = 'guide'; }
 try { S.bits = localStorage.getItem('mq.bits') === '4' ? 4 : 8; } catch { S.bits = 8; }
+S.local = localActive();   // своя модель с компьютера (localmodel.js)
+if (S.local) S.bits = localMeta().bits;
+// умолчания настроек: у своей модели штраф за повторы выключен — таблица 4-грамм корпуса записана номерами токенов
+// словаря опубликованной модели, с другим словарём она штрафовала бы случайные токены
+const DEF_P = () => (S.local ? { ...DEF, loopPenalty: false } : DEF);
 const LINK = readLink();
 // штраф за повторы с учётом корпуса и min-p 0.02 включены по умолчанию у обеих версий (замер в micro-qwen3,
 // experiments/ngram: зацикленных историй 9–16% → 1–2%, историй с обломками слов не больше, у 4 бит — вдвое меньше)
-if (!LINK) P.loopPenalty = DEF.loopPenalty;
+if (!LINK) P.loopPenalty = DEF_P().loopPenalty;
 if (!LINK) P.seed = DEMO_SEED[S.bits];
 
 // Гайд · Лаб: Гайд — главное простыми словами (простые логиты, одна карточка «что произошло», только сэмплинг,
@@ -81,8 +91,11 @@ function setMode(m, persist = true) {
   if (S.run) { setCur(S.cur); writeLink(); }
   requestAnimationFrame(() => { if (S.strip) S.strip.draw(); });
 }
-// модели студии: пока одна; новые добавляются сюда и появляются в меню модели
-const MODEL = () => MODELS.find((m) => m.bits === S.bits) || MODELS[0];
+// модели студии: опубликованные версии (MODELS) и своя, загруженная с компьютера
+const MODEL = () => {
+  if (S.local) { const m = localMeta(); return { id: m.name, bits: m.bits, params: m.params, file: null, local: true }; }
+  return MODELS.find((m) => m.bits === S.bits) || MODELS[0];
+};
 const ICON_PLAY = '<svg viewBox="0 0 16 16"><path d="M5 3.1v9.8a.7.7 0 0 0 1.06.6l7.7-4.9a.7.7 0 0 0 0-1.2l-7.7-4.9A.7.7 0 0 0 5 3.1z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 16 16"><rect x="4" y="3" width="2.8" height="10" rx="0.9"/><rect x="9.2" y="3" width="2.8" height="10" rx="0.9"/></svg>';
 window.__viz = S;   // для отладки из консоли
@@ -90,10 +103,13 @@ window.__viz = S;   // для отладки из консоли
 // ---------------------------------------------------------------- загрузка
 async function boot() {
   try {
-    const buf = new Uint8Array(await (await fetch(MODEL().file)).arrayBuffer());
+    let buf = S.local ? await readLocal().catch(() => null) : null;
+    if (S.local && !buf) { S.local = false; setLocalActive(false); }   // файл пропал из браузера — опубликованная модель
+    if (!buf) buf = new Uint8Array(await (await fetch(MODEL().file)).arrayBuffer());
     S.modelBytes = buf.length;
     S.engine = await loadEngine(buf);
   } catch (e) {
+    if (S.local) setLocalActive(false);   // своя модель не открылась: следующая загрузка — опубликованная
     $('status').textContent = t('status.fail', { msg: e.message }); $('status').classList.add('fail');
     return;
   }
@@ -855,29 +871,87 @@ function langMenu() {
 function modelMenu() {
   const pop = document.createElement('div'); pop.className = 'lang-pop model-pop';
   const cur = MODEL();
-  $('model-pill').querySelector('.mp-name').textContent = cur.bits === 4 ? `${cur.id} · ${t('model.b4.short')}` : cur.id;
+  $('model-pill').querySelector('.mp-name').textContent = cur.local ? cur.id : cur.bits === 4 ? `${cur.id} · ${t('model.b4.short')}` : cur.id;
+  const reopen = (q) => { if (q.has('seed')) location.search = q.toString().replace(/%2C/g, ','); else location.reload(); };
+  const mbText = (n) => { const mb = (n / 1e6).toFixed(2); return lang === 'ru' ? mb.replace('.', ',') : mb; };
   // версии одной модели: щелчок по другой — страница открывается заново с этой версией (и с тем же экспериментом)
   const items = MODELS.map((v) => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'cc-mod lang-item mode-item' + (v === cur ? ' on' : '');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'cc-mod lang-item mode-item' + (!cur.local && v === cur ? ' on' : '');
     b.innerHTML = `<span class="mi-t"><b>${t('model.b' + v.bits)}</b><small>${t('model.b' + v.bits + '.d')}</small></span>${CHECK}`;
     b.addEventListener('click', () => {
       m.open(false);
-      if (v === cur) return;
+      if (!cur.local && v === cur) return;
+      setLocalActive(false);
       try { localStorage.setItem('mq.bits', String(v.bits)); } catch { /* только по ссылке */ }
       const q = new URLSearchParams(location.search);
-      if (q.has('seed')) { q.set('q', v.bits); location.search = q.toString().replace(/%2C/g, ','); }
-      else location.reload();
+      q.set('q', v.bits); q.delete('m');
+      reopen(q);
     });
     return b;
   });
+  // своя модель: строка с ней (если уже загружали) и «Загрузить с компьютера». Файл проверяется движком до сохранения,
+  // иначе битый файл открывался бы при каждой загрузке студии
+  const meta = localMeta();
+  if (meta) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'cc-mod lang-item mode-item' + (cur.local ? ' on' : '');
+    b.innerHTML = `<span class="mi-t"><b></b><small>${t('model.local.d', { bits: meta.bits, mb: mbText(meta.size) })}</small></span>${CHECK}`;
+    b.querySelector('b').textContent = meta.name;
+    b.addEventListener('click', () => {
+      m.open(false);
+      if (cur.local) return;
+      setLocalActive(true);
+      const q = new URLSearchParams(location.search);
+      q.set('q', meta.bits); q.set('m', 'local');
+      reopen(q);
+    });
+    items.push(b);
+  }
+  const file = document.createElement('input'); file.type = 'file'; file.accept = '.bin'; file.hidden = true;
+  const load = document.createElement('button'); load.type = 'button'; load.className = 'cc-mod lang-item mode-item';
+  load.innerHTML = `<span class="mi-t"><b>${t('model.load')}</b><small>${t('model.load.d')}</small></span>`;
+  load.addEventListener('click', () => { m.open(false); file.click(); });
+  file.addEventListener('change', async () => {
+    const f = file.files[0]; file.value = '';
+    if (!f) return;
+    const st = $('status'); st.hidden = false; st.classList.remove('fail'); st.textContent = t('model.load.busy', { name: f.name });
+    try {
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      readHeader(bytes);
+      await loadEngine(bytes);              // откроет ли его движок: та же проверка, что при загрузке студии
+      const h = await saveLocal(f.name.replace(/\.bin$/i, ''), bytes);
+      setLocalActive(true);
+      const q = new URLSearchParams(location.search);
+      q.set('q', h.bits); q.set('m', 'local');
+      reopen(q);
+    } catch (e) {
+      st.textContent = t('model.load.fail', { msg: e.message === 'not-mqw3' || e.message === 'version' ? t('model.load.' + e.message) : e.message });
+      st.classList.add('fail');
+    }
+  });
+  items.push(load);
   const card = document.createElement('div'); card.className = 'cc-mod info-card';
   const fill = () => {
+    if (cur.local) {
+      const lines = [t('model.local.file', { name: cur.id }), t('model.params', { n: cur.params }),
+        t('model.local.size', { bits: cur.bits, mb: mbText(S.modelBytes || meta.size) }), t('model.local.pen')];
+      card.innerHTML = `<div class="ic-title">${t('model.current')}</div><ul>${lines.map(() => '<li></li>').join('')}</ul>`;
+      card.querySelectorAll('li').forEach((li, i) => { li.textContent = lines[i]; });
+      return;
+    }
     const mb = S.modelBytes ? (S.modelBytes / 1e6).toFixed(2) : (cur.bits === 4 ? '0.68' : '1.14');
     card.innerHTML = `<div class="ic-title">${t('model.current')}</div><ul>` +
       [t('model.arch'), t('model.params', { n: cur.params }), t('model.size' + cur.bits, { mb: lang === 'ru' ? mb.replace('.', ',') : mb }),
-        t('model.vocab'), t('model.data'), t(cur.bits === 4 ? 'model.esp4' : 'model.esp8')].map((x) => `<li>${x}</li>`).join('') + '</ul>';
+        t('model.vocab'), t('model.data'), ...(cur.bits === 8 ? [t('model.next')] : []), t(cur.bits === 4 ? 'model.esp4' : 'model.esp8')].map((x) => `<li>${x}</li>`).join('') + '</ul>';
+    // статья о том, как модель угадывает следующий токен против цепи Маркова; вид и поведение как у ссылок подсказок (DESIGN.md)
+    if (cur.bits !== 8) return;      // 52% и 42% измерены на 8-битных весах
+    const a = document.createElement('a');
+    a.className = 'gloss-more'; a.target = '_blank'; a.rel = 'noopener';
+    a.href = `/${lang === 'en' ? '' : lang + '/'}docs/model/next-token/`;
+    a.textContent = t('gl.more');
+    a.addEventListener('click', (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey) return; ev.preventDefault(); m.open(false); openDoc(a.href); });
+    card.appendChild(a);
   };
-  pop.append(...items, card);
+  pop.append(...items, card, file);
   const m = popover($('model-pill'), pop, { align: 'left', onOpen: fill });
 }
 
