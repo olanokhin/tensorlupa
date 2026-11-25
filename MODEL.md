@@ -14,7 +14,7 @@ The model built into TensorLupa, in two versions of the same trained weights:
 - Instruction tuning: 900,000 dialogues from [TinyStoriesInstruct](https://huggingface.co/datasets/roneneldan/TinyStoriesInstruct) in the Qwen chat format, 150M tokens, with
   quantization-aware training for the 4-bit format from the first step. The 4-bit version loses about 2% of quality
   against 8 bits (0.762 against 0.747 bits per byte).
-- On an ESP32-S3 the 4-bit version writes about 60 tokens per second in real use (74 in the bare benchmark).
+- On an ESP32-S3 the 4-bit version writes about 74 tokens per second in real use (85 in the bare benchmark).
 - Contains no Qwen weights.
 
 `web/corpus-4grams.bin` (2.3 MB) is not part of the model: it holds the four-token phrases seen at least 50 times

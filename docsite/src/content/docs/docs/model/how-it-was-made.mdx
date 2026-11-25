@@ -250,4 +250,28 @@ The penalty lets "once upon a time" repeat and stops "the tree was very tall" fr
 the model checks them all in one pass; a separate 14 MB draft table did only slightly better (1.87). On the board
 this could one day mean speed; in the studio it would be a way to watch guessing and checking.
 
+## Speed and repeatability on the chip
+
+The same C core runs on the board and on a computer. Two questions: how fast a full story is on the ESP32-S3 (one
+core, Wi-Fi on), and whether a seed found on a computer writes the same story on the board.
+
+<ul class="tr-branches">
+<li><span class="tr-name">exp and round from the C library, compiler free to fuse multiply and add</span><span class="tr-val">63 tok/s</span><span class="tr-note">the board and a computer agree on 4 of 7 stories</span></li>
+<li><span class="tr-name">own exp (a 6-line polynomial) and rounding, each input quantized once</span><span class="tr-val">76 tok/s</span><span class="tr-note">same quality, still 3 of 7</span></li>
+<li class="tr-win"><span class="tr-name">the same, with fused multiply-add off on both sides</span><span class="tr-val">74 tok/s</span><span class="tr-note">30 of 30 stories identical, letter for letter</span></li>
+<li><span class="tr-name">output layer shortlist over the top bit of the weights (lookup tables)</span><span class="tr-val">56 tok/s</span><span class="tr-note">every story kept, but slower</span></li>
+<li><span class="tr-name">shortlist over the top two bits, vector kernel, codes in fast memory</span><span class="tr-val">72 tok/s</span><span class="tr-note">the KV cache has to leave fast memory</span></li>
+</ul>
+
+The stories differed because the chip and the computer computed the exponent with different library code, and one
+side fused multiplications with additions. With an exponent built from plain + and ×, and fusing off on both sides,
+a seed found on a laptop with the same C code (`host/order` in the board repository) writes the same story on the board. The studio uses its own decoding rules (a repetition penalty from corpus statistics), so its stories differ from the board's anyway.
+
+The output layer is a third of the time of a token on the board, and it waits for memory: a row read from internal
+SRAM is 2.1 times faster than one from PSRAM. A shortlist reads only the top bits of every row, picks 256
+candidates and computes them exactly. It kept every one of 200 stories, but on this chip the first pass over all
+4,096 rows, choosing the 256 best and the lack of fast memory for both the codes and the KV cache cost more than
+it saved.
+
+
 </div>
