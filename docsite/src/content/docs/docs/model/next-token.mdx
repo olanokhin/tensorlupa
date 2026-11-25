@@ -1,0 +1,137 @@
+---
+title: How well it guesses the next token
+description: micro-qwen3 against a Markov chain built from the same children's stories. Top-1 accuracy on stories neither had seen, perplexity, and the 1913 idea behind the comparison.
+---
+
+**In one sentence:** on children's stories it has never seen, micro-qwen3 guesses the next token right 52% of the
+time, while a Markov chain built from the same stories guesses 42%.
+
+## The question
+
+A [language model](../../glossary/language-model/) does one thing: it scores every [token](../../glossary/token/) it
+knows as the possible next piece of text. A simple way to ask how good it is: take a story the model has never
+seen, stop at every position, and check whether the model's favourite token is the one the author actually wrote.
+This share is called **top-1 accuracy**.
+
+A number alone says little. 52% could be excellent or poor. So the model gets a rival that needs no neural network
+at all: a table of counts.
+
+## The rival: a Markov chain
+
+The table is built from the same [TinyStories](https://huggingface.co/datasets/roneneldan/TinyStories) the model
+was trained on. For every three tokens in a row, it remembers which token most often came next. To guess, it looks
+at the last three tokens of the story and answers with the most frequent continuation. When those three tokens never
+occurred in training, it falls back to the last two, and then to the last one.
+
+This is a Markov chain: the next step depends only on a few steps right before it. It knows nothing about who the
+story is about or what happened a paragraph ago.
+
+## The result
+
+Both were measured on the same text: about 404,000 tokens of held-out TinyStories V2 stories, which neither of them
+saw during training.
+
+| Who guesses | Looks at | Top-1 accuracy |
+| --- | --- | --- |
+| Markov chain (4-gram table) | the last 3 tokens | 42.1% |
+| **micro-qwen3, 8-bit weights** | up to 255 previous tokens | **51.7%** |
+
+The model wins by about 10 points: a quarter more right guesses. The difference is not in the easy places: after
+"Once upon a" both say "time". It is in the places where three tokens are not enough.
+
+## Where the extra 10 points come from
+
+**Who the story is about.** After *"...there was a little girl named Lily. She loved to play outside. One day,"*
+the table only sees "One day," and answers by habit:
+
+| Next token | Markov chain | micro-qwen3 |
+| --- | --- | --- |
+| she | 12% | **72%** |
+| Lily | | 18% |
+| he | **16%** | |
+| they | 9% | |
+
+The table's favourite is "he". The model remembers that the story is about Lily.
+
+**What happened before.** After *"...a little boy named Tom. He had a red ball. One day, Tom lost his"*:
+
+| Next token | Markov chain | micro-qwen3 |
+| --- | --- | --- |
+| balance | **51%** | |
+| toy | 18% | 13% |
+| ball | 16% | **58%** |
+
+In children's stories "lost his" is most often followed by "balance", so the table says so. The model has read the
+red ball three sentences earlier.
+
+When three tokens are enough, both agree. After *"Once upon a time, there was a little"*, the table says "girl"
+(41%) and "boy" (30%); the model says "girl" (65%) and "boy" (25%).
+
+## Why it can never be 100%
+
+After "there was a little", "girl", "boy", "dog" and "bunny" are all correct. The author picked one, and any
+predictor, a person included, misses the others. Top-1 accuracy counts a perfectly good alternative as a miss, so
+it always stays well below 100%, for small and large models alike.
+
+A measure that accounts for this is **perplexity**: the number of equally likely options the model is, on average,
+choosing between. On held-out TinyStories the base micro-qwen3 has a perplexity of about 6.5. At every step it is
+weighing roughly six or seven equally likely tokens out of 4,096. The same idea in bits is
+[entropy](../../glossary/entropy/).
+
+## Where it is in the studio
+
+The **model menu** (the model name at the left of the top bar) shows the 52% against 42% and links here. To see
+the comparison at a real step, open a story in **Completion** mode and look at the **Logits** card: it lists the
+model's candidates for the next token with their probabilities.
+
+## Try it
+
+<a class="try-link" href="/studio?p=Once%20upon%20a%20time%2C%20there%20was%20a%20little%20girl%20named%20Lily.%20She%20loved%20to%20play%20outside.%20One%20day%2C&seed=1&t=1&s=21&q=8" target="_blank" rel="noopener">Open "One day," in the story about Lily</a>
+
+<a class="try-link" href="/studio?p=Once%20upon%20a%20time%2C%20there%20was%20a%20little%20boy%20named%20Tom.%20He%20had%20a%20red%20ball.%20One%20day%2C%20Tom%20lost%20his&seed=1&t=1&s=24&q=8" target="_blank" rel="noopener">Open "Tom lost his"</a>
+
+The links set the [temperature](../../glossary/temperature/) to 1, so the studio shows the model's own
+probabilities. They come out a few points higher than in the tables above ("she" 73%, "ball" 65%): the studio
+cuts the unlikely tail with [top-k](../../glossary/top-k/) and [min-p](../../glossary/min-p/) and shares its
+probability among the candidates that remain.
+
+## The table still works in the studio
+
+The same counts, kept for the token phrases that occur at least 50 times (about 2.3 MB), drive the studio's
+[repetition penalty](../../glossary/repetition-penalty/): when the model is about to repeat a phrase that is rare in
+real stories, the table flags it. The Markov chain does not write the stories, the model does. The chain only says
+which repeats are natural.
+
+## A bit of history
+
+On 23 January 1913, Andrey Markov presented a study at the Academy of Sciences in St. Petersburg. He had
+taken 20,000 letters of Pushkin's *Eugene Onegin*, the whole first chapter and sixteen stanzas of the second, and
+counted by hand how vowels and consonants follow one another. It was the first application of what we now call a
+Markov chain: the next symbol depends on the one before it.
+
+In 1948 [Claude Shannon](https://ieeexplore.ieee.org/document/6773024) used the same idea to imitate English,
+letter by letter and word by word. In 2003 [Yoshua Bengio and colleagues](https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf)
+replaced the counting with a neural network, and modern language models, micro-qwen3 among them, descend from that
+step. This page puts the two ends of that line side by side, on the same stories.
+
+## How it was measured
+
+- **Text:** the validation part of TinyStories V2, about 404,000 tokens, not used to train either predictor.
+- **Markov chain:** counts of 4-, 3- and 2-token sequences from the training stories, with the thresholds 5, 3 and 1
+  occurrences; the longest context that is in the table wins. It has a guess at every position.
+- **Model:** the published 8-bit weights, the same as in the studio, reading the text in windows of 256 tokens.
+  It sees only the tokens before each position, as when it writes.
+- **Score:** the share of positions where the top candidate equals the token that is actually there.
+
+## Related
+
+- [Language model](../../glossary/language-model/): the next-token loop this page measures.
+- [Logits](../../glossary/logits/): where the candidates and their probabilities come from.
+- [How micro-qwen3 was made](../how-it-was-made/): the data and training behind the 52%.
+
+## References
+
+- A. A. Markov (1913; English translation 2006). [An Example of Statistical Investigation of the Text Eugene Onegin Concerning the Connection of Samples in Chains](https://doi.org/10.1017/S0269889706001074). Science in Context 19(4).
+- Claude E. Shannon (1948). [A Mathematical Theory of Communication](https://ieeexplore.ieee.org/document/6773024). Bell System Technical Journal.
+- Yoshua Bengio, Réjean Ducharme, Pascal Vincent, Christian Jauvin (2003). [A Neural Probabilistic Language Model](https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf). JMLR.
+- Ronen Eldan, Yuanzhi Li (2023). [TinyStories: How Small Can Language Models Be and Still Speak Coherent English?](https://arxiv.org/abs/2305.07759)

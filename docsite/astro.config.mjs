@@ -22,7 +22,7 @@ export default defineConfig({
         { label: 'Start here', translations: { ru: 'С чего начать' }, items: [{ slug: 'docs', label: 'About the docs', translations: { ru: 'О документации' } }, { slug: 'docs/terms' }] },
         // адреса страниц плоские и стабильные (/docs/glossary/<термин>/ — на них ссылаются подсказки студии),
         // а меню делится на «Основы» (порядок обучения) и «Настройки»
-        { label: 'The model', translations: { ru: 'Модель' }, items: [{ slug: 'docs/model/how-it-was-made' }] },
+        { label: 'The model', translations: { ru: 'Модель' }, items: [{ slug: 'docs/model/how-it-was-made' }, { slug: 'docs/model/next-token' }] },
         {
           label: 'Basics', translations: { ru: 'Основы' },
           items: [

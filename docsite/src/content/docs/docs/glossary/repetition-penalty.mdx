@@ -34,7 +34,8 @@ More rules, each one found by tracing the invented words the penalty used to cau
 - The penalty works in both modes, Instruct and Completion.
 
 The list comes from a table of phrase counts built from the training corpus, about 2.3 MB. The studio loads it
-only when you switch the penalty on.
+only when you switch the penalty on. A table of counts like this is a Markov chain; used on its own to guess the
+next token, it does about 10 points worse than the model ([How well it guesses the next token](../../model/next-token/)).
 
 ## A real loop, off and on
 

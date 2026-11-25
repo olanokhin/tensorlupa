@@ -6,6 +6,7 @@ Pages cite ONLY from this list. Format in a page's "## References" section:
 
 | Key | Citation | URL |
 | --- | --- | --- |
+| markov1913 | A. A. Markov (1913; English translation by Gloria Custance and David Link, 2006). An Example of Statistical Investigation of the Text Eugene Onegin Concerning the Connection of Samples in Chains. Science in Context 19(4), 591-600. Lecture at the Academy of Sciences, St. Petersburg, 23 January 1913; 20,000 letters, chapter 1 and 16 stanzas of chapter 2. Checked 2026-11-25. | https://doi.org/10.1017/S0269889706001074 |
 | shannon1948 | Claude E. Shannon (1948). A Mathematical Theory of Communication. Bell System Technical Journal. | https://ieeexplore.ieee.org/document/6773024 |
 | bengio2003 | Yoshua Bengio, Réjean Ducharme, Pascal Vincent, Christian Jauvin (2003). A Neural Probabilistic Language Model. JMLR. | https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf |
 | gpt2018 | Alec Radford et al. (2018). Improving Language Understanding by Generative Pre-Training. OpenAI. | https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf |
